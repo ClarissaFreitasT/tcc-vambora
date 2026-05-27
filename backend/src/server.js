@@ -36,32 +36,28 @@ app.get("/", (req, res) => {
  * GET /roteiros
  * Retorna todos os roteiros em formato JSON
  */
-app.get("/roteiros", (req, res) => {
-  res.json(obterTodasRoteiros());
+app.get("/roteiros", async (req, res) => {
+  const roteiros = await obterTodasRoteiros();
+  res.json(roteiros);
 });
 
 /**
  * GET /roteiros/:id
  * Retorna um roteiro específico com base no id enviado na URL
  */
-app.get("/roteiros/:id", (req, res) => {
-  // Converte o id recebido pela URL para número
-  const idNumero = Number(req.params.id);
+app.get("/roteiros/:id", async (req, res) => {
+  const id = req.params.id;
 
-  // Valida se o id é realmente um número
-  if (Number.isNaN(idNumero)) {
+  if (!id || typeof id !== "string") {
     return res.status(400).json({ erro: "ID inválido" });
   }
 
-  // Busca o roteiro pelo id
-  const roteiro = obterRoteiroPorId(idNumero);
+  const roteiro = await obterRoteiroPorId(id);
 
-  // Se não encontrar, retorna erro 404
   if (!roteiro) {
     return res.status(404).json({ erro: "Roteiro não encontrado" });
   }
 
-  // Se encontrar, retorna o roteiro
   res.json(roteiro);
 });
 
@@ -69,29 +65,23 @@ app.get("/roteiros/:id", (req, res) => {
  * POST /roteiros
  * Cria um novo roteiro
  */
-app.post("/roteiros", (req, res) => {
-  // Pega o nome, data e gênero enviados no corpo da requisição
-  const { nome, data, genero } = req.body;
+app.post("/roteiros", async (req, res) => {
+  const { nome, data, genero, lugares } = req.body;
 
-  // Valida se o nome foi enviado corretamente
   if (typeof nome !== "string" || nome.trim() === "") {
     return res.status(400).json({ erro: "Nome é obrigatório" });
   }
 
-  // Valida se a data foi enviada corretamente
   if (typeof data !== "string" || data.trim() === "") {
     return res.status(400).json({ erro: "Data é obrigatória" });
   }
 
-  // Valida se o gênero foi enviado corretamente
   if (typeof genero !== "string" || genero.trim() === "") {
     return res.status(400).json({ erro: "Gênero é obrigatório" });
   }
 
-  // Cria o novo roteiro
-  const roteiroCriado = criarNovoRoteiro(nome, data, genero);
+  const roteiroCriado = await criarNovoRoteiro(nome, data, genero, lugares);
 
-  // Retorna status 201 (criado com sucesso)
   res.status(201).json({
     mensagem: "Roteiro criado com sucesso!",
     roteiro: roteiroCriado
@@ -102,19 +92,14 @@ app.post("/roteiros", (req, res) => {
  * PATCH /roteiros/:id
  * Atualiza parcialmente um roteiro existente
  */
-app.patch("/roteiros/:id", (req, res) => {
-  // Converte o id da URL para número
-  const idNumero = Number(req.params.id);
+app.patch("/roteiros/:id", async (req, res) => {
+  const id = req.params.id;
+  const { nome, data, genero, lugares } = req.body;
 
-  // Pega os dados enviados no corpo da requisição
-  const { nome, data, genero } = req.body;
-
-  // Valida o id
-  if (Number.isNaN(idNumero)) {
+  if (!id || typeof id !== "string") {
     return res.status(400).json({ erro: "ID inválido" });
   }
 
-  // Valida o nome, se ele foi enviado
   if (
     nome !== undefined &&
     (typeof nome !== "string" || nome.trim() === "")
@@ -122,25 +107,26 @@ app.patch("/roteiros/:id", (req, res) => {
     return res.status(400).json({ erro: "Nome inválido" });
   }
 
-  // Valida a data, se ela foi enviada
   if (data !== undefined && (typeof data !== "string" || data.trim() === "")) {
     return res.status(400).json({ erro: "Data inválida" });
   }
 
-  // Valida o gênero, se ele foi enviado
   if (genero !== undefined && (typeof genero !== "string" || genero.trim() === "")) {
     return res.status(400).json({ erro: "Gênero inválido" });
   }
 
-  // Tenta atualizar o roteiro
-  const roteiroAtualizado = atualizarRoteiro(idNumero, nome, data, genero);
+  const roteiroAtualizado = await atualizarRoteiro(
+    id,
+    nome,
+    data,
+    genero,
+    lugares
+  );
 
-  // Se não encontrar o roteiro, retorna erro 404
   if (!roteiroAtualizado) {
     return res.status(404).json({ erro: "Roteiro não encontrado" });
   }
 
-  // Se atualizar com sucesso, retorna o roteiro atualizado
   res.json({
     mensagem: "Roteiro atualizado com sucesso!",
     roteiro: roteiroAtualizado
@@ -151,24 +137,19 @@ app.patch("/roteiros/:id", (req, res) => {
  * DELETE /roteiros/:id
  * Remove um roteiro pelo id
  */
-app.delete("/roteiros/:id", (req, res) => {
-  // Converte o id da URL para número
-  const idNumero = Number(req.params.id);
+app.delete("/roteiros/:id", async (req, res) => {
+  const id = req.params.id;
 
-  // Valida o id
-  if (Number.isNaN(idNumero)) {
+  if (!id || typeof id !== "string") {
     return res.status(400).json({ erro: "ID inválido" });
   }
 
-  // Tenta excluir o roteiro
-  const roteiroRemovido = excluirRoteiro(idNumero);
+  const roteiroRemovido = await excluirRoteiro(id);
 
-  // Se não encontrar, retorna erro 404
   if (!roteiroRemovido) {
     return res.status(404).json({ erro: "Roteiro não encontrado" });
   }
 
-  // Retorna o roteiro que foi removido
   res.json({
     mensagem: "Roteiro excluído com sucesso!",
     roteiro: roteiroRemovido
