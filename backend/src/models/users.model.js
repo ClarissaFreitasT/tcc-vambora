@@ -31,8 +31,4 @@ function autenticarUsuario(email, senha) {
     return user;
 }
 
-module.exports = {
-    cadastrarUsuario,
-    autenticarUsuario
-};
 

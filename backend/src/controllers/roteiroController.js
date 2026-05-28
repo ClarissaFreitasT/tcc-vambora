@@ -1,7 +1,7 @@
 import * as RoteiroModel from '../models/roteiro.model.js'
 
 export async function listarRoteiros(req, res) {
-  const roteiros = await RoteiroModel.obterTodasRoteiros();
+  const roteiros = await RoteiroModel.obterTodosRoteiros();
   res.json(roteiros);
 }
 

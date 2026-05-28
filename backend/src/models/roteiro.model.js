@@ -1,6 +1,6 @@
 import { prisma } from "../config/prisma.js";
 
-export async function obterTodasRoteiros() {
+export async function obterTodosRoteiros() {
   return prisma.roteiro.findMany();
 }
 
