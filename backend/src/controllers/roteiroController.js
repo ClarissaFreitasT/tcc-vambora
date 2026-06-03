@@ -5,10 +5,6 @@ export async function listarRoteiros(req, res) {
   res.json(roteiros);
 }
 
-/**
- * Retorna um roteiro específico com base no id enviado na URL
- * @route GET /filmes/:id
- */
 export async function obterRoteiro(req, res) {
   const id = req.params.id;
 
@@ -25,26 +21,36 @@ export async function obterRoteiro(req, res) {
   res.json(roteiro);
 }
 
-/**
- * Cria um novo roteiro
- * @route POST /filmes
- */
 export async function criarRoteiro(req, res) {
-  const { nome, data, genero, lugares } = req.body;
+  const {
+    usuarioId,
+    titulo,
+    destino,
+    descricao,
+    orcamento,
+    publico
+  } = req.body;
 
-  if (typeof nome !== "string" || nome.trim() === "") {
-    return res.status(400).json({ erro: "Nome é obrigatório" });
+  if (typeof usuarioId !== "string" || usuarioId.trim() === "") {
+    return res.status(400).json({ erro: "UsuarioId é obrigatório" });
   }
 
-  if (typeof data !== "string" || data.trim() === "") {
-    return res.status(400).json({ erro: "Data é obrigatória" });
+  if (typeof titulo !== "string" || titulo.trim() === "") {
+    return res.status(400).json({ erro: "Título é obrigatório" });
   }
 
-  if (typeof genero !== "string" || genero.trim() === "") {
-    return res.status(400).json({ erro: "Gênero é obrigatório" });
+  if (typeof destino !== "string" || destino.trim() === "") {
+    return res.status(400).json({ erro: "Destino é obrigatório" });
   }
 
-  const roteiroCriado = await RoteiroModel.criarNovoRoteiro(nome, data, genero, lugares);
+  const roteiroCriado = await RoteiroModel.criarNovoRoteiro({
+    usuarioId,
+    titulo,
+    destino,
+    descricao,
+    orcamento,
+    publico
+  });
 
   res.status(201).json({
     mensagem: "Roteiro criado com sucesso!",
@@ -52,45 +58,35 @@ export async function criarRoteiro(req, res) {
   });
 }
 
-/**
- * Atualiza parcialmente um roteiro existente
- * @route PATCH /filmes/:id
- */
 export async function atualizarRoteiro(req, res) {
   const id = req.params.id;
-  const { nome, lugares, data } = req.body;
+  const {
+    titulo,
+    destino,
+    descricao,
+    orcamento,
+    publico
+  } = req.body;
 
   if (!id || typeof id !== "string") {
     return res.status(400).json({ erro: "ID inválido" });
   }
 
-  if (
-    nome !== undefined &&
-    (typeof nome !== "string" || nome.trim() === "")
-  ) {
-    return res.status(400).json({ erro: "Nome inválido" });
+  if (titulo !== undefined && (typeof titulo !== "string" || titulo.trim() === "")) {
+    return res.status(400).json({ erro: "Título inválido" });
   }
 
-  if (
-    data !== undefined &&
-    (typeof data !== "string" || data.trim() === "")
-  ) {
-    return res.status(400).json({ erro: "Data inválida" });
+  if (destino !== undefined && (typeof destino !== "string" || destino.trim() === "")) {
+    return res.status(400).json({ erro: "Destino inválido" });
   }
 
-  if (
-    lugares !== undefined &&
-    (typeof lugares !== "string" || lugares.trim() === "")
-  ) {
-    return res.status(400).json({ erro: "Lugares inválidos" });
-  }
-
-  const roteiroAtualizado = await RoteiroModel.atualizarRoteiro(
-    id,
-    nome,
-    data,
-    lugares
-  );
+  const roteiroAtualizado = await RoteiroModel.atualizarRoteiro(id, {
+    titulo,
+    destino,
+    descricao,
+    orcamento,
+    publico
+  });
 
   if (!roteiroAtualizado) {
     return res.status(404).json({ erro: "Roteiro não encontrado" });
@@ -102,10 +98,6 @@ export async function atualizarRoteiro(req, res) {
   });
 }
 
-/**
- * Remove um roteiro pelo id
- * @route DELETE /filmes/:id
- */
 export async function excluirRoteiro(req, res) {
   const id = req.params.id;
 

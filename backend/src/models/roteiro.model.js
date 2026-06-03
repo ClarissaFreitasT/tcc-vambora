@@ -10,18 +10,29 @@ export async function obterRoteiroPorId(id) {
   });
 }
 
-export async function criarNovoRoteiro(nome, data, genero, lugares = null) {
+export async function criarNovoRoteiro({
+  usuarioId,
+  titulo,
+  destino,
+  descricao = null,
+  orcamento = null,
+  publico = false,
+  roteiroOriginalId = null
+}) {
   return prisma.roteiro.create({
     data: {
-      nome,
-      data,
-      genero,
-      lugares
+      usuarioId,
+      titulo,
+      destino,
+      descricao,
+      orcamento,
+      publico,
+      roteiroOriginalId
     }
   });
 }
 
-export async function atualizarRoteiro(id, nome, data, genero, lugares) {
+export async function atualizarRoteiro(id, dados) {
   const roteiroExistente = await prisma.roteiro.findUnique({
     where: { id }
   });
@@ -30,14 +41,17 @@ export async function atualizarRoteiro(id, nome, data, genero, lugares) {
     return null;
   }
 
+  const updateData = {};
+
+  if (dados.titulo !== undefined) updateData.titulo = dados.titulo;
+  if (dados.destino !== undefined) updateData.destino = dados.destino;
+  if (dados.descricao !== undefined) updateData.descricao = dados.descricao;
+  if (dados.orcamento !== undefined) updateData.orcamento = dados.orcamento;
+  if (dados.publico !== undefined) updateData.publico = dados.publico;
+
   return prisma.roteiro.update({
     where: { id },
-    data: {
-      nome: nome ?? roteiroExistente.nome,
-      data: data ?? roteiroExistente.data,
-      genero: genero ?? roteiroExistente.genero,
-      lugares: lugares ?? roteiroExistente.lugares
-    }
+    data: updateData
   });
 }
 

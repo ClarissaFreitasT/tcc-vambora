@@ -11,27 +11,27 @@ const router = express.Router();
 /**
  * GET /roteiros - Lista todos os roteiros
  */
-router.get("/roteiros", roteiroController.listarRoteiros);
+router.get("/", roteiroController.listarRoteiros);
 
 /**
  * GET /roteiros/:id - Obtém um roteiro específico
  */
-router.get("/roteiros/:id", roteiroController.obterRoteiro);
+router.get("/:id", roteiroController.obterRoteiro);
 
 /**
  * POST /roteiros - Cria um novo roteiro
  */
-router.post("/roteiros", roteiroController.criarRoteiro);
+router.post("/", roteiroController.criarRoteiro);
 
 /**
  * PATCH /roteiros/:id - Atualiza um roteiro parcialmente
  */
-router.patch("/roteiros/:id", roteiroController.atualizarRoteiro);
+router.patch("/:id", roteiroController.atualizarRoteiro);
 
 /**
  * DELETE /roteiros/:id - Remove um roteiro
  */
-router.delete("/roteiros/:id", roteiroController.deletarRoteiro);
+router.delete("/:id", roteiroController.excluirRoteiro);
 
 // Exporta o roteador para ser usado no app principal
 export default router;
