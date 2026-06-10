@@ -1,34 +1,46 @@
-const users = [];
+import { prisma } from "../config/prisma.js";
 
-function verificarUsuario(email) {
-    const userExists = users.find(user => user.email === email);
-    if (userExists) {
-        throw new Error("Usuário já registrado.");
-    }
-
+export async function obterTodosUsuarios() {
+  return prisma.usuario.findMany();
 }
 
-
-function cadastrarUsuario(nome, email, senha) {
-    if (!nome || !email || !senha) {
-        throw new Error("Todos os campos são obrigatórios.");
-    }
-    verificarUsuario(email);
-
-    const newUser = { id: users.length + 1, nome, email, senha };
-    users.push(newUser);
-    return newUser;
+export async function obterUsuarioPorId(id) {
+  return prisma.usuario.findUnique({
+    where: { id }
+  });
 }
 
-function autenticarUsuario(email, senha) {
-    if (!email || !senha) {
-        throw new Error("Email e senha são obrigatórios.");
-    }
-    const user = users.find(user => user.email === email && user.senha === senha);
-    if (!user) {
-        throw new Error("Credenciais inválidas.");
-    }
-    return user;
+export async function obterUsuarioPorEmail(email) {
+  return prisma.usuario.findUnique({
+    where: { email }
+  });
 }
 
+export async function criarUsuario(
+  nome,
+  email,
+  senhaHash,
+  fotoUrl,
+  bio,
+  personalidade,
+  orcamentoPerfil
+) {
+  const usuarioExistente = await obterUsuarioPorEmail(email);
+
+  if (usuarioExistente) {
+    return null;
+  }
+
+  return prisma.usuario.create({
+    data: {
+      nome,
+      email,
+      senhaHash,
+      fotoUrl,
+      bio,
+      personalidade,
+      orcamentoPerfil
+    }
+  });
+}
 
