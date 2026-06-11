@@ -20,7 +20,7 @@ export async function obterUsuario(req, res) {
   res.json(usuario);
 }
 
-export async function cadastrarUsuario(req, res) {
+export async function criarUsuario(req, res) {
   const {
     nome,
     email,

@@ -43,19 +43,28 @@ export async function criarRoteiro(req, res) {
     return res.status(400).json({ erro: "Destino é obrigatório" });
   }
 
-  const roteiroCriado = await RoteiroModel.criarNovoRoteiro({
-    usuarioId,
-    titulo,
-    destino,
-    descricao,
-    orcamento,
-    publico
-  });
+  try {
+    const roteiroCriado = await RoteiroModel.criarNovoRoteiro({
+      usuarioId,
+      titulo,
+      destino,
+      descricao,
+      orcamento,
+      publico
+    });
 
-  res.status(201).json({
-    mensagem: "Roteiro criado com sucesso!",
-    roteiro: roteiroCriado
-  });
+    return res.status(201).json({
+      mensagem: "Roteiro criado com sucesso!",
+      roteiro: roteiroCriado
+    });
+  } catch (error) {
+    console.error("Erro ao criar roteiro:", error);
+
+    return res.status(500).json({
+      erro: "Não foi possível salvar o roteiro.",
+      detalhe: error.message
+    });
+  }
 }
 
 export async function atualizarRoteiro(req, res) {
