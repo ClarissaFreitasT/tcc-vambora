@@ -1,5 +1,11 @@
-import app from "./app.js";
-import { prisma } from "./config/prisma.js";
+import express from "express";
+import {
+  obterTodosRoteiros,
+  obterRoteiroPorId,
+  criarNovoRoteiro,
+  atualizarRoteiro,
+  excluirRoteiro
+} from "./models/roteiro.model.js";
 
 const PORT = process.env.PORT || 3000;
 

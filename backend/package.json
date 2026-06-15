@@ -2,10 +2,13 @@
   "name": "js-basico",
   "version": "1.0.0",
   "type": "module",
-  "scripts": {
+
+    "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "batata": "node src/index.js",
     "dev": "nodemon src/server.js",
-    "start": "node src/server.js",
-    "prisma": "prisma"
+    "start": "node src/server.js"
+
   },
   "dependencies": {
     "@prisma/adapter-mariadb": "^7.8.0",
