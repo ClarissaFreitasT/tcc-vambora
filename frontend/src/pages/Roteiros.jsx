@@ -4,29 +4,60 @@ import { motion } from 'framer-motion'
 
 export default function Roteiros() {
   const [roteiros, setRoteiros] = useState([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('http://localhost:3000/roteiros')
+    fetch('/roteiros')
       .then((r) => r.json())
-      .then(setRoteiros)
+      .then((data) => setRoteiros(data))
       .catch(() => setRoteiros([]))
+      .finally(() => setLoading(false))
   }, [])
 
   return (
-    <main className="container" style={{ paddingBlock: 40 }}>
-      <motion.h2 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>Roteiros públicos</motion.h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, marginTop: 20 }}>
-        {roteiros.map((r) => (
-          <motion.article whileHover={{ scale: 1.02 }} transition={{ duration: 0.18 }} key={r.id} className="card">
-            <h3>{r.titulo}</h3>
-            <p style={{ color: 'var(--text-secondary)' }}>{r.destino}</p>
-            <p style={{ color: 'var(--text-secondary)' }}>{r.descricao}</p>
-            <div style={{ marginTop: 12 }}>
-              <Link to={`/roteiros/${r.id}`} className="btn btn-secondary">Ver detalhes</Link>
-            </div>
-          </motion.article>
-        ))}
+    <main className="container mx-auto px-4 py-16 lg:px-8">
+      <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-sm uppercase tracking-[0.24em] text-emerald-700">Roteiros</p>
+          <h2 className="mt-2 text-3xl font-semibold text-slate-900">Roteiros públicos disponíveis</h2>
+        </div>
+        <Link to="/roteiros/novo" className="btn-primary">
+          Novo roteiro
+        </Link>
       </div>
+
+      {loading ? (
+        <p className="text-slate-500">Buscando dados do backend...</p>
+      ) : roteiros.length === 0 ? (
+        <p className="text-slate-500">Nenhum roteiro encontrado.</p>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {roteiros.map((roteiro) => (
+            <motion.article
+              key={roteiro.id}
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.18 }}
+              className="card overflow-hidden p-6"
+            >
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <h3 className="text-xl font-semibold text-slate-900">{roteiro.titulo}</h3>
+                <span className="rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-700">
+                  {roteiro.destino || 'Sem destino'}
+                </span>
+              </div>
+              <p className="text-sm text-slate-600">{roteiro.descricao || 'Descrição não cadastrada.'}</p>
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                <span className="rounded-2xl bg-slate-100 px-3 py-1 text-sm text-slate-700">
+                  Orçamento: {roteiro.orcamento || '---'}
+                </span>
+                <Link to={`/roteiros/${roteiro.id}`} className="btn-secondary">
+                  Ver detalhes
+                </Link>
+              </div>
+            </motion.article>
+          ))}
+        </div>
+      )}
     </main>
   )
 }

@@ -82,184 +82,136 @@ function App() {
   const navigate = useNavigate()
   const [roteiros, setRoteiros] = useState([])
   const [usuarios, setUsuarios] = useState([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('http://localhost:3000/roteiros')
-      .then((r) => r.json())
-      .then(setRoteiros)
-      .catch(() => setRoteiros([]))
-
-    fetch('http://localhost:3000/usuarios')
-      .then((r) => r.json())
-      .then(setUsuarios)
-      .catch(() => setUsuarios([]))
+    Promise.all([
+      fetch('/roteiros').then((r) => r.json()),
+      fetch('/usuarios').then((r) => r.json())
+    ])
+      .then(([roteirosData, usuariosData]) => {
+        setRoteiros(roteirosData)
+        setUsuarios(usuariosData)
+      })
+      .catch(() => {
+        setRoteiros([])
+        setUsuarios([])
+      })
+      .finally(() => setLoading(false))
   }, [])
-
-  const fadeUp = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }
 
   return (
     <main className="site-shell">
       <Navbar />
-      <motion.section className="hero-section" initial="hidden" animate="show" variants={fadeUp} transition={{ duration: 0.5 }}>
-        <div className="container hero-grid">
-          <div className="hero-copy">
-            <span className="eyebrow">Planeje · Conecte · Compartilhe</span>
-            <h1>Ferramenta e comunidade para planejar suas viagens.</h1>
-            <p>
-              Crie roteiros personalizados, organize por dias e atividades, e compartilhe experiências com outros viajantes.
-            </p>
-            <div className="hero-actions">
-              <button className="btn btn-primary" onClick={() => navigate('/roteiros')}>Explorar roteiros</button>
-              <button className="btn btn-secondary" onClick={() => navigate('/comunidade')}>Explorar comunidade</button>
-              <button className="btn btn-primary" onClick={() => navigate('/roteiros/novo')}>Criar Roteiro</button>
-            </div>
-            <div className="hero-pill-grid">
-              <div className="pill-card">
-                <strong>60+</strong>
-                <span>destinos selecionados</span>
-              </div>
-              <div className="pill-card">
-                <strong>95%</strong>
-                <span>de aprovação entre viajantes</span>
-              </div>
-              <div className="pill-card">
-                <strong>20k+</strong>
-                <span>experiências compartilhadas</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="hero-media">
-            <img
-              src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1400&q=80"
-              alt="Casal em viagem na praia"
-            />
-            <div className="hero-overlay" />
-            <div className="hero-media-signal">
-              <span>Curadoria premium</span>
-              <strong>Destino em destaque</strong>
-            </div>
-          </div>
-          </div>
-        </motion.section>
-
-      <section className="section section-destinos fade-in">
-        <div className="container section-heading">
-          <div>
-            <span className="eyebrow">Destinos em destaque</span>
-            <h2>Roteiros públicos e destaques</h2>
-          </div>
-          <button className="btn btn-secondary btn-outline" onClick={() => navigate('/roteiros')}>Ver todos</button>
-        </div>
-        <div className="container card-grid destination-grid">
-          {roteiros.slice(0, 8).map((r) => (
-            <motion.article layout whileHover={{ scale: 1.02 }} transition={{ duration: 0.18 }} className="card destination-card" key={r.id}>
-              <div className="card-media">
-                <img src={r.imagem || `https://ui-avatars.com/api/?name=${encodeURIComponent(r.destino || r.titulo)}`} alt={r.titulo} />
-                <div className="card-media-overlay" />
-                <div className="destination-tag">
-                  <span>{r.destino}</span>
-                  <span className="rating">{r.orcamento || '-'}</span>
-                </div>
-              </div>
-              <div className="card-content">
-                <p className="destination-location">
-                  {r.titulo}
-                </p>
-                <p>{r.descricao}</p>
-              </div>
-            </motion.article>
-          ))}
-        </div>
-      </section>
-
-      <section className="section section-community fade-in">
-        <div className="container section-heading">
-          <div>
-            <span className="eyebrow">Comunidade</span>
-            <h2>Histórias reais de viajantes</h2>
-          </div>
-        </div>
-        <div className="container community-grid">
-          {usuarios.slice(0, 9).map((u) => (
-            <motion.article key={u.id} className="card community-card" whileHover={{ scale: 1.02 }} transition={{ duration: 0.18 }}>
-              <div className="community-media">
-                <img src={u.fotoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.nome || 'Viajante')}`} alt={u.nome} />
-              </div>
-              <div className="community-copy">
-                <p className="eyebrow">{u.nome}</p>
-                <h3>{u.bio || 'Compartilhou experiências recentemente'}</h3>
-              </div>
-            </motion.article>
-          ))}
-        </div>
-      </section>
-
-      <section className="section section-profile fade-in">
-        <div className="container profile-shell card">
-          <div className="profile-cover">
-            <img
-              src="https://images.unsplash.com/photo-1493558103817-58b2924bce98?auto=format&fit=crop&w=1600&q=80"
-              alt="Foto de viagem como cover"
-            />
-            <div className="profile-cover-overlay" />
-          </div>
-          <div className="profile-main">
-            <div className="profile-avatar">
-              <img
-                src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80"
-                alt="Avatar do perfil"
-              />
-            </div>
-            <div className="profile-intro">
-              <span className="eyebrow">Perfil</span>
-              <h2>Design de perfil moderno para viajantes que buscam experiências memoráveis.</h2>
-              <p>
-                Painel de visuais limpos, estatísticas organizadas e histórico de viagens com foco na sua próxima inspiração.
+      <section className="relative overflow-hidden bg-emerald-600 py-20 text-white">
+        <div className="container mx-auto px-4 lg:px-8">
+          <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+            <div className="space-y-6">
+              <span className="inline-flex rounded-full bg-white/10 px-4 py-2 text-sm font-semibold uppercase tracking-[0.3em] text-white/90">
+                Planeje · Conecte · Compartilhe
+              </span>
+              <h1 className="max-w-2xl text-4xl font-black sm:text-5xl">
+                Um frontend React com conexão real ao backend.
+              </h1>
+              <p className="max-w-xl text-slate-100/90 text-lg leading-8">
+                Já há consumo de API local para roteiros e usuários. O layout usa React em JavaScript e Tailwind para acelerar o desenvolvimento.
               </p>
-            </div>
-          </div>
-
-          <div className="profile-stats">
-            {profileHighlights.map((item) => (
-              <div className="profile-stat" key={item.label}>
-                <span>{item.value}</span>
-                <p>{item.label}</p>
+              <div className="flex flex-wrap gap-3">
+                <button className="btn-primary" onClick={() => navigate('/roteiros')}>Ver roteiros</button>
+                <button className="btn-secondary" onClick={() => navigate('/comunidade')}>Comunidade</button>
+                <button className="btn-secondary" onClick={() => navigate('/roteiros/novo')}>Novo roteiro</button>
               </div>
-            ))}
-          </div>
-
-          <div className="profile-gallery">
-            <div className="profile-thumb">
+            </div>
+            <div className="rounded-[2rem] bg-white/10 p-6 shadow-2xl shadow-slate-950/10 backdrop-blur-xl">
               <img
-                src="https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1000&q=80"
-                alt="Viagem paradisíaca"
+                className="h-96 w-full rounded-[1.75rem] object-cover shadow-xl shadow-slate-950/20"
+                src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1400&q=80"
+                alt="Casal em viagem na praia"
               />
             </div>
-            <div className="profile-thumb">
-              <img
-                src="https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1000&q=80"
-                alt="Trilha de montanha"
-              />
-            </div>
-            <div className="profile-thumb">
-              <img
-                src="https://images.unsplash.com/photo-1519817650390-64a93db5112b?auto=format&fit=crop&w=1000&q=80"
-                alt="Experiência urbana"
-              />
-            </div>
-          </div>
-
-          <div className="loading-skeleton">
-            <div className="skeleton-line skeleton-short" />
-            <div className="skeleton-line" />
           </div>
         </div>
       </section>
 
-      <footer className="footer container fade-in">
-        <p>Vambora — Plataforma premium de turismo inspirada por experiências selecionadas.</p>
-      </footer>
+      <section className="container mx-auto px-4 lg:px-8 py-16">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-sm uppercase tracking-[0.24em] text-emerald-700">Conexão com backend</p>
+            <h2 className="mt-3 text-3xl font-semibold text-slate-900">Dados reais carregados</h2>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <span className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-800">{roteiros.length} roteiros</span>
+            <span className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-800">{usuarios.length} usuários</span>
+          </div>
+        </div>
+
+        <div className="mt-10 grid gap-6 lg:grid-cols-2">
+          <div className="card p-6">
+            <h3 className="text-xl font-semibold text-slate-900">Roteiros recentes</h3>
+            <div className="mt-6 space-y-4">
+              {loading ? (
+                <p className="text-slate-500">Carregando roteiros...</p>
+              ) : roteiros.length > 0 ? (
+                roteiros.slice(0, 4).map((roteiro) => (
+                  <article key={roteiro.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                    <h4 className="text-lg font-semibold text-slate-900">{roteiro.titulo}</h4>
+                    <p className="mt-1 text-sm text-slate-600">Destino: {roteiro.destino}</p>
+                    <p className="mt-2 text-sm text-slate-500">{roteiro.descricao || 'Sem descrição disponível'}</p>
+                  </article>
+                ))
+              ) : (
+                <p className="text-slate-500">Nenhum roteiro encontrado no backend.</p>
+              )}
+            </div>
+          </div>
+
+          <div className="card p-6">
+            <h3 className="text-xl font-semibold text-slate-900">Comunidade ativa</h3>
+            <div className="mt-6 space-y-4">
+              {loading ? (
+                <p className="text-slate-500">Carregando usuários...</p>
+              ) : usuarios.length > 0 ? (
+                usuarios.slice(0, 4).map((user) => (
+                  <article key={user.id} className="flex flex-col gap-2 rounded-3xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center">
+                    <div className="h-16 w-16 overflow-hidden rounded-3xl bg-slate-200">
+                      <img
+                        className="h-full w-full object-cover"
+                        src={user.fotoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.nome || 'Usuário')}`}
+                        alt={user.nome}
+                      />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-slate-900">{user.nome}</p>
+                      <p className="text-sm text-slate-600">{user.bio || 'Bio não disponível'}</p>
+                    </div>
+                  </article>
+                ))
+              ) : (
+                <p className="text-slate-500">Nenhum usuário encontrado no backend.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-slate-900 py-16 text-white">
+        <div className="container mx-auto px-4 lg:px-8">
+          <div className="grid gap-8 lg:grid-cols-3">
+            <div className="rounded-3xl bg-slate-800/80 p-8 shadow-xl shadow-slate-950/20">
+              <h3 className="text-xl font-semibold">Roteiros públicos</h3>
+              <p className="mt-3 text-slate-300">Navegue entre roteiros públicos carregados diretamente do backend.</p>
+            </div>
+            <div className="rounded-3xl bg-slate-800/80 p-8 shadow-xl shadow-slate-950/20">
+              <h3 className="text-xl font-semibold">Tela de criação</h3>
+              <p className="mt-3 text-slate-300">Formulário simples com envio de dados para a rota POST de roteiros.</p>
+            </div>
+            <div className="rounded-3xl bg-slate-800/80 p-8 shadow-xl shadow-slate-950/20">
+              <h3 className="text-xl font-semibold">Navegação React</h3>
+              <p className="mt-3 text-slate-300">Rotas implementadas para home, roteiros, comunidade e perfil.</p>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
   )
 }
