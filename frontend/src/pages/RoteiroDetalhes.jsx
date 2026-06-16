@@ -1,18 +1,78 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 
 export default function RoteiroDetalhes() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const [roteiro, setRoteiro] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [editMode, setEditMode] = useState(false)
+  const [titulo, setTitulo] = useState('')
+  const [destino, setDestino] = useState('')
+  const [descricao, setDescricao] = useState('')
+  const [orcamento, setOrcamento] = useState('')
+  const [publico, setPublico] = useState(true)
+  const [status, setStatus] = useState(null)
 
   useEffect(() => {
-    fetch(`/roteiros/${id}`)
-      .then((r) => r.json())
-      .then((data) => setRoteiro(data))
-      .catch(() => setRoteiro(null))
-      .finally(() => setLoading(false))
+    async function carregarRoteiro() {
+      try {
+        const response = await fetch(`/roteiros/${id}`)
+        const data = await response.json()
+
+        if (response.ok) {
+          setRoteiro(data)
+          setTitulo(data.titulo || '')
+          setDestino(data.destino || '')
+          setDescricao(data.descricao || '')
+          setOrcamento(data.orcamento || '')
+          setPublico(data.publico ?? false)
+        } else {
+          setRoteiro(null)
+        }
+      } catch (error) {
+        setRoteiro(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    carregarRoteiro()
   }, [id])
+
+  async function handleUpdate(e) {
+    e.preventDefault()
+    setStatus('Atualizando roteiro...')
+
+    const response = await fetch(`/roteiros/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ titulo, destino, descricao, orcamento, publico })
+    })
+
+    const data = await response.json()
+
+    if (response.ok) {
+      setRoteiro(data.roteiro)
+      setStatus('Roteiro atualizado com sucesso!')
+      setEditMode(false)
+    } else {
+      setStatus(data.erro || 'Não foi possível atualizar o roteiro.')
+    }
+  }
+
+  async function handleDelete() {
+    if (!window.confirm('Deseja realmente excluir este roteiro?')) return
+
+    const response = await fetch(`/roteiros/${id}`, { method: 'DELETE' })
+    const data = await response.json()
+
+    if (response.ok) {
+      navigate('/roteiros')
+    } else {
+      setStatus(data.erro || 'Não foi possível excluir o roteiro.')
+    }
+  }
 
   if (loading) {
     return (
@@ -32,36 +92,107 @@ export default function RoteiroDetalhes() {
 
   return (
     <main className="container mx-auto px-4 py-16 lg:px-8">
-      <div className="grid gap-8 lg:grid-cols-[1.3fr_0.7fr]">
-        <section className="space-y-6">
-          <span className="text-sm uppercase tracking-[0.3em] text-emerald-700">Detalhes do roteiro</span>
-          <h1 className="text-4xl font-bold text-slate-900">{roteiro.titulo}</h1>
-          <p className="text-lg font-medium text-slate-600">Destino: {roteiro.destino || 'Não informado'}</p>
-          <p className="text-slate-600">{roteiro.descricao || 'Sem descrição cadastrada para este roteiro.'}</p>
-          <div className="flex flex-wrap gap-3 text-sm text-slate-700">
-            <span className="rounded-2xl bg-slate-100 px-4 py-2">Orçamento: {roteiro.orcamento || '---'}</span>
-            <span className="rounded-2xl bg-slate-100 px-4 py-2">Visibilidade: {roteiro.publico ? 'Público' : 'Privado'}</span>
-          </div>
-        </section>
-
-        <aside className="card p-6">
-          <h2 className="text-xl font-semibold text-slate-900">Integração backend</h2>
-          <p className="mt-4 text-sm text-slate-600">
-            Esta página ilustra a leitura do backend usando a rota GET por id.
-          </p>
-          <div className="mt-6 space-y-3 rounded-3xl bg-slate-50 p-4 text-sm text-slate-700">
-            <p>ID requisitado: <strong>{id}</strong></p>
-            <p>Usuário dono do roteiro: <strong>{roteiro.usuarioId || 'Indefinido'}</strong></p>
-          </div>
-        </aside>
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <p className="text-sm uppercase tracking-[0.24em] text-emerald-700">Detalhes do roteiro</p>
+          <h1 className="mt-3 text-4xl font-bold text-slate-900">{roteiro.titulo}</h1>
+          <p className="mt-3 text-slate-600">A rota foi carregada do backend via GET /roteiros/{id}.</p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <button className="btn-secondary" onClick={() => setEditMode((prev) => !prev)}>
+            {editMode ? 'Cancelar edição' : 'Editar roteiro'}
+          </button>
+          <button className="btn-primary" onClick={handleDelete}>
+            Excluir roteiro
+          </button>
+        </div>
       </div>
 
-      <section className="mt-12 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-2xl font-semibold text-slate-900">Dias e atividades</h2>
-        <p className="mt-3 text-slate-600">
-          A rota de dias ainda não está ligada diretamente nesta tela, mas o backend já disponibiliza /dias e /itens para expansão futura.
-        </p>
-      </section>
+      {status ? <div className="mt-6 rounded-3xl bg-emerald-50 p-4 text-sm text-emerald-900">{status}</div> : null}
+
+      {!editMode ? (
+        <section className="mt-10 grid gap-8 lg:grid-cols-[1.3fr_0.7fr]">
+          <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="space-y-4">
+              <p className="text-sm text-slate-500">Destino</p>
+              <h2 className="text-2xl font-semibold text-slate-900">{roteiro.destino}</h2>
+              <p className="text-slate-600">{roteiro.descricao || 'Sem descrição cadastrada.'}</p>
+              <div className="mt-4 flex flex-wrap gap-3 text-sm text-slate-700">
+                <span className="rounded-2xl bg-slate-100 px-4 py-2">Orçamento: {roteiro.orcamento || 'Não informado'}</span>
+                <span className="rounded-2xl bg-slate-100 px-4 py-2">{roteiro.publico ? 'Público' : 'Privado'}</span>
+              </div>
+            </div>
+          </div>
+
+          <aside className="card p-8">
+            <h2 className="text-xl font-semibold text-slate-900">Integração com backend</h2>
+            <p className="mt-3 text-slate-600">Esta tela permite editar e apagar o roteiro usando PATCH e DELETE do backend.</p>
+            <div className="mt-6 space-y-3 rounded-3xl bg-slate-50 p-4 text-sm text-slate-700">
+              <p>ID do roteiro: <strong>{roteiro.id}</strong></p>
+              <p>Usuário responsável: <strong>{roteiro.usuarioId || 'Indefinido'}</strong></p>
+            </div>
+          </aside>
+        </section>
+      ) : (
+        <section className="mt-10 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+          <h2 className="text-2xl font-semibold text-slate-900">Editar roteiro</h2>
+          <form className="mt-6 grid gap-5" onSubmit={handleUpdate}>
+            <label className="space-y-2 text-sm font-medium text-slate-700">
+              Título
+              <input
+                className="w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-500"
+                value={titulo}
+                onChange={(e) => setTitulo(e.target.value)}
+                required
+              />
+            </label>
+            <label className="space-y-2 text-sm font-medium text-slate-700">
+              Destino
+              <input
+                className="w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-500"
+                value={destino}
+                onChange={(e) => setDestino(e.target.value)}
+                required
+              />
+            </label>
+            <label className="space-y-2 text-sm font-medium text-slate-700">
+              Descrição
+              <textarea
+                className="w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-500"
+                rows={4}
+                value={descricao}
+                onChange={(e) => setDescricao(e.target.value)}
+              />
+            </label>
+            <label className="space-y-2 text-sm font-medium text-slate-700">
+              Orçamento
+              <input
+                className="w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-500"
+                value={orcamento}
+                onChange={(e) => setOrcamento(e.target.value)}
+              />
+            </label>
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+              <label className="flex items-center gap-3 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={publico}
+                  onChange={() => setPublico((prev) => !prev)}
+                  className="h-5 w-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                Compartilhar publicamente
+              </label>
+              <p className="mt-3 text-sm text-slate-500">{publico ? 'O roteiro ficará público.' : 'O roteiro ficará privado.'}</p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <button className="btn-primary" type="submit">Salvar alterações</button>
+              <button className="btn-secondary" type="button" onClick={() => setEditMode(false)}>
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </section>
+      )}
     </main>
   )
 }
