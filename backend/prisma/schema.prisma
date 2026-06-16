@@ -7,50 +7,40 @@ datasource db {
   provider = "mysql"
 }
 
-enum Personalidade {
-  AVENTUREIRA
-  CULTURAL
-  FESTEIRA
-  TRANQUILA
-}
-
 model Usuario {
-  id               String         @id @default(uuid()) @db.Char(36)
-  nome             String         @db.VarChar(255)
-  email            String         @unique @db.VarChar(255)
-  senhaHash        String         @map("senha_hash") @db.VarChar(255)
-  fotoUrl          String?        @map("foto_url") @db.VarChar(255)
-  bio              String?        @db.Text
-  personalidade    Personalidade?
-  orcamentoPerfil  Int?           @map("orcamento_perfil")
-  criadoEm         DateTime       @default(now()) @map("criado_em")
-
-  roteiros         Roteiro[]
-  favoritos        Favorito[]
-  reviews          Review[]
+  id              String         @id @default(uuid()) @db.Char(36)
+  nome            String         @db.VarChar(255)
+  email           String         @unique @db.VarChar(255)
+  senhaHash       String         @map("senha_hash") @db.VarChar(255)
+  fotoUrl         String?        @map("foto_url") @db.VarChar(255)
+  bio             String?        @db.Text
+  personalidade   Personalidade?
+  orcamentoPerfil Int?           @map("orcamento_perfil")
+  criadoEm        DateTime       @default(now()) @map("criado_em")
+  favoritos       Favorito[]
+  reviews         Review[]
+  roteiros        Roteiro[]
 
   @@map("usuarios")
 }
 
 model Roteiro {
-  id                  String              @id @default(uuid()) @db.Char(36)
-  usuarioId           String              @map("usuario_id") @db.Char(36)
-  roteiroOriginalId   String?             @map("roteiro_original_id") @db.Char(36)
-  titulo              String              @db.VarChar(255)
-  descricao           String?             @db.Text
-  destino             String              @db.VarChar(255)
-  orcamento           Decimal?            @db.Decimal(10, 2)
-  publico             Boolean             @default(false)
-  criadoEm            DateTime            @default(now()) @map("criado_em")
-
-  usuario             Usuario             @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  roteiroOriginal     Roteiro?            @relation("DuplicacaoRoteiro", fields: [roteiroOriginalId], references: [id], onDelete: SetNull)
-  roteirosDuplicados  Roteiro[]           @relation("DuplicacaoRoteiro")
-
-  dias                DiaDoRoteiro[]
-  favoritos           Favorito[]
-  reviews             Review[]
-  categorias          RoteiroCategoria[]
+  id                 String             @id @default(uuid()) @db.Char(36)
+  usuarioId          String             @map("usuario_id") @db.Char(36)
+  roteiroOriginalId  String?            @map("roteiro_original_id") @db.Char(36)
+  titulo             String             @db.VarChar(255)
+  descricao          String?            @db.Text
+  destino            String             @db.VarChar(255)
+  orcamento          Decimal?           @db.Decimal(10, 2)
+  publico            Boolean            @default(false)
+  criadoEm           DateTime           @default(now()) @map("criado_em")
+  dias               DiaDoRoteiro[]
+  favoritos          Favorito[]
+  reviews            Review[]
+  categorias         RoteiroCategoria[]
+  roteiroOriginal    Roteiro?           @relation("DuplicacaoRoteiro", fields: [roteiroOriginalId], references: [id])
+  roteirosDuplicados Roteiro[]          @relation("DuplicacaoRoteiro")
+  usuario            Usuario            @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
   @@index([usuarioId])
   @@index([roteiroOriginalId])
@@ -58,13 +48,12 @@ model Roteiro {
 }
 
 model DiaDoRoteiro {
-  id         String            @id @default(uuid()) @db.Char(36)
-  roteiroId  String            @map("roteiro_id") @db.Char(36)
-  numeroDia  Int               @map("numero_dia")
-  titulo     String?           @db.VarChar(255)
-
-  roteiro    Roteiro           @relation(fields: [roteiroId], references: [id], onDelete: Cascade)
-  itens      ItemDoRoteiro[]
+  id        String          @id @default(uuid()) @db.Char(36)
+  roteiroId String          @map("roteiro_id") @db.Char(36)
+  numeroDia Int             @map("numero_dia")
+  titulo    String?         @db.VarChar(255)
+  roteiro   Roteiro         @relation(fields: [roteiroId], references: [id], onDelete: Cascade)
+  itens     ItemDoRoteiro[]
 
   @@unique([roteiroId, numeroDia])
   @@index([roteiroId])
@@ -72,28 +61,26 @@ model DiaDoRoteiro {
 }
 
 model ItemDoRoteiro {
-  id              String        @id @default(uuid()) @db.Char(36)
-  diaId           String        @map("dia_id") @db.Char(36)
-  titulo          String        @db.VarChar(255)
-  descricao       String?       @db.Text
-  localNome       String?       @map("local_nome") @db.VarChar(255)
-  custoEstimado   Decimal?      @map("custo_estimado") @db.Decimal(10, 2)
-  horarioInicio   DateTime?     @map("horario_inicio") @db.Time(0)
-  ordem           Int           @default(0)
-
-  dia             DiaDoRoteiro  @relation(fields: [diaId], references: [id], onDelete: Cascade)
+  id            String       @id @default(uuid()) @db.Char(36)
+  diaId         String       @map("dia_id") @db.Char(36)
+  titulo        String       @db.VarChar(255)
+  descricao     String?      @db.Text
+  localNome     String?      @map("local_nome") @db.VarChar(255)
+  custoEstimado Decimal?     @map("custo_estimado") @db.Decimal(10, 2)
+  horarioInicio DateTime?    @map("horario_inicio") @db.Time(0)
+  ordem         Int          @default(0)
+  dia           DiaDoRoteiro @relation(fields: [diaId], references: [id], onDelete: Cascade)
 
   @@index([diaId])
   @@map("itens_do_roteiro")
 }
 
 model Favorito {
-  id         String    @id @default(uuid()) @db.Char(36)
-  usuarioId  String    @map("usuario_id") @db.Char(36)
-  roteiroId  String    @map("roteiro_id") @db.Char(36)
-
-  usuario    Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  roteiro    Roteiro   @relation(fields: [roteiroId], references: [id], onDelete: Cascade)
+  id        String  @id @default(uuid()) @db.Char(36)
+  usuarioId String  @map("usuario_id") @db.Char(36)
+  roteiroId String  @map("roteiro_id") @db.Char(36)
+  roteiro   Roteiro @relation(fields: [roteiroId], references: [id], onDelete: Cascade)
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
   @@unique([usuarioId, roteiroId])
   @@index([usuarioId])
@@ -102,20 +89,18 @@ model Favorito {
 }
 
 model Categoria {
-  id        String              @id @default(uuid()) @db.Char(36)
-  nome      String              @unique @db.VarChar(255)
-
-  roteiros  RoteiroCategoria[]
+  id       String             @id @default(uuid()) @db.Char(36)
+  nome     String             @unique @db.VarChar(255)
+  roteiros RoteiroCategoria[]
 
   @@map("categorias")
 }
 
 model RoteiroCategoria {
-  roteiroId    String     @map("roteiro_id") @db.Char(36)
-  categoriaId  String     @map("categoria_id") @db.Char(36)
-
-  roteiro      Roteiro    @relation(fields: [roteiroId], references: [id], onDelete: Cascade)
-  categoria    Categoria  @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
+  roteiroId   String    @map("roteiro_id") @db.Char(36)
+  categoriaId String    @map("categoria_id") @db.Char(36)
+  categoria   Categoria @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
+  roteiro     Roteiro   @relation(fields: [roteiroId], references: [id], onDelete: Cascade)
 
   @@id([roteiroId, categoriaId])
   @@index([categoriaId])
@@ -123,18 +108,24 @@ model RoteiroCategoria {
 }
 
 model Review {
-  id          String    @id @default(uuid()) @db.Char(36)
-  usuarioId   String    @map("usuario_id") @db.Char(36)
-  roteiroId   String    @map("roteiro_id") @db.Char(36)
-  nota        Int
-  comentario  String?   @db.Text
-  criadoEm    DateTime  @default(now()) @map("criado_em")
-
-  usuario     Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  roteiro     Roteiro   @relation(fields: [roteiroId], references: [id], onDelete: Cascade)
+  id         String   @id @default(uuid()) @db.Char(36)
+  usuarioId  String   @map("usuario_id") @db.Char(36)
+  roteiroId  String   @map("roteiro_id") @db.Char(36)
+  nota       Int
+  comentario String?  @db.Text
+  criadoEm   DateTime @default(now()) @map("criado_em")
+  roteiro    Roteiro  @relation(fields: [roteiroId], references: [id], onDelete: Cascade)
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
   @@unique([usuarioId, roteiroId])
   @@index([usuarioId])
   @@index([roteiroId])
   @@map("reviews")
+}
+
+enum Personalidade {
+  AVENTUREIRA
+  CULTURAL
+  FESTEIRA
+  TRANQUILA
 }
