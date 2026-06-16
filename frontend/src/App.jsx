@@ -73,20 +73,45 @@ const profileHighlights = [
   }
 ]
 
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import Navbar from './components/Navbar'
+
 function App() {
+  const navigate = useNavigate()
+  const [roteiros, setRoteiros] = useState([])
+  const [usuarios, setUsuarios] = useState([])
+
+  useEffect(() => {
+    fetch('http://localhost:3000/roteiros')
+      .then((r) => r.json())
+      .then(setRoteiros)
+      .catch(() => setRoteiros([]))
+
+    fetch('http://localhost:3000/usuarios')
+      .then((r) => r.json())
+      .then(setUsuarios)
+      .catch(() => setUsuarios([]))
+  }, [])
+
+  const fadeUp = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }
+
   return (
     <main className="site-shell">
-      <section className="hero-section fade-in">
+      <Navbar />
+      <motion.section className="hero-section" initial="hidden" animate="show" variants={fadeUp} transition={{ duration: 0.5 }}>
         <div className="container hero-grid">
           <div className="hero-copy">
-            <span className="eyebrow">Inspire-se para a próxima jornada</span>
-            <h1>Viagens premium com roteiros locais, elegantes e inesquecíveis.</h1>
+            <span className="eyebrow">Planeje · Conecte · Compartilhe</span>
+            <h1>Ferramenta e comunidade para planejar suas viagens.</h1>
             <p>
-              Planeje viagens com curadoria, atividades exclusivas e suporte em cada etapa. Sua próxima aventura começa aqui, com design de experiência pensado para exploradores exigentes.
+              Crie roteiros personalizados, organize por dias e atividades, e compartilhe experiências com outros viajantes.
             </p>
             <div className="hero-actions">
-              <button className="btn btn-primary">Explorar roteiros</button>
-              <button className="btn btn-secondary">Ver destinos</button>
+              <button className="btn btn-primary" onClick={() => navigate('/roteiros')}>Explorar roteiros</button>
+              <button className="btn btn-secondary" onClick={() => navigate('/comunidade')}>Explorar comunidade</button>
+              <button className="btn btn-primary" onClick={() => navigate('/roteiros/novo')}>Criar Roteiro</button>
             </div>
             <div className="hero-pill-grid">
               <div className="pill-card">
@@ -115,36 +140,35 @@ function App() {
               <strong>Destino em destaque</strong>
             </div>
           </div>
-        </div>
-      </section>
+          </div>
+        </motion.section>
 
       <section className="section section-destinos fade-in">
         <div className="container section-heading">
           <div>
             <span className="eyebrow">Destinos em destaque</span>
-            <h2>Experiências selecionadas para a sua próxima viagem</h2>
+            <h2>Roteiros públicos e destaques</h2>
           </div>
-          <button className="btn btn-secondary btn-outline">Ver todos</button>
+          <button className="btn btn-secondary btn-outline" onClick={() => navigate('/roteiros')}>Ver todos</button>
         </div>
-
         <div className="container card-grid destination-grid">
-          {destinations.map((destination) => (
-            <article className="card destination-card" key={destination.title}>
+          {roteiros.slice(0, 8).map((r) => (
+            <motion.article layout whileHover={{ scale: 1.02 }} transition={{ duration: 0.18 }} className="card destination-card" key={r.id}>
               <div className="card-media">
-                <img src={destination.image} alt={destination.title} />
+                <img src={r.imagem || `https://ui-avatars.com/api/?name=${encodeURIComponent(r.destino || r.titulo)}`} alt={r.titulo} />
                 <div className="card-media-overlay" />
                 <div className="destination-tag">
-                  <span>{destination.category}</span>
-                  <span className="rating">{destination.rating}</span>
+                  <span>{r.destino}</span>
+                  <span className="rating">{r.orcamento || '-'}</span>
                 </div>
               </div>
               <div className="card-content">
                 <p className="destination-location">
-                  {destination.title}, <span>{destination.country}</span>
+                  {r.titulo}
                 </p>
-                <p>{destination.description}</p>
+                <p>{r.descricao}</p>
               </div>
-            </article>
+            </motion.article>
           ))}
         </div>
       </section>
@@ -153,21 +177,20 @@ function App() {
         <div className="container section-heading">
           <div>
             <span className="eyebrow">Comunidade</span>
-            <h2>Histórias reais de viagens e roteiros de exploradores</h2>
+            <h2>Histórias reais de viajantes</h2>
           </div>
         </div>
-
         <div className="container community-grid">
-          {communityStories.map((story) => (
-            <article className="card community-card" key={story.name}>
+          {usuarios.slice(0, 9).map((u) => (
+            <motion.article key={u.id} className="card community-card" whileHover={{ scale: 1.02 }} transition={{ duration: 0.18 }}>
               <div className="community-media">
-                <img src={story.image} alt={story.name} />
+                <img src={u.fotoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.nome || 'Viajante')}`} alt={u.nome} />
               </div>
               <div className="community-copy">
-                <p className="eyebrow">{story.name}</p>
-                <h3>{story.headline}</h3>
+                <p className="eyebrow">{u.nome}</p>
+                <h3>{u.bio || 'Compartilhou experiências recentemente'}</h3>
               </div>
-            </article>
+            </motion.article>
           ))}
         </div>
       </section>
