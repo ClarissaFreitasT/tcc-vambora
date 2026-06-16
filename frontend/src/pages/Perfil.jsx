@@ -29,6 +29,13 @@ const PERGUNTAS_PERSONALIDADE = [
   }
 ]
 
+const PERSONALIDADE_MAP = {
+  'Aventura e trilhas': 'AVENTUREIRA',
+  'Cultura e história': 'CULTURAL',
+  'Relaxamento e praia': 'TRANQUILA',
+  'Cidade e gastronomia': 'FESTEIRA'
+}
+
 export default function Perfil() {
   const navigate = useNavigate()
   const [stage, setStage] = useState('registro') // 'registro' ou 'questionario'
@@ -87,7 +94,8 @@ export default function Perfil() {
   async function handleFinalizarQuestionario() {
     setStatus('Salvando perfil...')
 
-    const personalizacao = Object.values(respostas).join(', ')
+    const respostaPersonalidade = respostas[1]
+    const personalizacao = PERSONALIDADE_MAP[respostaPersonalidade] || 'TRANQUILA'
 
     try {
       const response = await fetch('/usuarios', {
@@ -100,7 +108,7 @@ export default function Perfil() {
           fotoUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(nome)}`,
           bio: 'Viajante apaixonado por novas experiências.',
           personalidade: personalizacao,
-          orcamentoPerfil: 'R$ 2.500'
+          orcamentoPerfil: 2500
         })
       })
 
