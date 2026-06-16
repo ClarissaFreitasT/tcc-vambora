@@ -123,7 +123,7 @@ export default function Perfil() {
         <div className="mx-auto max-w-2xl">
           <div className="space-y-6">
             <div>
-              <p className="text-sm uppercase tracking-[0.24em] text-emerald-700">Crie sua conta</p>
+              <p className="text-sm uppercase tracking-[0.24em] text-[#00B4D8]">Crie sua conta</p>
               <h1 className="mt-3 text-4xl font-bold text-slate-900">Bem-vindo ao Vambora!</h1>
               <p className="mt-3 max-w-2xl text-slate-600">
                 Crie seu perfil para começar a planejar suas viagens. Responderemos algumas perguntas para personalizar suas recomendações.
@@ -131,7 +131,7 @@ export default function Perfil() {
             </div>
 
             {status ? (
-              <p className={`rounded-3xl p-4 text-sm font-medium ${status.includes('✓') ? 'bg-emerald-50 text-emerald-900' : 'bg-red-50 text-red-900'}`}>
+              <p className={`rounded-3xl p-4 text-sm font-medium ${status.includes('✓') ? 'bg-[#E0F4FF] text-[#0077B6]' : 'bg-red-50 text-red-900'}`}>
                 {status}
               </p>
             ) : null}
@@ -177,14 +177,14 @@ export default function Perfil() {
         <div className="mx-auto max-w-2xl">
           <div className="space-y-6">
             <div>
-              <p className="text-sm uppercase tracking-[0.24em] text-emerald-700">Questionário de personalidade</p>
+              <p className="text-sm uppercase tracking-[0.24em] text-[#00B4D8]">Questionário de personalidade</p>
               <h1 className="mt-3 text-4xl font-bold text-slate-900">Conhecendo seu estilo de viagem</h1>
               <p className="mt-3 text-slate-600">
                 Progresso: {currentPergunta + 1} de {PERGUNTAS_PERSONALIDADE.length}
               </p>
               <div className="mt-4 h-2 w-full rounded-full bg-slate-200">
                 <div
-                  className="h-full rounded-full bg-emerald-600 transition-all duration-300"
+                  className="h-full rounded-full bg-[#00B4D8] transition-all duration-300"
                   style={{
                     width: `${((currentPergunta + 1) / PERGUNTAS_PERSONALIDADE.length) * 100}%`
                   }}
@@ -193,7 +193,7 @@ export default function Perfil() {
             </div>
 
             {status ? (
-              <p className={`rounded-3xl p-4 text-sm font-medium ${status.includes('✓') ? 'bg-emerald-50 text-emerald-900' : 'bg-red-50 text-red-900'}`}>
+              <p className={`rounded-3xl p-4 text-sm font-medium ${status.includes('✓') ? 'bg-[#E0F4FF] text-[#0077B6]' : 'bg-red-50 text-red-900'}`}>
                 {status}
               </p>
             ) : null}
@@ -208,8 +208,8 @@ export default function Perfil() {
                     key={opcao}
                     className={`w-full rounded-3xl border-2 p-4 text-left transition ${
                       respostas[PERGUNTAS_PERSONALIDADE[currentPergunta].id] === opcao
-                        ? 'border-emerald-600 bg-emerald-50'
-                        : 'border-slate-200 bg-white hover:border-emerald-300'
+                        ? 'border-[#00B4D8] bg-[#E0F4FF]'
+                        : 'border-slate-200 bg-white hover:border-[#00B4D8]/30'
                     }`}
                     onClick={() => handleResposta(opcao)}
                   >

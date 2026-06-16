@@ -31,19 +31,27 @@
 
 @layer components {
   .site-shell {
-    @apply min-h-screen bg-slate-50;
+    @apply min-h-screen bg-[#F8FAFC];
   }
 
   .card {
-    @apply rounded-[2rem] border border-slate-200 bg-white shadow-sm;
+    @apply rounded-[20px] border border-[#E2E8F0] bg-white shadow-[0_4px_20px_rgba(0,0,0,0.06)] transition hover:shadow-[0_10px_30px_rgba(0,0,0,0.10)];
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-full bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-200/40 transition hover:bg-emerald-700;
+    @apply inline-flex items-center justify-center rounded-full bg-[#00B4D8] px-6 py-3 text-sm font-semibold text-white shadow-[0_8px_16px_rgba(0,180,216,0.20)] transition hover:bg-[#0099BB] active:scale-95;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50;
+    @apply inline-flex items-center justify-center rounded-full border border-[#E2E8F0] bg-white px-6 py-3 text-sm font-semibold text-[#0F172A] transition hover:bg-[#F8FAFC] hover:border-[#D0DCE4];
+  }
+
+  .btn-accent {
+    @apply inline-flex items-center justify-center rounded-full bg-[#FFB703] px-6 py-3 text-sm font-semibold text-[#0F172A] shadow-[0_8px_16px_rgba(255,183,3,0.15)] transition hover:bg-[#E5A500] active:scale-95;
+  }
+
+  .container {
+    @apply mx-auto max-w-[1280px] px-6 lg:px-8;
   }
 }
 

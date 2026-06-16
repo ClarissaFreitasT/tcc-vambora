@@ -16,7 +16,7 @@ export default function Comunidade() {
   return (
     <main className="container mx-auto px-4 py-16 lg:px-8">
       <div className="mb-8">
-        <p className="text-sm uppercase tracking-[0.24em] text-emerald-700">Comunidade</p>
+        <p className="text-sm uppercase tracking-[0.24em] text-[#00B4D8]">Comunidade</p>
         <h2 className="mt-3 text-3xl font-semibold text-slate-900">Viajantes conectados</h2>
         <p className="mt-2 max-w-2xl text-slate-600">
           Dados reais de usuários carregados do backend para demonstrar a integração entre frontend e backend.

@@ -84,12 +84,12 @@ export default function NovoRoteiro() {
     <main className="container mx-auto px-4 py-16 lg:px-8">
       <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
         <section className="space-y-6">
-          <p className="text-sm uppercase tracking-[0.3em] text-emerald-700">Novo Roteiro</p>
+          <p className="text-sm uppercase tracking-[0.3em] text-[#00B4D8]">Novo Roteiro</p>
           <h2 className="text-3xl font-semibold text-slate-900">Formulário de criação</h2>
           <p className="max-w-2xl text-slate-600">
             Esta tela cria roteiros automaticamente para um usuário existente. Você não precisa informar o ID manualmente.
           </p>
-          {status ? <p className={`rounded-3xl p-4 text-sm font-medium ${status.includes('✓') ? 'bg-emerald-50 text-emerald-900' : 'bg-red-50 text-red-900'}`}>{status}</p> : null}
+          {status ? <p className={`rounded-3xl p-4 text-sm font-medium ${status.includes('✓') ? 'bg-[#E0F4FF] text-[#0077B6]' : 'bg-red-50 text-red-900'}`}>{status}</p> : null}
         </section>
 
         <section className="card p-8">
@@ -135,7 +135,7 @@ export default function NovoRoteiro() {
                   type="checkbox"
                   checked={publico}
                   onChange={() => setPublico((prev) => !prev)}
-                  className="h-5 w-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  className="h-5 w-5 rounded border-slate-300 text-[#00B4D8] focus:ring-[#00B4D8]"
                 />
                 Compartilhar publicamente
               </label>

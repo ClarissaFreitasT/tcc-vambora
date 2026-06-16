@@ -94,7 +94,7 @@ export default function RoteiroDetalhes() {
     <main className="container mx-auto px-4 py-16 lg:px-8">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="text-sm uppercase tracking-[0.24em] text-emerald-700">Detalhes do roteiro</p>
+          <p className="text-sm uppercase tracking-[0.24em] text-[#00B4D8]">Detalhes do roteiro</p>
           <h1 className="mt-3 text-4xl font-bold text-slate-900">{roteiro.titulo}</h1>
           <p className="mt-3 text-slate-600">A rota foi carregada do backend via GET /roteiros/{id}.</p>
         </div>
@@ -108,7 +108,7 @@ export default function RoteiroDetalhes() {
         </div>
       </div>
 
-      {status ? <div className="mt-6 rounded-3xl bg-emerald-50 p-4 text-sm text-emerald-900">{status}</div> : null}
+      {status ? <div className="mt-6 rounded-3xl bg-[#E0F4FF] p-4 text-sm text-[#0077B6]">{status}</div> : null}
 
       {!editMode ? (
         <section className="mt-10 grid gap-8 lg:grid-cols-[1.3fr_0.7fr]">
@@ -140,7 +140,7 @@ export default function RoteiroDetalhes() {
             <label className="space-y-2 text-sm font-medium text-slate-700">
               Título
               <input
-                className="w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-500"
+                className="w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#00B4D8]"
                 value={titulo}
                 onChange={(e) => setTitulo(e.target.value)}
                 required
@@ -149,7 +149,7 @@ export default function RoteiroDetalhes() {
             <label className="space-y-2 text-sm font-medium text-slate-700">
               Destino
               <input
-                className="w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-500"
+                className="w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#00B4D8]"
                 value={destino}
                 onChange={(e) => setDestino(e.target.value)}
                 required
@@ -158,7 +158,7 @@ export default function RoteiroDetalhes() {
             <label className="space-y-2 text-sm font-medium text-slate-700">
               Descrição
               <textarea
-                className="w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-500"
+                className="w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#00B4D8]"
                 rows={4}
                 value={descricao}
                 onChange={(e) => setDescricao(e.target.value)}
@@ -167,7 +167,7 @@ export default function RoteiroDetalhes() {
             <label className="space-y-2 text-sm font-medium text-slate-700">
               Orçamento
               <input
-                className="w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-500"
+                className="w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#00B4D8]"
                 value={orcamento}
                 onChange={(e) => setOrcamento(e.target.value)}
               />
@@ -178,7 +178,7 @@ export default function RoteiroDetalhes() {
                   type="checkbox"
                   checked={publico}
                   onChange={() => setPublico((prev) => !prev)}
-                  className="h-5 w-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  className="h-5 w-5 rounded border-slate-300 text-[#00B4D8] focus:ring-[#00B4D8]"
                 />
                 Compartilhar publicamente
               </label>
