@@ -31,23 +31,23 @@
 
 @layer components {
   .site-shell {
-    @apply min-h-screen bg-[#F8FAFC];
+    @apply min-h-screen bg-gradient-to-b from-slate-50 via-slate-100 to-white;
   }
 
   .card {
-    @apply rounded-[20px] border border-[#E2E8F0] bg-white shadow-[0_4px_20px_rgba(0,0,0,0.06)] transition hover:shadow-[0_10px_30px_rgba(0,0,0,0.10)];
+    @apply rounded-[20px] border border-[#E2E8F0] bg-white shadow-[0_4px_20px_rgba(15,23,42,0.08)] transition hover:shadow-[0_14px_40px_rgba(15,23,42,0.14)];
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-full bg-[#00B4D8] px-6 py-3 text-sm font-semibold text-white shadow-[0_8px_16px_rgba(0,180,216,0.20)] transition hover:bg-[#0099BB] active:scale-95;
+    @apply inline-flex items-center justify-center rounded-full bg-[#0F4C81] px-6 py-3 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(15,23,42,0.16)] transition hover:bg-[#08365a] active:scale-95;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-full border border-[#E2E8F0] bg-white px-6 py-3 text-sm font-semibold text-[#0F172A] transition hover:bg-[#F8FAFC] hover:border-[#D0DCE4];
+    @apply inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-[#0F172A] transition hover:bg-slate-50 hover:border-slate-400;
   }
 
   .btn-accent {
-    @apply inline-flex items-center justify-center rounded-full bg-[#FFB703] px-6 py-3 text-sm font-semibold text-[#0F172A] shadow-[0_8px_16px_rgba(255,183,3,0.15)] transition hover:bg-[#E5A500] active:scale-95;
+    @apply inline-flex items-center justify-center rounded-full bg-[#FFB703] px-6 py-3 text-sm font-semibold text-[#0F172A] shadow-[0_12px_30px_rgba(255,183,3,0.18)] transition hover:bg-[#e5a500] active:scale-95;
   }
 
   .container {

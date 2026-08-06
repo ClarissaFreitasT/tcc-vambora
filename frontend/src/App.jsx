@@ -1,321 +1,183 @@
-import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+﻿import { useNavigate } from 'react-router-dom'
 import Navbar from './components/Navbar'
+import ImageFallback from './components/ImageFallback'
+import HeroBlobs from './components/HeroBlobs'
+import { motion } from 'framer-motion'
 
-const destinationsDemo = [
-  {
-    title: 'Lisboa',
-    country: 'Portugal',
-    category: 'City Escape',
-    rating: '4.9',
-    price: 'R$ 2.999',
-    image: 'https://images.unsplash.com/photo-1521295121783-8a321d551ad2?auto=format&fit=crop&w=1200&q=80'
-  },
-  {
-    title: 'Ilhas Maldivas',
-    country: 'Maldives',
-    category: 'Luxury Retreat',
-    rating: '4.8',
-    price: 'R$ 5.999',
-    image: 'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=80'
-  },
-  {
-    title: 'Patagônia',
-    country: 'Argentina',
-    category: 'Nature & Trek',
-    rating: '4.9',
-    price: 'R$ 3.499',
-    image: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80'
-  },
-  {
-    title: 'Kyoto',
-    country: 'Japão',
-    category: 'Culture Journey',
-    rating: '4.8',
-    price: 'R$ 4.299',
-    image: 'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1200&q=80'
-  }
+const categories = [
+  { label: 'Cultural', image: 'https://images.unsplash.com/photo-1526318472351-c75fcf07052a?auto=format&fit=crop&w=1200&q=80' },
+  { label: 'Praia', image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80' },
+  { label: 'Natureza', image: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=80' },
+  { label: 'Gastronômico', image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=80' },
+  { label: 'Aventura', image: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80' },
+  { label: 'Histórico', image: 'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1200&q=80' },
+  { label: 'Mochilão', image: 'https://images.unsplash.com/photo-1508609349937-5ec4ae374ebf?auto=format&fit=crop&w=1200&q=80' },
+  { label: 'Vida Noturna', image: 'https://images.unsplash.com/photo-1483723608457-7a44b3c6c2d8?auto=format&fit=crop&w=1200&q=80' }
+]
+
+const destinos = [
+  { id: 'lisboa', title: 'Lisboa', image: 'https://images.unsplash.com/photo-1503820503912-1b9b1b6f3b7b?auto=format&fit=crop&w=1400&q=80' },
+  { id: 'noronha', title: 'Fernando de Noronha', image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1400&q=80' },
+  { id: 'chapada', title: 'Chapada Diamantina', image: 'https://images.unsplash.com/photo-1500534285749-7cff9e0f2b1d?auto=format&fit=crop&w=1400&q=80' },
+  { id: 'gramado', title: 'Gramado', image: 'https://images.unsplash.com/photo-1526481280693-3ce3b41b5ae5?auto=format&fit=crop&w=1400&q=80' }
+]
+
+const destaque = [
+  { id: 'noronha', title: 'Fernando de Noronha', image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1400&q=80' },
+  { id: 'gramado', title: 'Gramado', image: 'https://images.unsplash.com/photo-1526481280693-3ce3b41b5ae5?auto=format&fit=crop&w=1400&q=80' },
+  { id: 'chapada', title: 'Chapada Diamantina', image: 'https://images.unsplash.com/photo-1500534285749-7cff9e0f2b1d?auto=format&fit=crop&w=1400&q=80' },
+  { id: 'rio', title: 'Rio de Janeiro', image: 'https://images.unsplash.com/photo-1509395176047-4a66953fd231?auto=format&fit=crop&w=1400&q=80' },
+  { id: 'jericoacoara', title: 'Jericoacoara', image: 'https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=crop&w=1400&q=80' }
 ]
 
 const features = [
-  {
-    icon: '🗺️',
-    title: 'Expertise Local',
-    description: 'Roteiros criados por viajantes experientes com conhecimento profundo dos destinos.'
-  },
-  {
-    icon: '📅',
-    title: 'Planejamento Flexível',
-    description: 'Customize cada roteiro de acordo com seu tempo, orçamento e preferências pessoais.'
-  },
-  {
-    icon: '🎧',
-    title: 'Suporte 24/7',
-    description: 'Estamos sempre disponíveis para ajudar durante sua jornada de viagem.'
-  }
+  { icon: '🗺️', title: 'Roteiros inteligentes', description: 'Sugestões diárias personalizadas conforme seu perfil.' },
+  { icon: '📅', title: 'Planejamento flexível', description: 'Adapte horários e atividades com facilidade.' },
+  { icon: '🤝', title: 'Compartilhe com a comunidade', description: 'Decida se seu roteiro será público ou privado.' }
 ]
 
-function App() {
-  const navigate = useNavigate()
-  const [roteiros, setRoteiros] = useState([])
-  const [usuarios, setUsuarios] = useState([])
-  const [loading, setLoading] = useState(true)
+const comunidade = [
+  { id: 1, nome: 'Ana Silva', destino: 'Lisboa', dias: 7, curtidas: 245, comentarios: 31, avatar: 'https://i.pravatar.cc/120?img=32', mini: 'https://images.unsplash.com/photo-1503820503912-1b9b1b6f3b7b?auto=format&fit=crop&w=600&q=80' },
+  { id: 2, nome: 'Lucas Oliveira', destino: 'Fernando de Noronha', dias: 5, curtidas: 198, comentarios: 18, avatar: 'https://i.pravatar.cc/120?img=12', mini: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80' },
+  { id: 3, nome: 'Mariana Costa', destino: 'Gramado', dias: 6, curtidas: 310, comentarios: 42, avatar: 'https://i.pravatar.cc/120?img=47', mini: 'https://images.unsplash.com/photo-1526481280693-3ce3b41b5ae5?auto=format&fit=crop&w=600&q=80' },
+  { id: 4, nome: 'Rafael Souza', destino: 'Japão', dias: 10, curtidas: 521, comentarios: 77, avatar: 'https://i.pravatar.cc/120?img=5', mini: 'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=600&q=80' }
+]
 
-  useEffect(() => {
-    Promise.all([
-      fetch('/roteiros').then((r) => r.json()),
-      fetch('/usuarios').then((r) => r.json())
-    ])
-      .then(([roteirosData, usuariosData]) => {
-        setRoteiros(roteirosData)
-        setUsuarios(usuariosData)
-      })
-      .catch(() => {
-        setRoteiros([])
-        setUsuarios([])
-      })
-      .finally(() => setLoading(false))
-  }, [])
+export default function App() {
+  const navigate = useNavigate()
 
   return (
     <main className="site-shell">
       <Navbar />
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-[#F8FAFC] via-[#E0F4FF] to-white py-0">
-        <div className="mx-auto max-w-[1440px] px-6 py-20 lg:px-8 lg:py-32">
-          <div className="grid gap-12 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-            {/* Left Content */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="space-y-8">
-              <div>
-                <span className="inline-flex rounded-full border border-[#00B4D8]/20 bg-[#00B4D8]/5 px-4 py-2 text-sm font-semibold uppercase tracking-[0.4em] text-[#00B4D8]">
-                  Descubra · Planeje · Viaje
-                </span>
-              </div>
-
-              <div>
-                <h1 className="text-5xl font-black leading-[1.1] text-[#0F172A] sm:text-6xl">
-                  Planeje suas viagens dos <span className="text-[#00B4D8]">sonhos</span>
-                </h1>
-              </div>
-
-              <p className="max-w-xl text-lg leading-8 text-[#64748B]">
-                Descubra roteiros curados por viajantes apaixonados. De praias paradisíacas a trilhas épicas, encontre a aventura perfeita para você.
-              </p>
-
-              <div className="flex flex-wrap gap-4">
-                <button className="btn-accent" onClick={() => navigate('/roteiros')}>
-                  Explorar Roteiros
-                </button>
-                <button className="btn-secondary" onClick={() => navigate('/roteiros/novo')}>
-                  Criar Meu Roteiro
-                </button>
-              </div>
-
-              {/* Stats */}
-              <div className="grid gap-6 pt-4 sm:grid-cols-3">
-                <div>
-                  <p className="text-2xl font-black text-[#0F172A]">{roteiros.length}+</p>
-                  <p className="text-sm text-[#64748B]">Roteiros ativos</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-black text-[#0F172A]">{usuarios.length}+</p>
-                  <p className="text-sm text-[#64748B]">Viajantes</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-black text-[#0F172A]">4.9★</p>
-                  <p className="text-sm text-[#64748B]">Avaliação média</p>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Right Hero Image */}
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.7 }} className="relative">
-              <div className="relative rounded-[24px] overflow-hidden shadow-[0_20px_50px_rgba(0,180,216,0.15)]">
-                <img
-                  className="h-[500px] w-full object-cover"
-                  src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1400&q=80"
-                  alt="Praia tropical inspiradora"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
-              </div>
-            </motion.div>
-          </div>
+      {/* Hero */}
+      <header className="relative overflow-hidden">
+        <div className="absolute inset-0">
+          <ImageFallback src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=2000&q=80" alt="Praia" className="h-full w-full object-cover" />
         </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="border-b border-[#E2E8F0] bg-white py-16 lg:py-24">
-        <div className="mx-auto max-w-[1280px] px-6 lg:px-8">
-          <div className="mb-16 space-y-4">
-            <p className="text-sm uppercase tracking-[0.24em] text-[#00B4D8] font-semibold">Por que escolher o VAMBORA</p>
-            <h2 className="text-3xl font-black text-[#0F172A] sm:text-4xl">Tudo que você precisa para viagens incríveis</h2>
-          </div>
-
-          <div className="grid gap-8 lg:grid-cols-3">
-            {features.map((feature, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.2, duration: 0.5 }}
-                className="card p-8"
-              >
-                <div className="text-4xl mb-4">{feature.icon}</div>
-                <h3 className="text-xl font-semibold text-[#0F172A]">{feature.title}</h3>
-                <p className="mt-3 text-[#64748B]">{feature.description}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Top Destinations */}
-      <section className="border-b border-[#E2E8F0] bg-[#F8FAFC] py-16 lg:py-24">
-        <div className="mx-auto max-w-[1280px] px-6 lg:px-8">
-          <div className="mb-12 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="space-y-4">
-              <p className="text-sm uppercase tracking-[0.24em] text-[#00B4D8] font-semibold">Destinos populares</p>
-              <h2 className="text-3xl font-black text-[#0F172A] sm:text-4xl">Explore os melhores roteiros</h2>
-            </div>
-            <button className="btn-secondary w-fit" onClick={() => navigate('/roteiros')}>
-              Ver todos os roteiros →
-            </button>
-          </div>
-
-          {loading ? (
-            <div className="text-center py-12">
-              <p className="text-[#64748B]">Carregando roteiros...</p>
-            </div>
-          ) : roteiros.length > 0 ? (
-            <div className="grid gap-8 lg:grid-cols-2">
-              {roteiros.slice(0, 4).map((roteiro, idx) => (
-                <motion.article
-                  key={roteiro.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.1, duration: 0.5 }}
-                  onClick={() => navigate(`/roteiros/${roteiro.id}`)}
-                  className="card group cursor-pointer overflow-hidden"
-                >
-                  <div className="aspect-video overflow-hidden bg-slate-200">
-                    <img
-                      src={destinationsDemo[idx]?.image || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80'}
-                      alt={roteiro.titulo}
-                      className="h-full w-full object-cover transition group-hover:scale-105"
-                    />
-                  </div>
-                  <div className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="text-xl font-semibold text-[#0F172A]">{roteiro.titulo}</h3>
-                        <p className="mt-1 text-sm text-[#64748B]">📍 {roteiro.destino}</p>
-                      </div>
-                      <span className="rounded-full bg-[#FFB703]/10 px-3 py-1 text-sm font-semibold text-[#FFB703]">
-                        {destinationsDemo[idx]?.price || 'Sob consulta'}
-                      </span>
-                    </div>
-                    <p className="mt-4 text-[#64748B] line-clamp-2">{roteiro.descricao || 'Roteiro de viagem completo'}</p>
-                    <div className="mt-6 flex items-center justify-between pt-6 border-t border-[#E2E8F0]">
-                      <span className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-[#FFB703]">★ {destinationsDemo[idx]?.rating || '4.8'}</span>
-                      </span>
-                      <span className="text-xs font-semibold text-[#00B4D8]">Ver detalhes →</span>
-                    </div>
-                  </div>
-                </motion.article>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-[20px] border border-[#E2E8F0] bg-white p-12 text-center">
-              <p className="text-[#64748B]">Nenhum roteiro encontrado. Crie o seu primeiro roteiro!</p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Community Section */}
-      <section className="border-b border-[#E2E8F0] bg-white py-16 lg:py-24">
-        <div className="mx-auto max-w-[1280px] px-6 lg:px-8">
-          <div className="mb-12 space-y-4">
-            <p className="text-sm uppercase tracking-[0.24em] text-[#00B4D8] font-semibold">Nossa comunidade</p>
-            <h2 className="text-3xl font-black text-[#0F172A] sm:text-4xl">Viajantes apaixonados em todo o mundo</h2>
-          </div>
-
-          {loading ? (
-            <div className="text-center py-12">
-              <p className="text-[#64748B]">Carregando comunidade...</p>
-            </div>
-          ) : usuarios.length > 0 ? (
-            <div className="grid gap-8 lg:grid-cols-4">
-              {usuarios.slice(0, 4).map((user, idx) => (
-                <motion.div
-                  key={user.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.1, duration: 0.5 }}
-                  className="card overflow-hidden"
-                >
-                  <div className="aspect-square overflow-hidden bg-slate-200">
-                    <img
-                      className="h-full w-full object-cover"
-                      src={user.fotoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.nome || 'Usuário')}`}
-                      alt={user.nome}
-                    />
-                  </div>
-                  <div className="p-6">
-                    <p className="font-semibold text-[#0F172A]">{user.nome}</p>
-                    <p className="mt-2 text-sm text-[#64748B] line-clamp-2">{user.bio || 'Viajante apaixonado'}</p>
-                    <button className="btn-primary mt-4 w-full text-sm" onClick={() => navigate('/comunidade')}>
-                      Ver perfil
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-[20px] border border-[#E2E8F0] bg-[#F8FAFC] p-12 text-center">
-              <p className="text-[#64748B]">Seja o primeiro a se juntar à nossa comunidade!</p>
-              <button className="btn-primary mt-6" onClick={() => navigate('/perfil')}>
-                Criar meu perfil
-              </button>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="relative overflow-hidden bg-gradient-to-r from-[#0077B6] to-[#00B4D8] py-20 text-white lg:py-32">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,#fff,transparent),radial-gradient(circle_at_80%_80%,#fff,transparent)]" />
-        </div>
-
-        <div className="relative mx-auto max-w-[1280px] px-6 lg:px-8">
-          <div className="max-w-2xl">
-            <h2 className="text-4xl font-black leading-[1.2] sm:text-5xl">
-              Pronto para sua próxima aventura?
-            </h2>
-            <p className="mt-6 text-lg text-white/90">
-              Junte-se a milhares de viajantes que já estão descobrindo roteiros incríveis com o VAMBORA.
+        <HeroBlobs className="pointer-events-none absolute -top-8 left-0 right-0 z-10 h-[420px] w-full" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/10" />
+        <div className="relative mx-auto flex min-h-[70vh] max-w-6xl items-center justify-center py-24 px-6 text-center z-20">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="w-full rounded-[28px] bg-white/95 p-12 shadow-lg">
+            <h1 className="text-4xl font-black text-slate-900">Planeje sua próxima viagem</h1>
+            <p className="mt-4 max-w-2xl mx-auto text-slate-700">
+              Crie roteiros totalmente personalizados com sugestões automáticas para cada dia da viagem.
             </p>
-            <div className="mt-8 flex flex-wrap gap-4">
-              <button
-                className="inline-flex items-center justify-center rounded-full bg-[#FFB703] px-8 py-3 text-sm font-semibold text-[#0F172A] shadow-lg shadow-[#FFB703]/30 transition hover:bg-[#E5A500]"
-                onClick={() => navigate('/perfil')}
-              >
-                Começar agora
-              </button>
-              <button className="btn-secondary" onClick={() => navigate('/roteiros')}>
-                Explorar roteiros
-              </button>
+            <div className="mt-8 flex items-center justify-center gap-4">
+              <button className="btn-primary" onClick={() => navigate('/roteiros/novo')}>Criar roteiro</button>
+              <button className="btn-secondary" onClick={() => navigate('/comunidade')}>Ver comunidade</button>
             </div>
-          </div>
+          </motion.div>
+        </div>
+      </header>
+
+      {/* Categories */}
+      <section className="container mx-auto px-6 py-20">
+        <div className="mb-8 text-center">
+          <p className="text-sm uppercase tracking-[0.24em] text-[#00B4D8] font-semibold">Categorias</p>
+          <h2 className="mt-2 text-3xl font-black text-[#0F172A]">Explore por tipo de viagem</h2>
+        </div>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {categories.map((cat) => (
+            <motion.div key={cat.label} className="group overflow-hidden rounded-[20px] border border-[#E2E8F0] bg-white shadow-sm transition hover:shadow-lg" whileHover={{ scale: 1.02 }}>
+              <div className="aspect-[4/3] overflow-hidden">
+                <ImageFallback src={cat.image} alt={cat.label} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+              </div>
+              <div className="p-4 text-center">
+                <h3 className="text-lg font-semibold text-[#0F172A]">{cat.label}</h3>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* Destinos populares */}
+      <section className="container mx-auto px-6 py-12">
+        <div className="mb-8 text-center">
+          <p className="text-sm uppercase tracking-[0.24em] text-[#00B4D8] font-semibold">Destinos populares</p>
+          <h2 className="mt-2 text-3xl font-black text-[#0F172A]">Os destinos que inspiram</h2>
+        </div>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {destinos.map((d) => (
+            <motion.div key={d.id} className="overflow-hidden rounded-[20px] border border-[#E2E8F0] bg-white shadow-sm transition hover:shadow-lg" whileHover={{ y: -4 }}>
+              <div className="aspect-[5/4] overflow-hidden">
+                <ImageFallback src={d.image} alt={d.title} className="h-full w-full object-cover transition duration-500 hover:scale-105" />
+              </div>
+              <div className="p-4">
+                <h3 className="text-lg font-semibold text-[#0F172A]">{d.title}</h3>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* Roteiros em destaque */}
+      <section className="container mx-auto px-6 py-12">
+        <div className="mb-8 text-center">
+          <p className="text-sm uppercase tracking-[0.24em] text-[#00B4D8] font-semibold">Roteiros em destaque</p>
+          <h2 className="mt-2 text-3xl font-black text-[#0F172A]">Explore roteiros selecionados</h2>
+        </div>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
+          {destaque.map((r) => (
+            <motion.div key={r.id} className="card overflow-hidden" whileHover={{ scale: 1.02 }}>
+              <div className="aspect-[4/3] overflow-hidden">
+                <ImageFallback src={r.image} alt={r.title} className="h-full w-full object-cover transition duration-500 hover:scale-105" />
+              </div>
+              <div className="p-4">
+                <h3 className="text-lg font-semibold text-[#0F172A]">{r.title}</h3>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* Por que escolher */}
+      <section className="container mx-auto px-6 py-16">
+        <div className="mb-8 text-center">
+          <p className="text-sm uppercase tracking-[0.24em] text-[#00B4D8] font-semibold">Por que escolher o VAMBORA</p>
+          <h2 className="mt-2 text-3xl font-black text-[#0F172A]">Tudo que você precisa para planejar</h2>
+        </div>
+        <div className="grid gap-6 sm:grid-cols-3">
+          {features.map((f) => (
+            <div key={f.title} className="card p-8 transition hover:scale-[1.02] hover:shadow-lg">
+              <div className="text-4xl mb-4">{f.icon}</div>
+              <h3 className="text-xl font-semibold text-[#0F172A]">{f.title}</h3>
+              <p className="mt-3 text-[#64748B]">{f.description}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Comunidade */}
+      <section className="container mx-auto px-6 py-16">
+        <div className="mb-8 text-center">
+          <p className="text-sm uppercase tracking-[0.24em] text-[#00B4D8] font-semibold">Nossa comunidade</p>
+          <h2 className="mt-2 text-3xl font-black text-[#0F172A]">Publicações recentes</h2>
+        </div>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {comunidade.map((post) => (
+            <motion.div key={post.id} className="rounded-[20px] border border-[#E2E8F0] bg-white p-4 shadow-sm" whileHover={{ y: -4 }}>
+              <div className="flex items-center gap-3">
+                <ImageFallback src={post.avatar} alt={post.nome} className="h-12 w-12 rounded-full object-cover" />
+                <div>
+                  <p className="font-semibold text-[#0F172A]">{post.nome}</p>
+                  <p className="text-sm text-[#64748B]">{post.dias} dias · {post.destino}</p>
+                </div>
+              </div>
+              <div className="mt-4 overflow-hidden rounded-[12px]">
+                <ImageFallback src={post.mini} alt="miniatura" className="h-40 w-full object-cover" />
+              </div>
+              <div className="mt-4 flex items-center justify-between text-sm text-[#64748B]">
+                <div>❤️ {post.curtidas} · 💬 {post.comentarios}</div>
+                <button className="btn-secondary" onClick={() => navigate('/roteiros')}>Ver roteiro</button>
+              </div>
+            </motion.div>
+          ))}
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-[#E2E8F0] bg-white py-16 lg:py-24">
+      <footer className="border-t border-[#E2E8F0] bg-white py-12 lg:py-16">
         <div className="mx-auto max-w-[1280px] px-6 lg:px-8">
           <div className="grid gap-12 lg:grid-cols-4">
             <div>
@@ -355,5 +217,3 @@ function App() {
     </main>
   )
 }
-
-export default App
