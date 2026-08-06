@@ -17,3 +17,33 @@ export async function listarDiasDoRoteiro(roteiroId) {
     }
   });
 }
+
+export async function atualizarDia(id, dadosAtualizados) {
+  const diaExistente = await prisma.diaDoRoteiro.findUnique({
+    where: { id }
+  });
+
+  if (!diaExistente) {
+    return null;
+  }   
+
+  return prisma.diaDoRoteiro.update({
+    where: { id },
+    data: dadosAtualizados
+  });
+} 
+
+
+export async function deletarDia(id) {
+  const diaExistente = await prisma.diaDoRoteiro.findUnique({
+    where: { id }
+  });
+
+  if (!diaExistente) {
+    return null;
+  }
+
+  return prisma.diaDoRoteiro.delete({
+    where: { id }
+  });
+}
