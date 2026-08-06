@@ -58,3 +58,55 @@ export async function criarUsuario(req, res) {
     usuario
   });
 }
+
+export async function atualizarUsuario(req, res) {
+  const { id } = req.params;
+  const dadosAtualizados = req.body;
+
+  const usuario = await UsuarioModel.atualizarUsuario(id, dadosAtualizados);
+
+  if (!usuario) {
+    return res.status(404).json({
+      erro: "Usuário não encontrado"
+    });
+  }
+
+  res.json({
+    mensagem: "Usuário atualizado com sucesso",
+    usuario
+  });
+}
+
+export async function login(req, res) {
+  const { email, senha } = req.body;  
+
+  const usuario = await UsuarioModel.login(email, senha);
+
+  if (!usuario) {
+    return res.status(401).json({
+      erro: "Email ou senha inválidos"
+    });
+  } 
+
+  res.json({
+    mensagem: "Login realizado com sucesso",
+    usuario
+  });
+}
+
+export async function deletarUsuario(req, res) {
+  const { id } = req.params;  
+
+  const usuario = await UsuarioModel.deletarUsuario(id);
+
+  if (!usuario) {
+    return res.status(404).json({
+      erro: "Usuário não encontrado"
+    });
+  }
+
+  res.json({
+    mensagem: "Usuário deletado com sucesso",
+    usuario
+  });
+}

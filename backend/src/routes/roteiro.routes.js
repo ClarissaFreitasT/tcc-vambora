@@ -1,5 +1,5 @@
 import express from "express";
-import * as roteiroController from "../controllers/roteiroController.js";
+import * as roteiroController from "../controllers/roteiro.controller.js";
 
 // Cria um roteador do Express
 const router = express.Router();

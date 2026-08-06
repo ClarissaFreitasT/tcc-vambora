@@ -1,6 +1,6 @@
 import express from "express";
 
-import roteiroRoutes from "./routes/roteiroRoutes.js";
+import roteiroRoutes from "./routes/roteiro.routes.js";
 import diaRoutes from "./routes/dia.routes.js";
 import itemRoutes from "./routes/item.routes.js";
 import usuarioRoutes from "./routes/users.routes.js";
