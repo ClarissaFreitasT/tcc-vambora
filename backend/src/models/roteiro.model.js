@@ -1,15 +1,18 @@
 import { prisma } from "../config/prisma.js";
 
+// Retorna a lista completa de todos os roteiros cadastrados.
 export async function obterTodasRoteiros() {
   return prisma.roteiro.findMany();
 }
 
+// Busca um roteiro específico pelo seu identificador único.
 export async function obterRoteiroPorId(id) {
   return prisma.roteiro.findUnique({
     where: { id }
   });
 }
 
+// Cria um novo roteiro com as informações fornecidas pelo usuário.
 export async function criarNovoRoteiro({
   usuarioId,
   titulo,
@@ -32,6 +35,7 @@ export async function criarNovoRoteiro({
   });
 }
 
+// Atualiza os dados de um roteiro existente com as informações fornecidas.
 export async function atualizarRoteiro(id, dados) {
   const roteiroExistente = await prisma.roteiro.findUnique({
     where: { id }
@@ -55,6 +59,7 @@ export async function atualizarRoteiro(id, dados) {
   });
 }
 
+// Remove um roteiro do banco de dados pelo seu identificador.
 export async function excluirRoteiro(id) {
   const roteiroExistente = await prisma.roteiro.findUnique({
     where: { id }
