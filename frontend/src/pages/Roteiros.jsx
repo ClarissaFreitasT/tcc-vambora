@@ -61,48 +61,50 @@ export default function Roteiros() {
   }
 
   return (
-    <main className="min-h-screen container mx-auto px-4 py-16 lg:px-8">
-      <div className="mb-10 flex flex-col gap-6 rounded-[32px] border border-slate-200 bg-white p-10 shadow-sm lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <p className="text-sm uppercase tracking-[0.24em] text-[#0F4C81]">Seus roteiros</p>
-          <h1 className="mt-4 text-4xl font-black text-slate-900">Acompanhe seus roteiros salvos</h1>
-          <p className="mt-3 max-w-2xl text-sm text-slate-600">
-            Veja destino, duração, estilos, orçamento e controle a visibilidade de cada roteiro que você criou.
-          </p>
-        </div>
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.1),_transparent_45%)] px-4 py-16 lg:px-8">
+      <div className="container mx-auto rounded-[36px] border border-slate-200 bg-white/85 p-8 shadow-[0_20px_70px_rgba(15,23,42,0.08)] lg:p-10">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#2563EB]">Seus roteiros</p>
+            <h1 className="mt-4 text-4xl font-black text-slate-900">Acompanhe cada viagem como um plano premium</h1>
+            <p className="mt-3 max-w-2xl text-sm text-slate-600">
+              Gerencie destinos, durações, estilos e visibilidade em uma experiência visual mais fluida e elegante.
+            </p>
+          </div>
 
-        <div className="flex flex-wrap gap-3">
-          <Link to="/roteiros/novo" className="btn-primary">
-            Criar novo roteiro
-          </Link>
+          <div className="flex flex-wrap gap-3">
+            <Link to="/roteiros/novo" className="btn-primary">
+              Criar novo roteiro
+            </Link>
+          </div>
         </div>
       </div>
 
       {status ? (
-        <div className="mb-8 rounded-[28px] border border-slate-200 bg-slate-50 p-6 text-center text-slate-700">
+        <div className="container mx-auto mt-8 rounded-[28px] border border-slate-200 bg-slate-50 p-6 text-center text-slate-700">
           {status}
         </div>
       ) : null}
 
       {roteiros.length === 0 ? (
-        <div className="rounded-[32px] border border-dashed border-slate-300 bg-slate-50 p-14 text-center text-slate-600 shadow-sm">
+        <div className="container mx-auto mt-8 rounded-[32px] border border-dashed border-slate-300 bg-slate-50 p-14 text-center text-slate-600 shadow-sm">
           <p className="text-xl font-semibold text-slate-900">Nenhum roteiro encontrado</p>
           <p className="mt-3 text-sm text-slate-600">Inicie sua primeira viagem clicando em "Criar novo roteiro".</p>
         </div>
       ) : (
-        <div className="space-y-8">
+        <div className="container mx-auto mt-8 space-y-6">
           {roteiros.map((roteiro) => (
             <motion.article
               key={roteiro.id}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35 }}
-              className="rounded-[32px] border border-slate-200 bg-white p-8 shadow-sm"
+              className="rounded-[32px] border border-slate-200 bg-white p-8 shadow-[0_20px_70px_rgba(15,23,42,0.08)]"
             >
               <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
                 <div className="space-y-3">
                   <div className="flex flex-wrap items-center gap-3">
-                    <span className="rounded-full bg-[#E0F4FF] px-3 py-1 text-sm font-semibold text-[#0F4C81]">
+                    <span className="rounded-full bg-[#E0F4FF] px-3 py-1 text-sm font-semibold text-[#2563EB]">
                       {roteiro.publico ? 'Público' : 'Privado'}
                     </span>
                     <span className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700">
@@ -117,18 +119,10 @@ export default function Roteiros() {
                   <p className="text-sm text-slate-500">Criado em {formatDate(roteiro.createdAt || roteiro.createdAt)}</p>
                 </div>
                 <div className="grid gap-3 sm:auto-cols-auto sm:grid-flow-col">
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={() => navigate(`/roteiros/${roteiro.id}`)}
-                  >
+                  <button type="button" className="btn-secondary" onClick={() => navigate(`/roteiros/${roteiro.id}`)}>
                     Abrir roteiro
                   </button>
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={() => navigate(`/roteiros/${roteiro.id}`)}
-                  >
+                  <button type="button" className="btn-secondary" onClick={() => navigate(`/roteiros/${roteiro.id}`)}>
                     Editar
                   </button>
                 </div>
@@ -142,18 +136,10 @@ export default function Roteiros() {
                   </p>
                 </div>
                 <div className="space-y-3 rounded-[28px] border border-slate-200 bg-slate-50 p-6 shadow-sm">
-                  <button
-                    type="button"
-                    className="btn-secondary w-full"
-                    onClick={() => handleToggleVisibility(roteiro.id)}
-                  >
+                  <button type="button" className="btn-secondary w-full" onClick={() => handleToggleVisibility(roteiro.id)}>
                     {roteiro.publico ? 'Tornar privado' : 'Tornar público'}
                   </button>
-                  <button
-                    type="button"
-                    className="btn-secondary w-full border-red-200 text-red-700 hover:bg-red-50"
-                    onClick={() => handleDelete(roteiro.id)}
-                  >
+                  <button type="button" className="btn-secondary w-full border-red-200 text-red-700 hover:bg-red-50" onClick={() => handleDelete(roteiro.id)}>
                     Excluir roteiro
                   </button>
                 </div>
