@@ -15,7 +15,6 @@ model Usuario {
   fotoUrl         String?        @map("foto_url") @db.VarChar(255)
   bio             String?        @db.Text
   personalidade   Personalidade?
-  orcamentoPerfil Int?           @map("orcamento_perfil")
   criadoEm        DateTime       @default(now()) @map("criado_em")
   favoritos       Favorito[]
   reviews         Review[]
