@@ -20,45 +20,6 @@ export async function obterUsuario(req, res) {
   res.json(usuario);
 }
 
-export async function criarUsuario(req, res) {
-  const {
-    nome,
-    email,
-    senhaHash,
-    fotoUrl,
-    bio,
-    personalidade,
-    orcamentoPerfil
-  } = req.body;
-
-  if (!nome || !email || !senhaHash) {
-    return res.status(400).json({
-      erro: "Nome, email e senha são obrigatórios"
-    });
-  }
-
-  const usuario = await UsuarioModel.criarUsuario(
-    nome,
-    email,
-    senhaHash,
-    fotoUrl,
-    bio,
-    personalidade,
-    orcamentoPerfil
-  );
-
-  if (!usuario) {
-    return res.status(409).json({
-      erro: "Email já cadastrado"
-    });
-  }
-
-  res.status(201).json({
-    mensagem: "Usuário criado com sucesso",
-    usuario
-  });
-}
-
 export async function atualizarUsuario(req, res) {
   const { id } = req.params;
   const dadosAtualizados = req.body;
@@ -77,22 +38,6 @@ export async function atualizarUsuario(req, res) {
   });
 }
 
-export async function login(req, res) {
-  const { email, senha } = req.body;  
-
-  const usuario = await UsuarioModel.login(email, senha);
-
-  if (!usuario) {
-    return res.status(401).json({
-      erro: "Email ou senha inválidos"
-    });
-  } 
-
-  res.json({
-    mensagem: "Login realizado com sucesso",
-    usuario
-  });
-}
 
 export async function deletarUsuario(req, res) {
   const { id } = req.params;  

@@ -19,34 +19,6 @@ export async function obterUsuarioPorEmail(email) {
   });
 }
 
-// Cria um novo usuário no banco de dados, verificando se já existe um e-mail igual.
-export async function criarUsuario(
-  nome,
-  email,
-  senhaHash,
-  fotoUrl,
-  bio,
-  personalidade,
-  orcamentoPerfil
-) {
-  const usuarioExistente = await obterUsuarioPorEmail(email);
-
-  if (usuarioExistente) {
-    return null;
-  }
-
-  return prisma.usuario.create({
-    data: {
-      nome,
-      email,
-      senhaHash,
-      fotoUrl,
-      bio,
-      personalidade,
-      orcamentoPerfil
-    }
-  });
-}
 
 // Atualiza os dados de um usuário existente com as informações fornecidas.
 export async function atualizarUsuario(id, dadosAtualizados) {
@@ -64,19 +36,6 @@ export async function atualizarUsuario(id, dadosAtualizados) {
   });
 }
 
-// Realiza a autenticação de um usuário verificando e-mail e senha.
-export async function login(email, senha) {
-  const usuario = await obterUsuarioPorEmail(email);
-
-  if (!usuario) {
-    return null;
-  }
-
-  if (usuario.senhaHash !== senha) {
-    return null;
-  }
-  return usuario;
-}
 
 // Remove um usuário do banco de dados pelo seu identificador.
 export async function deletarUsuario(id) {
