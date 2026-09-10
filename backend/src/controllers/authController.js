@@ -4,9 +4,9 @@ import { prisma } from "../config/prisma.js";
 
 export async function register(req, res) {
   try {
-    const { name, email, password } = req.body;
+    const { nome, email, password } = req.body;
 
-    if (!name || !email || !password) {
+    if (!nome || !email || !password) {
       return res.status(400).json({
         message: "Nome, email e senha são obrigatórios"
       });
@@ -24,7 +24,7 @@ export async function register(req, res) {
 
     const usuario = await prisma.usuario.create({
       data: {
-        nome: name,
+        nome: nome,
         email: email,
         senhaHash
       }

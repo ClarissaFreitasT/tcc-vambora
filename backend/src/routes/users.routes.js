@@ -7,14 +7,16 @@ import {
   deletarUsuario
 } from "../controllers/users.controller.js";
 
+import authMiddleware from "../middlewares/authMiddleware.js";
+
 const router = Router();
 
-router.get("/", listarUsuarios);
+router.get("/", authMiddleware, listarUsuarios);
 
-router.get("/:id", obterUsuario);
+router.get("/:id",authMiddleware, obterUsuario);
 
-router.patch("/:id", atualizarUsuario);
+router.patch("/:id", authMiddleware, atualizarUsuario);
 
-router.delete("/:id", deletarUsuario);
+router.delete("/:id", authMiddleware, deletarUsuario);
 
 export default router;

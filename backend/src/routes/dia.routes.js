@@ -1,15 +1,17 @@
 import { Router } from "express";
 import * as DiaController from "../controllers/dia.controller.js";
 
+import authMiddleware from "../middlewares/authMiddleware.js";
+
 const router = Router();
 
-router.post("/", DiaController.criarDia);
+router.post("/", authMiddleware, DiaController.criarDia);
 
 router.get("/:roteiroId", DiaController.listarDiasDoRoteiro);
 
-router.patch("/:id", DiaController.atualizarDia);
+router.patch("/:id", authMiddleware, DiaController.atualizarDia);
 
-router.delete("/:id", DiaController.deletarDia);
+router.delete("/:id", authMiddleware, DiaController.deletarDia);
 
 
 export default router;
