@@ -1,3 +1,4 @@
+import cors from "cors";
 import express from "express";
 
 import roteiroRoutes from "./routes/roteiro.routes.js";
@@ -7,6 +8,12 @@ import usuarioRoutes from "./routes/users.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 
 const app = express();
+
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+  }),
+);
 
 // Middleware para JSON
 app.use(express.json());
