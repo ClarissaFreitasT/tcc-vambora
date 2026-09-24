@@ -53,6 +53,10 @@
   .container {
     @apply mx-auto max-w-[1280px] px-6 lg:px-8;
   }
+
+  .input-field {
+    @apply w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#2563EB] focus:bg-white;
+  }
 }
 
 button,

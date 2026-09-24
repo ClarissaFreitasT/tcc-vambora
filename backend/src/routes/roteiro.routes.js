@@ -4,7 +4,7 @@ import * as roteiroController from "../controllers/roteiro.controller.js";
 // Cria um roteador do Express
 const router = express.Router();
 
-import authMiddleware from "../middlewares/authMiddleware.js";
+import authMiddleware, { optionalAuth } from "../middlewares/authMiddleware.js";
 // ========================================
 // DEFINIÇÃO DAS ROTAS DE ROTEIROS
 // ========================================
@@ -12,12 +12,12 @@ import authMiddleware from "../middlewares/authMiddleware.js";
 /**
  * GET /roteiros - Lista todos os roteiros
  */
-router.get("/", roteiroController.listarRoteiros);
+router.get("/", optionalAuth, roteiroController.listarRoteiros);
 
 /**
  * GET /roteiros/:id - Obtém um roteiro específico
  */
-router.get("/:id", roteiroController.obterRoteiro);
+router.get("/:id", optionalAuth, roteiroController.obterRoteiro);
 
 /**
  * POST /roteiros - Cria um novo roteiro

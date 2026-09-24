@@ -1,315 +1,149 @@
 import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
-import { updateStoredRoteiro } from '../data/storage'
 import { useNavigate, useParams } from 'react-router-dom'
-import { getMockRoteiroById } from '../data/mockRoteiros'
-import { getActivitySuggestions, replaceActivityInRoteiro } from '../utils/roteiroUtils'
+import { apiFetch } from '../data/api'
 
-const activityIcons = ['☕', '🏛', '🍽', '🏖', '🌅', '✨']
+const emptyItem = { titulo: '', descricao: '', localNome: '', horarioInicio: '', custoEstimado: '' }
+
+function money(value) {
+  if (value === null || value === undefined || value === '') return 'Não informado'
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value))
+}
+
+function Field({ label, children }) {
+  return <label className="grid gap-2 text-sm font-medium text-slate-700">{label}{children}</label>
+}
 
 export default function RoteiroDetalhes() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [roteiro, setRoteiro] = useState(null)
-  const [editedRoteiro, setEditedRoteiro] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [editMode, setEditMode] = useState(false)
-  const [titulo, setTitulo] = useState('')
-  const [destino, setDestino] = useState('')
-  const [descricao, setDescricao] = useState('')
-  const [orcamento, setOrcamento] = useState('')
-  const [publico, setPublico] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [status, setStatus] = useState(null)
-  const [replaceModal, setReplaceModal] = useState({ open: false, day: null, actionIndex: null, options: [], selected: null })
+  const [editingRoteiro, setEditingRoteiro] = useState(false)
+  const [roteiroForm, setRoteiroForm] = useState({})
+  const [newDayTitle, setNewDayTitle] = useState('')
+  const [editingDay, setEditingDay] = useState(null)
+  const [itemDay, setItemDay] = useState(null)
+  const [editingItem, setEditingItem] = useState(null)
+  const [itemForm, setItemForm] = useState(emptyItem)
+
+  async function loadRoteiro() {
+    try {
+      const data = await apiFetch(`/roteiros/${id}`)
+      setRoteiro(data)
+      setRoteiroForm({ titulo: data.titulo, destino: data.destino, descricao: data.descricao || '', orcamento: data.orcamento ?? '', publico: data.publico })
+    } catch (error) {
+      setStatus(error.message)
+    } finally { setLoading(false) }
+  }
 
   useEffect(() => {
-    async function carregarRoteiro() {
-      try {
-        const response = await fetch(`/roteiros/${id}`)
-        const data = await response.json()
-
-        if (response.ok && data) {
-          setRoteiro(data)
-          const loaded = normalizeRoteiro(data)
-          setEditedRoteiro(loaded)
-          setTitulo(loaded.titulo)
-          setDestino(loaded.destino)
-          setDescricao(loaded.descricao)
-          setOrcamento(loaded.orcamento)
-          setPublico(loaded.publico ?? false)
-        } else {
-          const localRoteiro = getMockRoteiroById(id)
-          setRoteiro(localRoteiro)
-          setEditedRoteiro(localRoteiro)
-          if (localRoteiro) {
-            setTitulo(localRoteiro.titulo)
-            setDestino(localRoteiro.destino)
-            setDescricao(localRoteiro.descricao || '')
-            setOrcamento(localRoteiro.orcamento)
-            setPublico(localRoteiro.publico ?? false)
-          }
-          setStatus('Usando dados de exemplo local para visualização.')
-        }
-      } catch (error) {
-        const localRoteiro = getMockRoteiroById(id)
-        setRoteiro(localRoteiro)
-        setEditedRoteiro(localRoteiro)
-        if (localRoteiro) {
-          setTitulo(localRoteiro.titulo)
-          setDestino(localRoteiro.destino)
-          setDescricao(localRoteiro.descricao || '')
-          setOrcamento(localRoteiro.orcamento)
-          setPublico(localRoteiro.publico ?? false)
-        }
-        setStatus('Não foi possível carregar o backend. Exibindo dados de exemplo local.')
-      } finally {
-        setLoading(false)
+    async function loadInitialRoteiro() {
+      if (!localStorage.getItem('vambora_token')) {
+        navigate('/login')
+        return
       }
+      try {
+        const data = await apiFetch(`/roteiros/${id}`)
+        setRoteiro(data)
+        setRoteiroForm({ titulo: data.titulo, destino: data.destino, descricao: data.descricao || '', orcamento: data.orcamento ?? '', publico: data.publico })
+      } catch (error) {
+        setStatus(error.message)
+      } finally { setLoading(false) }
     }
 
-    carregarRoteiro()
-  }, [id])
+    loadInitialRoteiro()
+  }, [id, navigate])
 
-  function normalizeRoteiro(data) {
-    return {
-      ...data,
-      dias: Array.isArray(data.dias) ? data.dias : []
-    }
-  }
-
-  function handleReplaceAction(dayNumber, actionIndex, replacement) {
-    if (!editedRoteiro) return
-
-    const next = replaceActivityInRoteiro(editedRoteiro, dayNumber, actionIndex, replacement)
-    setEditedRoteiro(next)
+  async function saveRoteiro(event) {
+    event.preventDefault(); setSaving(true); setStatus(null)
     try {
-      updateStoredRoteiro(next.id, next)
-      setStatus('Atividade substituída com sucesso e salva localmente.')
-    } catch (err) {
-      setStatus('Atividade substituída, mas houve um problema ao salvar localmente.')
-    }
+      await apiFetch(`/roteiros/${id}`, { method: 'PATCH', body: JSON.stringify({ ...roteiroForm, orcamento: roteiroForm.orcamento === '' ? null : Number(roteiroForm.orcamento) }) })
+      await loadRoteiro(); setEditingRoteiro(false); setStatus('Roteiro atualizado.')
+    } catch (error) { setStatus(error.message) } finally { setSaving(false) }
   }
 
-  function openReplaceModal(dayNumber, actionIndex, day) {
-    const suggestions = getActivitySuggestions({
-      destino: editedRoteiro?.destino || '',
-      estiloViajante: editedRoteiro?.estiloViajante || '',
-      orcamento: editedRoteiro?.orcamento || '',
-      periodo: day?.periodo || ''
-    })
-
-    setReplaceModal({ open: true, day: dayNumber, actionIndex, options: suggestions, selected: suggestions[0] || null })
+  async function addDay(event) {
+    event.preventDefault(); setSaving(true)
+    try {
+      const nextNumber = (roteiro.dias?.reduce((max, day) => Math.max(max, day.numeroDia), 0) || 0) + 1
+      await apiFetch('/dias', { method: 'POST', body: JSON.stringify({ roteiroId: id, numeroDia: nextNumber, titulo: newDayTitle || `Dia ${nextNumber}` }) })
+      setNewDayTitle(''); await loadRoteiro(); setStatus('Dia adicionado.')
+    } catch (error) { setStatus(error.message) } finally { setSaving(false) }
   }
 
-  async function handleUpdate(e) {
-    e.preventDefault()
-    setStatus('Atualizando roteiro...')
-
-    const response = await fetch(`/roteiros/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ titulo, destino, descricao, orcamento, publico })
-    })
-
-    const data = await response.json()
-
-    if (response.ok) {
-      setRoteiro(data.roteiro)
-      const loaded = normalizeRoteiro(data.roteiro)
-      setEditedRoteiro(loaded)
-      setStatus('Roteiro atualizado com sucesso!')
-      setEditMode(false)
-    } else {
-      setStatus(data.erro || 'Não foi possível atualizar o roteiro.')
-    }
+  async function saveDay(event, day) {
+    event.preventDefault()
+    try {
+      await apiFetch(`/dias/${day.id}`, { method: 'PATCH', body: JSON.stringify({ numeroDia: day.numeroDia, titulo: editingDay.titulo }) })
+      setEditingDay(null); await loadRoteiro(); setStatus('Dia atualizado.')
+    } catch (error) { setStatus(error.message) }
   }
 
-  async function handleDelete() {
+  async function deleteDay(day) {
+    if (!window.confirm(`Excluir o Dia ${day.numeroDia} e todas as suas atividades?`)) return
+    try { await apiFetch(`/dias/${day.id}`, { method: 'DELETE' }); await loadRoteiro(); setStatus('Dia excluído.') } catch (error) { setStatus(error.message) }
+  }
+
+  function startItem(dayId, item = null) {
+    setItemDay(dayId)
+    setEditingItem(item?.id || null)
+    setItemForm(item ? { titulo: item.titulo, descricao: item.descricao || '', localNome: item.localNome || '', horarioInicio: item.horarioInicio || '', custoEstimado: item.custoEstimado ?? '' } : emptyItem)
+  }
+
+  async function saveItem(event, day) {
+    event.preventDefault(); setSaving(true)
+    const payload = { ...itemForm, custoEstimado: itemForm.custoEstimado === '' ? null : Number(itemForm.custoEstimado), ordem: editingItem ? undefined : day.itens.length }
+    try {
+      if (editingItem) await apiFetch(`/itens/${editingItem}`, { method: 'PATCH', body: JSON.stringify(payload) })
+      else await apiFetch('/itens', { method: 'POST', body: JSON.stringify({ ...payload, diaId: day.id }) })
+      setItemDay(null); setEditingItem(null); await loadRoteiro(); setStatus('Atividade salva.')
+    } catch (error) { setStatus(error.message) } finally { setSaving(false) }
+  }
+
+  async function deleteItem(item) {
+    if (!window.confirm('Excluir esta atividade?')) return
+    try { await apiFetch(`/itens/${item.id}`, { method: 'DELETE' }); await loadRoteiro(); setStatus('Atividade excluída.') } catch (error) { setStatus(error.message) }
+  }
+
+  async function moveItem(day, index, direction) {
+    const target = index + direction
+    if (target < 0 || target >= day.itens.length) return
+    const current = day.itens[index]; const next = day.itens[target]
+    try {
+      await Promise.all([
+        apiFetch(`/itens/${current.id}`, { method: 'PATCH', body: JSON.stringify({ ordem: next.ordem }) }),
+        apiFetch(`/itens/${next.id}`, { method: 'PATCH', body: JSON.stringify({ ordem: current.ordem }) })
+      ])
+      await loadRoteiro()
+    } catch (error) { setStatus(error.message) }
+  }
+
+  async function deleteRoteiro() {
     if (!window.confirm('Deseja realmente excluir este roteiro?')) return
-
-    const response = await fetch(`/roteiros/${id}`, { method: 'DELETE' })
-    const data = await response.json()
-
-    if (response.ok) {
-      navigate('/roteiros')
-    } else {
-      setStatus(data.erro || 'Não foi possível excluir o roteiro.')
-    }
+    try { await apiFetch(`/roteiros/${id}`, { method: 'DELETE' }); navigate('/roteiros') } catch (error) { setStatus(error.message) }
   }
 
-  function closeReplaceModal() {
-    setReplaceModal({ open: false, day: null, actionIndex: null, options: [], selected: null })
-  }
-
-  function confirmReplaceModal() {
-    if (!replaceModal.selected) return
-    handleReplaceAction(replaceModal.day, replaceModal.actionIndex, replaceModal.selected)
-    closeReplaceModal()
-  }
-
-  if (loading) {
-    return (
-      <main className="container mx-auto px-4 py-16 lg:px-8">
-        <p className="text-slate-500">Carregando roteiro...</p>
-      </main>
-    )
-  }
-
-  if (!editedRoteiro) {
-    return (
-      <main className="container mx-auto px-4 py-16 lg:px-8">
-        <p className="text-slate-500">Roteiro não encontrado.</p>
-      </main>
-    )
-  }
+  if (loading) return <main className="container mx-auto px-4 py-16">Carregando roteiro...</main>
+  if (!roteiro) return <main className="container mx-auto px-4 py-16">{status || 'Roteiro não encontrado.'}</main>
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.12),_transparent_40%)] px-4 py-16 lg:px-8">
-      <div className="container mx-auto rounded-[36px] border border-slate-200 bg-white/90 p-8 shadow-[0_20px_70px_rgba(15,23,42,0.08)] lg:p-10">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#2563EB]">Detalhes do roteiro</p>
-            <h1 className="mt-3 text-4xl font-black text-slate-900">{editedRoteiro.titulo}</h1>
-            <p className="mt-3 text-slate-600">{editedRoteiro.destino} · {editedRoteiro.estiloViajante}</p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <button className="btn-secondary" onClick={() => setEditMode((prev) => !prev)}>
-              {editMode ? 'Cancelar edição' : 'Editar roteiro'}
-            </button>
-            <button className="btn-primary" onClick={handleDelete}>
-              Excluir roteiro
-            </button>
-          </div>
-        </div>
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.12),_transparent_42%)] px-4 py-16 lg:px-8">
+      <div className="container mx-auto max-w-6xl">
+        <header className="rounded-[36px] border border-slate-200 bg-white p-8 shadow-[0_20px_70px_rgba(15,23,42,0.08)] lg:p-10">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between"><div><p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#2563EB]">Editor de roteiro</p><h1 className="mt-3 text-4xl font-black text-slate-900">{roteiro.titulo}</h1><p className="mt-2 text-slate-600">{roteiro.destino}</p><div className="mt-4 flex flex-wrap gap-2 text-sm"><span className="rounded-full bg-slate-100 px-3 py-1">{roteiro.publico ? 'Público' : 'Privado'}</span><span className="rounded-full bg-slate-100 px-3 py-1">Orçamento: {money(roteiro.orcamento)}</span></div></div><div className="flex flex-wrap gap-3"><button className="btn-secondary" onClick={() => setEditingRoteiro((value) => !value)}>{editingRoteiro ? 'Fechar edição' : 'Editar informações'}</button><button className="btn-secondary border-red-200 text-red-700 hover:bg-red-50" onClick={deleteRoteiro}>Excluir roteiro</button></div></div>
+          {editingRoteiro ? <form className="mt-8 grid gap-5 border-t border-slate-200 pt-8" onSubmit={saveRoteiro}><Field label="Título"><input className="input-field" value={roteiroForm.titulo || ''} onChange={(e) => setRoteiroForm({ ...roteiroForm, titulo: e.target.value })} required /></Field><Field label="Destino"><input className="input-field" value={roteiroForm.destino || ''} onChange={(e) => setRoteiroForm({ ...roteiroForm, destino: e.target.value })} required /></Field><Field label="Descrição"><textarea className="input-field" rows={3} value={roteiroForm.descricao || ''} onChange={(e) => setRoteiroForm({ ...roteiroForm, descricao: e.target.value })} /></Field><Field label="Orçamento (R$)"><input className="input-field" type="number" min="0" step="0.01" value={roteiroForm.orcamento ?? ''} onChange={(e) => setRoteiroForm({ ...roteiroForm, orcamento: e.target.value })} /></Field><label className="flex items-center gap-3 text-sm text-slate-700"><input type="checkbox" checked={Boolean(roteiroForm.publico)} onChange={(e) => setRoteiroForm({ ...roteiroForm, publico: e.target.checked })} />Roteiro público</label><button className="btn-primary w-fit" disabled={saving}>{saving ? 'Salvando...' : 'Salvar informações'}</button></form> : null}
+        </header>
+        {status ? <div className="mt-6 rounded-3xl bg-blue-50 p-4 text-sm text-[#1d4ed8]">{status}</div> : null}
+
+        <section className="mt-8 rounded-[32px] border border-slate-200 bg-white p-8 shadow-sm"><div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-sm font-semibold uppercase tracking-[0.25em] text-[#2563EB]">Planejamento</p><h2 className="mt-2 text-2xl font-black text-slate-900">Dias e atividades</h2></div><form className="flex flex-wrap gap-2" onSubmit={addDay}><input className="input-field" value={newDayTitle} onChange={(e) => setNewDayTitle(e.target.value)} placeholder="Título do novo dia" /><button className="btn-primary" disabled={saving}>Adicionar dia</button></form></div></section>
+
+        <div className="mt-6 space-y-6">{roteiro.dias?.map((day) => <article key={day.id} className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm lg:p-8"><div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#2563EB]">Dia {day.numeroDia}</p>{editingDay?.id === day.id ? <form className="mt-2 flex flex-wrap gap-2" onSubmit={(e) => saveDay(e, day)}><input className="input-field" value={editingDay.titulo} onChange={(e) => setEditingDay({ ...editingDay, titulo: e.target.value })} required /><button className="btn-primary">Salvar</button><button type="button" className="btn-secondary" onClick={() => setEditingDay(null)}>Cancelar</button></form> : <h3 className="mt-2 text-xl font-bold text-slate-900">{day.titulo || `Dia ${day.numeroDia}`}</h3>}</div><div className="flex flex-wrap gap-2"><button className="btn-secondary" onClick={() => setEditingDay({ id: day.id, titulo: day.titulo || '' })}>Editar dia</button><button className="btn-secondary border-red-200 text-red-700 hover:bg-red-50" onClick={() => deleteDay(day)}>Excluir dia</button></div></div>
+          <div className="mt-6 space-y-3">{day.itens?.map((item, index) => <div key={item.id} className="rounded-3xl border border-slate-200 bg-slate-50 p-5"><div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"><div><h4 className="font-semibold text-slate-900">{item.titulo}</h4><p className="mt-2 text-sm text-slate-600">{item.descricao || 'Sem descrição.'}</p><p className="mt-3 text-sm text-slate-500">{item.localNome || 'Local não informado'} {item.horarioInicio ? `· ${String(item.horarioInicio).slice(0, 5)}` : ''} · {money(item.custoEstimado)}</p></div><div className="flex flex-wrap gap-2"><button className="btn-secondary px-4 py-2" onClick={() => startItem(day.id, item)}>Editar</button><button className="btn-secondary px-4 py-2" onClick={() => moveItem(day, index, -1)} disabled={index === 0}>↑</button><button className="btn-secondary px-4 py-2" onClick={() => moveItem(day, index, 1)} disabled={index === day.itens.length - 1}>↓</button><button className="btn-secondary border-red-200 px-4 py-2 text-red-700 hover:bg-red-50" onClick={() => deleteItem(item)}>Excluir</button></div></div></div>)}{day.itens?.length === 0 ? <p className="rounded-2xl border border-dashed border-slate-300 p-5 text-sm text-slate-500">Nenhuma atividade adicionada.</p> : null}</div>
+          {itemDay === day.id ? <form className="mt-5 grid gap-4 border-t border-slate-200 pt-5" onSubmit={(e) => saveItem(e, day)}><Field label="Título"><input className="input-field" value={itemForm.titulo} onChange={(e) => setItemForm({ ...itemForm, titulo: e.target.value })} required /></Field><Field label="Descrição"><textarea className="input-field" rows={2} value={itemForm.descricao} onChange={(e) => setItemForm({ ...itemForm, descricao: e.target.value })} /></Field><div className="grid gap-4 md:grid-cols-3"><Field label="Local"><input className="input-field" value={itemForm.localNome} onChange={(e) => setItemForm({ ...itemForm, localNome: e.target.value })} /></Field><Field label="Horário"><input className="input-field" type="time" value={String(itemForm.horarioInicio || '').slice(0, 5)} onChange={(e) => setItemForm({ ...itemForm, horarioInicio: e.target.value })} /></Field><Field label="Custo (R$)"><input className="input-field" type="number" min="0" step="0.01" value={itemForm.custoEstimado} onChange={(e) => setItemForm({ ...itemForm, custoEstimado: e.target.value })} /></Field></div><div className="flex gap-3"><button className="btn-primary" disabled={saving}>{saving ? 'Salvando...' : 'Salvar atividade'}</button><button type="button" className="btn-secondary" onClick={() => setItemDay(null)}>Cancelar</button></div></form> : <button className="btn-accent mt-5" onClick={() => startItem(day.id)}>+ Adicionar atividade</button>}
+        </article>)}</div>
       </div>
-
-      {status ? <div className="container mx-auto mt-6 rounded-[24px] border border-blue-100 bg-blue-50 p-4 text-sm text-[#2563EB]">{status}</div> : null}
-
-      {!editMode ? (
-        <section className="container mx-auto mt-8 grid gap-8 lg:grid-cols-[1.25fr_0.75fr]">
-          <div className="space-y-6">
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="rounded-[32px] border border-slate-200 bg-white p-8 shadow-[0_20px_70px_rgba(15,23,42,0.06)]">
-              <div className="space-y-4">
-                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#2563EB]">Resumo</p>
-                <h2 className="text-2xl font-semibold text-slate-900">{editedRoteiro.destino}</h2>
-                <p className="text-slate-600">{editedRoteiro.descricao || 'Sem descrição cadastrada.'}</p>
-                <div className="mt-4 flex flex-wrap gap-3 text-sm text-slate-700">
-                  <span className="rounded-2xl bg-slate-100 px-4 py-2">Orçamento: {editedRoteiro.orcamento || 'Não informado'}</span>
-                  <span className="rounded-2xl bg-slate-100 px-4 py-2">{editedRoteiro.publico ? 'Público' : 'Privado'}</span>
-                  <span className="rounded-2xl bg-slate-100 px-4 py-2">Estilo: {editedRoteiro.estiloViajante || 'Não informado'}</span>
-                </div>
-              </div>
-            </motion.div>
-
-            <div className="space-y-5">
-              {editedRoteiro.dias.map((dia, dayIndex) => (
-                <motion.div key={dia.numero} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: dayIndex * 0.05 }} className="rounded-[32px] border border-slate-200 bg-slate-50 p-6 shadow-sm">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-[#2563EB]">Dia {dia.numero} • {dia.periodo}</p>
-                      <h3 className="mt-2 text-xl font-semibold text-slate-900">{dia.lugar}</h3>
-                    </div>
-                    <p className="text-sm text-slate-500">{dia.horario}</p>
-                  </div>
-
-                  <div className="mt-4 space-y-3">
-                    {dia.acoes.map((acao, actionIndex) => (
-                      <motion.div key={`${dia.numero}-${actionIndex}`} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.2 }} className="rounded-[24px] border border-slate-200 bg-white p-4">
-                        <div className="flex items-start gap-3">
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-lg">{activityIcons[actionIndex % activityIcons.length]}</div>
-                          <div className="flex-1">
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                              <div>
-                                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Atividade {actionIndex + 1}</p>
-                                <h4 className="mt-1 text-base font-semibold text-slate-900">{acao}</h4>
-                              </div>
-                              <button type="button" className="btn-secondary px-4 py-2" onClick={() => openReplaceModal(dia.numero, actionIndex, dia)}>
-                                Trocar
-                              </button>
-                            </div>
-                            <p className="mt-3 text-sm text-slate-600">Sugestões compatíveis com {editedRoteiro.destino} e o contexto do dia.</p>
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-
-          <aside className="rounded-[32px] border border-slate-200 bg-white p-8 shadow-[0_20px_70px_rgba(15,23,42,0.06)]">
-            <h2 className="text-xl font-semibold text-slate-900">Fluxo inteligente</h2>
-            <p className="mt-3 text-slate-600">Cada atividade pode ser substituída por um novo conceito relevante ao destino, estilo e período do dia.</p>
-            <div className="mt-6 space-y-3 rounded-[24px] bg-slate-50 p-4 text-sm text-slate-700">
-              <p>ID do roteiro: <strong>{editedRoteiro.id}</strong></p>
-              <p>Usuário responsável: <strong>{editedRoteiro.usuario?.nome || 'Indefinido'}</strong></p>
-              <p>Perfil: <strong>{editedRoteiro.usuario?.perfil || 'Não informado'}</strong></p>
-            </div>
-            <div className="mt-6 rounded-[24px] border border-blue-100 bg-blue-50 p-4 text-sm text-slate-700">
-              <p className="font-semibold text-[#2563EB]">Experiência premium</p>
-              <p className="mt-2">A alteração é aplicada apenas no bloco selecionado, sem recarregar a página e sem interferir nas demais atividades.</p>
-            </div>
-          </aside>
-        </section>
-      ) : (
-        <section className="container mx-auto mt-8 rounded-[32px] border border-slate-200 bg-white p-8 shadow-sm">
-          <h2 className="text-2xl font-semibold text-slate-900">Editar roteiro</h2>
-          <form className="mt-6 grid gap-5" onSubmit={handleUpdate}>
-            <label className="space-y-2 text-sm font-medium text-slate-700">
-              Título
-              <input className="w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#2563EB]" value={titulo} onChange={(e) => setTitulo(e.target.value)} required />
-            </label>
-            <label className="space-y-2 text-sm font-medium text-slate-700">
-              Destino
-              <input className="w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#2563EB]" value={destino} onChange={(e) => setDestino(e.target.value)} required />
-            </label>
-            <label className="space-y-2 text-sm font-medium text-slate-700">
-              Descrição
-              <textarea className="w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#2563EB]" rows={4} value={descricao} onChange={(e) => setDescricao(e.target.value)} />
-            </label>
-            <label className="space-y-2 text-sm font-medium text-slate-700">
-              Orçamento
-              <input className="w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#2563EB]" value={orcamento} onChange={(e) => setOrcamento(e.target.value)} />
-            </label>
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-              <label className="flex items-center gap-3 text-sm text-slate-700">
-                <input type="checkbox" checked={publico} onChange={() => setPublico((prev) => !prev)} className="h-5 w-5 rounded border-slate-300 text-[#2563EB] focus:ring-[#2563EB]" />
-                Compartilhar publicamente
-              </label>
-              <p className="mt-3 text-sm text-slate-500">{publico ? 'O roteiro ficará público.' : 'O roteiro ficará privado.'}</p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <button className="btn-primary" type="submit">Salvar alterações</button>
-              <button className="btn-secondary" type="button" onClick={() => setEditMode(false)}>Cancelar</button>
-            </div>
-          </form>
-        </section>
-      )}
-
-      {replaceModal.open ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-slate-950/45" onClick={closeReplaceModal} />
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="relative z-50 w-full max-w-md rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_30px_100px_rgba(15,23,42,0.2)]">
-            <h3 className="text-lg font-bold text-slate-900">Substituir atividade</h3>
-            <p className="mt-2 text-sm text-slate-600">Sugestões compatíveis com o destino, estilo e período do dia.</p>
-
-            <div className="mt-4 max-h-60 space-y-3 overflow-auto">
-              {(replaceModal.options || []).map((opt, idx) => (
-                <label key={idx} className={`flex cursor-pointer items-center gap-3 rounded-[16px] border px-3 py-2 transition ${replaceModal.selected === opt ? 'border-[#2563EB] bg-blue-50' : 'border-slate-200 hover:bg-slate-50'}`}>
-                  <input type="radio" name="replaceOption" checked={replaceModal.selected === opt} onChange={() => setReplaceModal((prev) => ({ ...prev, selected: opt }))} className="h-4 w-4 text-[#2563EB]" />
-                  <div className="text-sm text-slate-800">{opt}</div>
-                </label>
-              ))}
-            </div>
-
-            <div className="mt-6 flex justify-end gap-3">
-              <button className="btn-secondary" onClick={closeReplaceModal}>Cancelar</button>
-              <button className="btn-primary" onClick={confirmReplaceModal}>Confirmar</button>
-            </div>
-          </motion.div>
-        </div>
-      ) : null}
     </main>
   )
 }

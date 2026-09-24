@@ -41,9 +41,14 @@ export default async function authMiddleware(req, res, next) {
     });
   }
 
-  // TODO: validar o token usando jwt.verify
-
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch {
+    return res.status(401).json({
+      message: "Token inválido ou expirado"
+    });
+  }
 
   // TODO: buscar o usuário no banco pelo id que veio no token
   const usuario = await prisma.usuario.findUnique({
@@ -72,4 +77,9 @@ export default async function authMiddleware(req, res, next) {
   // return res.status(501).json({
   //   message: "Middleware de autenticação ainda será implementado pelos alunos"
   // });
+}
+
+export async function optionalAuth(req, res, next) {
+  if (!req.headers.authorization) return next();
+  return authMiddleware(req, res, next);
 }

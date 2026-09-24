@@ -1,7 +1,7 @@
 import * as RoteiroModel from '../models/roteiro.model.js'
 
 export async function listarRoteiros(req, res) {
-  const roteiros = await RoteiroModel.obterTodasRoteiros();
+  const roteiros = await RoteiroModel.obterTodasRoteiros(req.user?.id);
   res.json(roteiros);
 }
 
@@ -18,22 +18,21 @@ export async function obterRoteiro(req, res) {
     return res.status(404).json({ erro: "Roteiro não encontrado" });
   }
 
+  if (!roteiro.publico && roteiro.usuarioId !== req.user?.id) {
+    return res.status(404).json({ erro: "Roteiro não encontrado" });
+  }
+
   res.json(roteiro);
 }
 
 export async function criarRoteiro(req, res) {
   const {
-    usuarioId,
     titulo,
     destino,
     descricao,
     orcamento,
     publico
   } = req.body;
-
-  if (typeof usuarioId !== "string" || usuarioId.trim() === "") {
-    return res.status(400).json({ erro: "UsuarioId é obrigatório" });
-  }
 
   if (typeof titulo !== "string" || titulo.trim() === "") {
     return res.status(400).json({ erro: "Título é obrigatório" });
@@ -45,7 +44,7 @@ export async function criarRoteiro(req, res) {
 
   try {
     const roteiroCriado = await RoteiroModel.criarNovoRoteiro({
-      usuarioId,
+      usuarioId: req.user.id,
       titulo,
       destino,
       descricao,
@@ -89,6 +88,11 @@ export async function atualizarRoteiro(req, res) {
     return res.status(400).json({ erro: "Destino inválido" });
   }
 
+  const roteiroAtual = await RoteiroModel.obterRoteiroPorId(id);
+  if (!roteiroAtual || roteiroAtual.usuarioId !== req.user.id) {
+    return res.status(404).json({ erro: "Roteiro não encontrado" });
+  }
+
   const roteiroAtualizado = await RoteiroModel.atualizarRoteiro(id, {
     titulo,
     destino,
@@ -114,7 +118,7 @@ export async function excluirRoteiro(req, res) {
     return res.status(400).json({ erro: "ID inválido" });
   }
 
-  const roteiroRemovido = await RoteiroModel.excluirRoteiro(id);
+  const roteiroRemovido = await RoteiroModel.excluirRoteiro(id, req.user.id);
 
   if (!roteiroRemovido) {
     return res.status(404).json({ erro: "Roteiro não encontrado" });

@@ -9,9 +9,17 @@ export async function criarDia(req, res) {
     });
   }
 
+  if (!Number.isInteger(Number(numeroDia)) || Number(numeroDia) < 1) {
+    return res.status(400).json({ erro: "Número do dia inválido" });
+  }
+
+  if (!await DiaModel.roteiroPertenceAoUsuario(roteiroId, req.user.id)) {
+    return res.status(404).json({ erro: "Roteiro não encontrado" });
+  }
+
   const dia = await DiaModel.criarDia(
     roteiroId,
-    numeroDia,
+    Number(numeroDia),
     titulo
   );
 
@@ -30,14 +38,17 @@ export async function atualizarDia(req, res) {
   const { id } = req.params;
   const dadosAtualizados = req.body;    
 
-  const diaAtualizado = await DiaModel.atualizarDia(id, dadosAtualizados);  
+  const permitidos = {};
+  if (dadosAtualizados.numeroDia !== undefined) permitidos.numeroDia = Number(dadosAtualizados.numeroDia);
+  if (dadosAtualizados.titulo !== undefined) permitidos.titulo = dadosAtualizados.titulo || null;
+  const diaAtualizado = await DiaModel.atualizarDia(id, permitidos, req.user.id);
   res.json(diaAtualizado);
 }
 
 export async function deletarDia(req, res) {
   const { id } = req.params;
 
-  const diaDeletado = await DiaModel.deletarDia(id);
+  const diaDeletado = await DiaModel.deletarDia(id, req.user.id);
 
   if (!diaDeletado) {
     return res.status(404).json({

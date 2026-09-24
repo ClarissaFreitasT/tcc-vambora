@@ -1,15 +1,31 @@
 import { prisma } from "../config/prisma.js";
 
 // Retorna a lista completa de todos os roteiros cadastrados.
-export async function obterTodasRoteiros() {
-  return prisma.roteiro.findMany();
+export async function obterTodasRoteiros(usuarioId) {
+  return prisma.roteiro.findMany({
+    where: usuarioId ? { usuarioId } : { publico: true },
+    include: { usuario: { select: { id: true, nome: true } } },
+    orderBy: { criadoEm: "desc" }
+  });
 }
 
 // Busca um roteiro específico pelo seu identificador único.
-export async function obterRoteiroPorId(id) {
+export async function obterRoteiroPorId(id, usuarioId) {
   return prisma.roteiro.findUnique({
-    where: { id }
+    where: { id },
+    include: {
+      usuario: { select: { id: true, nome: true } },
+      dias: {
+        orderBy: { numeroDia: "asc" },
+        include: { itens: { orderBy: { ordem: "asc" } } }
+      }
+    }
   });
+}
+
+export async function usuarioPodeEditar(id, usuarioId) {
+  const roteiro = await prisma.roteiro.findUnique({ where: { id }, select: { usuarioId: true } });
+  return roteiro?.usuarioId === usuarioId;
 }
 
 // Cria um novo roteiro com as informações fornecidas pelo usuário.
@@ -60,9 +76,9 @@ export async function atualizarRoteiro(id, dados) {
 }
 
 // Remove um roteiro do banco de dados pelo seu identificador.
-export async function excluirRoteiro(id) {
+export async function excluirRoteiro(id, usuarioId) {
   const roteiroExistente = await prisma.roteiro.findUnique({
-    where: { id }
+    where: { id, usuarioId }
   });
 
   if (!roteiroExistente) {
