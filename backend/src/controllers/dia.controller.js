@@ -1,11 +1,26 @@
 import * as DiaModel from "../models/dia.model.js";
+import * as RoteiroModel from "../models/roteiro.model.js";
 
 export async function criarDia(req, res) {
   const { roteiroId, numeroDia, titulo } = req.body;
 
-  if (!roteiroId) {
-    return res.status(400).json({
-      erro: "Roteiro obrigatório"
+  if (!roteiroId || typeof roteiroId !== "string") {
+    return res.status(400).json({ erro: "Roteiro obrigatório" });
+  }
+
+  if (numeroDia === undefined || numeroDia === null) {
+    return res.status(400).json({ erro: "Número do dia obrigatório" });
+  }
+
+  const roteiro = await RoteiroModel.obterRoteiroPorId(roteiroId);
+
+  if (!roteiro) {
+    return res.status(404).json({ erro: "Roteiro não encontrado" });
+  }
+
+  if (roteiro.usuarioId !== req.user.id) {
+    return res.status(403).json({
+      erro: "Você não tem permissão para adicionar um dia a este roteiro",
     });
   }
 
@@ -13,49 +28,72 @@ export async function criarDia(req, res) {
     return res.status(400).json({ erro: "Número do dia inválido" });
   }
 
-  if (!await DiaModel.roteiroPertenceAoUsuario(roteiroId, req.user.id)) {
-    return res.status(404).json({ erro: "Roteiro não encontrado" });
-  }
+  const dia = await DiaModel.criarDia(roteiroId, Number(numeroDia), titulo);
 
-  const dia = await DiaModel.criarDia(
-    roteiroId,
-    Number(numeroDia),
-    titulo
-  );
-
-  res.status(201).json(dia);
+  return res.status(201).json(dia);
 }
 
 export async function listarDiasDoRoteiro(req, res) {
-  const { roteiroId } = req.params; 
+  const { roteiroId } = req.params;
+
+  if (!roteiroId || typeof roteiroId !== "string") {
+    return res.status(400).json({ erro: "ID do roteiro inválido" });
+  }
 
   const dias = await DiaModel.listarDiasDoRoteiro(roteiroId);
 
-  res.json(dias);
-}   
+  return res.json(dias);
+}
 
 export async function atualizarDia(req, res) {
   const { id } = req.params;
-  const dadosAtualizados = req.body;    
+  const dadosAtualizados = req.body;
 
-  const permitidos = {};
-  if (dadosAtualizados.numeroDia !== undefined) permitidos.numeroDia = Number(dadosAtualizados.numeroDia);
-  if (dadosAtualizados.titulo !== undefined) permitidos.titulo = dadosAtualizados.titulo || null;
-  const diaAtualizado = await DiaModel.atualizarDia(id, permitidos, req.user.id);
-  res.json(diaAtualizado);
+  if (!id || typeof id !== "string") {
+    return res.status(400).json({ erro: "ID inválido" });
+  }
+
+  const diaExistente = await DiaModel.obterDiaPorId(id);
+
+  if (!diaExistente) {
+    return res.status(404).json({ erro: "Dia não encontrado" });
+  }
+
+  const roteiro = await RoteiroModel.obterRoteiroPorId(diaExistente.roteiroId);
+
+  if (!roteiro || roteiro.usuarioId !== req.user.id) {
+    return res.status(403).json({
+      erro: "Você não tem permissão para atualizar este dia",
+    });
+  }
+
+  const diaAtualizado = await DiaModel.atualizarDia(id, dadosAtualizados);
+
+  return res.json(diaAtualizado);
 }
 
 export async function deletarDia(req, res) {
   const { id } = req.params;
 
-  const diaDeletado = await DiaModel.deletarDia(id, req.user.id);
+  if (!id || typeof id !== "string") {
+    return res.status(400).json({ erro: "ID inválido" });
+  }
 
-  if (!diaDeletado) {
-    return res.status(404).json({
-      erro: "Dia não encontrado"
+  const diaExistente = await DiaModel.obterDiaPorId(id);
+
+  if (!diaExistente) {
+    return res.status(404).json({ erro: "Dia não encontrado" });
+  }
+
+  const roteiro = await RoteiroModel.obterRoteiroPorId(diaExistente.roteiroId);
+
+  if (!roteiro || roteiro.usuarioId !== req.user.id) {
+    return res.status(403).json({
+      erro: "Você não tem permissão para excluir este dia",
     });
   }
 
-  res.json(diaDeletado);
-}
+  const diaDeletado = await DiaModel.deletarDia(id);
 
+  return res.json(diaDeletado);
+}
