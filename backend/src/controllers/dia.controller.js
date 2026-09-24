@@ -75,10 +75,6 @@ export async function atualizarDia(req, res) {
 export async function deletarDia(req, res) {
   const { id } = req.params;
 
-  if (!id || typeof id !== "string") {
-    return res.status(400).json({ erro: "ID inválido" });
-  }
-
   const diaExistente = await DiaModel.obterDiaPorId(id);
 
   if (!diaExistente) {

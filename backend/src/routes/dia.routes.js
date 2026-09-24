@@ -13,5 +13,4 @@ router.patch("/:id", authMiddleware, DiaController.atualizarDia);
 
 router.delete("/:id", authMiddleware, DiaController.deletarDia);
 
-
 export default router;

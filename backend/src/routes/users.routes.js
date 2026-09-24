@@ -4,7 +4,7 @@ import {
   listarUsuarios,
   obterUsuario,
   atualizarUsuario,
-  deletarUsuario
+  deletarUsuario,
 } from "../controllers/users.controller.js";
 
 import authMiddleware from "../middlewares/authMiddleware.js";
@@ -13,7 +13,7 @@ const router = Router();
 
 router.get("/", authMiddleware, listarUsuarios);
 
-router.get("/:id",authMiddleware, obterUsuario);
+router.get("/:id", authMiddleware, obterUsuario);
 
 router.patch("/:id", authMiddleware, atualizarUsuario);
 

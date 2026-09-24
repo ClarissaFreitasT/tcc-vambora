@@ -5,7 +5,7 @@ export async function obterTodasRoteiros(usuarioId) {
   return prisma.roteiro.findMany({
     where: usuarioId ? { usuarioId } : { publico: true },
     include: { usuario: { select: { id: true, nome: true } } },
-    orderBy: { criadoEm: "desc" }
+    orderBy: { criadoEm: "desc" },
   });
 }
 
@@ -17,14 +17,18 @@ export async function obterRoteiroPorId(id, usuarioId) {
       usuario: { select: { id: true, nome: true } },
       dias: {
         orderBy: { numeroDia: "asc" },
-        include: { itens: { orderBy: { ordem: "asc" } } }
-      }
-    }
+        include: { itens: { orderBy: { ordem: "asc" } } },
+      },
+    },
   });
 }
 
 export async function usuarioPodeEditar(id, usuarioId) {
-  const roteiro = await prisma.roteiro.findUnique({ where: { id }, select: { usuarioId: true } });
+  const roteiro = await prisma.roteiro.findUnique({
+    where: { id },
+    select: { usuarioId: true },
+  });
+
   return roteiro?.usuarioId === usuarioId;
 }
 
@@ -36,7 +40,7 @@ export async function criarNovoRoteiro({
   descricao = null,
   orcamento = null,
   publico = false,
-  roteiroOriginalId = null
+  roteiroOriginalId = null,
 }) {
   return prisma.roteiro.create({
     data: {
@@ -46,15 +50,15 @@ export async function criarNovoRoteiro({
       descricao,
       orcamento,
       publico,
-      roteiroOriginalId
-    }
+      roteiroOriginalId,
+    },
   });
 }
 
 // Atualiza os dados de um roteiro existente com as informações fornecidas.
 export async function atualizarRoteiro(id, dados) {
   const roteiroExistente = await prisma.roteiro.findUnique({
-    where: { id }
+    where: { id },
   });
 
   if (!roteiroExistente) {
@@ -71,14 +75,14 @@ export async function atualizarRoteiro(id, dados) {
 
   return prisma.roteiro.update({
     where: { id },
-    data: updateData
+    data: updateData,
   });
 }
 
 // Remove um roteiro do banco de dados pelo seu identificador.
-export async function excluirRoteiro(id, usuarioId) {
+export async function excluirRoteiro(id) {
   const roteiroExistente = await prisma.roteiro.findUnique({
-    where: { id, usuarioId }
+    where: { id },
   });
 
   if (!roteiroExistente) {
@@ -86,7 +90,6 @@ export async function excluirRoteiro(id, usuarioId) {
   }
 
   return prisma.roteiro.delete({
-    where: { id }
+    where: { id },
   });
 }
-

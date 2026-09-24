@@ -102,10 +102,6 @@ export async function atualizarRoteiro(req, res) {
     publico,
   });
 
-  if (!roteiroAtualizado) {
-    return res.status(404).json({ erro: "Roteiro não encontrado" });
-  }
-
   res.json({
     mensagem: "Roteiro atualizado com sucesso!",
     roteiro: roteiroAtualizado,
@@ -131,5 +127,10 @@ export async function excluirRoteiro(req, res) {
     });
   }
 
-  const roteiroRemovido = await Rotei;
+  const roteiroRemovido = await RoteiroModel.excluirRoteiro(id);
+
+  res.json({
+    mensagem: "Roteiro excluído com sucesso!",
+    roteiro: roteiroRemovido,
+  });
 }
