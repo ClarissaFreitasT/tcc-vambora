@@ -7,6 +7,8 @@ const mockCriarNovoRoteiro = jest.fn();
 const mockAtualizarRoteiro = jest.fn();
 const mockExcluirRoteiro = jest.fn();
 const mockCriarDia = jest.fn();
+const mockAtualizarDia = jest.fn();
+const mockDeletarDia = jest.fn();
 const mockCriarItem = jest.fn();
 
 jest.unstable_mockModule("../models/roteiro.model.js", () => ({
@@ -14,16 +16,19 @@ jest.unstable_mockModule("../models/roteiro.model.js", () => ({
   obterRoteiroPorId: mockObterRoteiroPorId,
   criarNovoRoteiro: mockCriarNovoRoteiro,
   atualizarRoteiro: mockAtualizarRoteiro,
-  excluirRoteiro: mockExcluirRoteiro
+  excluirRoteiro: mockExcluirRoteiro,
 }));
 
 jest.unstable_mockModule("../models/dia.model.js", () => ({
   criarDia: mockCriarDia,
-  listarDiasDoRoteiro: jest.fn()
+  listarDiasDoRoteiro: jest.fn(),
+  obterDiaPorId: jest.fn(),
+  atualizarDia: mockAtualizarDia,
+  deletarDia: mockDeletarDia,
 }));
 
 jest.unstable_mockModule("../models/item.model.js", () => ({
-  criarItem: mockCriarItem
+  criarItem: mockCriarItem,
 }));
 
 const { default: app } = await import("../app.js");
@@ -43,8 +48,8 @@ describe("Testes das rotas principais", () => {
           destino: "Paraty",
           descricao: "Passeio histórico e praias",
           orcamento: 1500,
-          publico: true
-        }
+          publico: true,
+        },
       ];
 
       mockObterTodasRoteiros.mockResolvedValue(roteirosMock);
@@ -64,7 +69,7 @@ describe("Testes das rotas principais", () => {
         destino: "Salvador",
         descricao: "Museus e culinária",
         orcamento: 1200,
-        publico: false
+        publico: false,
       };
 
       mockObterRoteiroPorId.mockResolvedValue(roteiroMock);
@@ -93,12 +98,12 @@ describe("Testes das rotas principais", () => {
         destino: "São Paulo",
         descricao: "Melhores restaurantes da cidade",
         orcamento: 2000,
-        publico: true
+        publico: true,
       };
 
       const roteiroCriado = {
         id: "2",
-        ...novoRoteiro
+        ...novoRoteiro,
       };
 
       mockCriarNovoRoteiro.mockResolvedValue(roteiroCriado);
@@ -108,7 +113,7 @@ describe("Testes das rotas principais", () => {
       expect(response.status).toBe(201);
       expect(response.body).toEqual({
         mensagem: "Roteiro criado com sucesso!",
-        roteiro: roteiroCriado
+        roteiro: roteiroCriado,
       });
       expect(mockCriarNovoRoteiro).toHaveBeenCalledWith(novoRoteiro);
     });
@@ -117,7 +122,7 @@ describe("Testes das rotas principais", () => {
       const response = await request(app).post("/roteiros").send({
         usuarioId: "",
         titulo: "",
-        destino: ""
+        destino: "",
       });
 
       expect(response.status).toBe(400);
@@ -132,7 +137,7 @@ describe("Testes das rotas principais", () => {
         destino: "Paraty",
         descricao: "Passeio histórico e praias",
         orcamento: 1500,
-        publico: true
+        publico: true,
       };
 
       mockAtualizarRoteiro.mockResolvedValue(roteiroAtualizado);
@@ -144,14 +149,14 @@ describe("Testes das rotas principais", () => {
       expect(response.status).toBe(200);
       expect(response.body).toEqual({
         mensagem: "Roteiro atualizado com sucesso!",
-        roteiro: roteiroAtualizado
+        roteiro: roteiroAtualizado,
       });
       expect(mockAtualizarRoteiro).toHaveBeenCalledWith("1", {
         titulo: "Roteiro Atualizado",
         destino: undefined,
         descricao: undefined,
         orcamento: undefined,
-        publico: undefined
+        publico: undefined,
       });
     });
 
@@ -169,7 +174,7 @@ describe("Testes das rotas principais", () => {
         destino: undefined,
         descricao: undefined,
         orcamento: undefined,
-        publico: undefined
+        publico: undefined,
       });
     });
 
@@ -178,7 +183,7 @@ describe("Testes das rotas principais", () => {
         id: "1",
         usuarioId: "u1",
         titulo: "Roteiro Gastronômico",
-        destino: "São Paulo"
+        destino: "São Paulo",
       };
 
       mockExcluirRoteiro.mockResolvedValue(roteiroRemovido);
@@ -188,7 +193,7 @@ describe("Testes das rotas principais", () => {
       expect(response.status).toBe(200);
       expect(response.body).toEqual({
         mensagem: "Roteiro excluído com sucesso!",
-        roteiro: roteiroRemovido
+        roteiro: roteiroRemovido,
       });
       expect(mockExcluirRoteiro).toHaveBeenCalledWith("1");
     });
@@ -209,12 +214,12 @@ describe("Testes das rotas principais", () => {
       const novoDia = {
         roteiroId: "1",
         numeroDia: 1,
-        titulo: "Dia de Praias"
+        titulo: "Dia de Praias",
       };
 
       const diaCriado = {
         id: "10",
-        ...novoDia
+        ...novoDia,
       };
 
       mockCriarDia.mockResolvedValue(diaCriado);
@@ -226,7 +231,30 @@ describe("Testes das rotas principais", () => {
       expect(mockCriarDia).toHaveBeenCalledWith(
         novoDia.roteiroId,
         novoDia.numeroDia,
-        novoDia.titulo
+        novoDia.titulo,
+      );
+    });
+
+    it("deve atualizar um dia usando o id do usuário autenticado", async () => {
+      const diaAtualizado = {
+        id: "10",
+        roteiroId: "1",
+        numeroDia: 2,
+        titulo: "Dia de museus",
+      };
+
+      mockAtualizarDia.mockResolvedValue(diaAtualizado);
+
+      const response = await request(app)
+        .patch("/dias/10")
+        .set("Authorization", "Bearer token-valido")
+        .send({ titulo: "Dia de museus" });
+
+      expect(response.status).toBe(200);
+      expect(mockAtualizarDia).toHaveBeenCalledWith(
+        "10",
+        { titulo: "Dia de museus" },
+        "u1",
       );
     });
 
@@ -247,12 +275,12 @@ describe("Testes das rotas principais", () => {
         diaId: "10",
         titulo: "Visita ao Museu",
         descricao: "Museu de arte local",
-        localNome: "Museu Histórico"
+        localNome: "Museu Histórico",
       };
 
       const itemCriado = {
         id: "100",
-        ...novoItem
+        ...novoItem,
       };
 
       mockCriarItem.mockResolvedValue(itemCriado);
@@ -265,7 +293,7 @@ describe("Testes das rotas principais", () => {
         novoItem.diaId,
         novoItem.titulo,
         novoItem.descricao,
-        novoItem.localNome
+        novoItem.localNome,
       );
     });
 

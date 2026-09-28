@@ -31,7 +31,7 @@ export default function Login() {
 
       localStorage.setItem("vambora_token", data.token);
       localStorage.setItem("vambora_usuario", JSON.stringify(data.usuario));
-      navigate("/roteiros");
+      navigate("/");
     } catch {
       setStatus("Não foi possível conectar ao servidor.");
     } finally {
