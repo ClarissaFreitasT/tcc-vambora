@@ -5,6 +5,19 @@ export async function listarRoteiros(req, res) {
   res.json(roteiros);
 }
 
+export async function listarRoteirosPublicos(req, res) {
+  try {
+    const roteiros = await RoteiroModel.obterRoteirosPublicos();
+    res.json(roteiros);
+  } catch (error) {
+    console.error("Erro ao listar roteiros públicos:", error);
+
+    res.status(500).json({
+      erro: "Não foi possível listar os roteiros públicos.",
+    });
+  }
+}
+
 export async function obterRoteiro(req, res) {
   const id = req.params.id;
 

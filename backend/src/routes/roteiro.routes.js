@@ -14,6 +14,8 @@ import authMiddleware, { optionalAuth } from "../middlewares/authMiddleware.js";
  */
 router.get("/", optionalAuth, roteiroController.listarRoteiros);
 
+router.get("/publicos", optionalAuth, roteiroController.listarRoteirosPublicos);
+
 /**
  * GET /roteiros/:id - Obtém um roteiro específico
  */

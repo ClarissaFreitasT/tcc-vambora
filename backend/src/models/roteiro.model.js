@@ -9,6 +9,18 @@ export async function obterTodasRoteiros(usuarioId) {
   });
 }
 
+export async function obterRoteirosPublicos() {
+  return prisma.roteiro.findMany({
+    where: { publico: true },
+    include: {
+      usuario: {
+        select: { id: true, nome: true },
+      },
+    },
+    orderBy: { criadoEm: "desc" },
+  });
+}
+
 // Busca um roteiro específico pelo seu identificador único.
 export async function obterRoteiroPorId(id, usuarioId) {
   return prisma.roteiro.findUnique({

@@ -19,6 +19,12 @@ function money(value) {
   }).format(Number(value));
 }
 
+function formatTime(value) {
+  if (!value) return "";
+  const time = String(value);
+  return time.match(/(?:T|\s|^)(\d{2}:\d{2})/)?.[1] || time.slice(0, 5);
+}
+
 function Field({ label, children }) {
   return (
     <label className="grid gap-2 text-sm font-medium text-slate-700">
@@ -210,7 +216,7 @@ export default function RoteiroDetalhes() {
             titulo: item.titulo,
             descricao: item.descricao || "",
             localNome: item.localNome || "",
-            horarioInicio: item.horarioInicio || "",
+            horarioInicio: formatTime(item.horarioInicio),
             custoEstimado: item.custoEstimado ?? "",
           }
         : emptyItem,
@@ -382,6 +388,16 @@ export default function RoteiroDetalhes() {
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.12),_transparent_42%)] px-4 py-16 lg:px-8">
       <div className="container mx-auto max-w-6xl">
+        <button
+          type="button"
+          className="mb-4 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-white hover:text-[#2563EB]"
+          onClick={() => navigate("/")}
+        >
+          <span aria-hidden="true" className="text-lg leading-none">
+            ←
+          </span>
+          Voltar à tela inicial
+        </button>
         <header className="rounded-[36px] border border-slate-200 bg-white p-8 shadow-[0_20px_70px_rgba(15,23,42,0.08)] lg:p-10">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
             <div>
@@ -594,7 +610,7 @@ export default function RoteiroDetalhes() {
                         <p className="mt-3 text-sm text-slate-500">
                           {item.localNome || "Local não informado"}{" "}
                           {item.horarioInicio
-                            ? `· ${String(item.horarioInicio).slice(0, 5)}`
+                            ? `· ${formatTime(item.horarioInicio)}`
                             : ""}{" "}
                           · {money(item.custoEstimado)}
                         </p>
@@ -678,7 +694,7 @@ export default function RoteiroDetalhes() {
                       <input
                         className="input-field"
                         type="time"
-                        value={String(itemForm.horarioInicio || "").slice(0, 5)}
+                        value={formatTime(itemForm.horarioInicio)}
                         onChange={(e) =>
                           setItemForm({
                             ...itemForm,
