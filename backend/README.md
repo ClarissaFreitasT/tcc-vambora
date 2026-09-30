@@ -9,6 +9,7 @@
 ```bash
 npm install
 npx prisma migrate deploy
+npx prisma generate
 ```
 
 O `.env` local usa a configuracao padrao do XAMPP: MySQL em `localhost:3306`, usuario `root` e senha vazia. Se a senha ou a porta do XAMPP forem diferentes, ajuste `DATABASE_URL`, `DATABASE_PASSWORD` e `DATABASE_HOST`.
@@ -20,3 +21,17 @@ npm start
 ```
 
 A API fica disponivel em `http://localhost:3000`.
+
+## Papeis de usuario
+
+Novas contas e contas existentes recebem o papel `USER` por padrao. O cadastro
+nao aceita papel enviado pelo cliente. Para promover uma conta, um operador com
+acesso administrativo ao banco deve executar uma alteracao direta, usando o
+email exato da conta:
+
+```sql
+UPDATE usuarios SET role = 'ADMIN' WHERE email = 'admin@example.com';
+```
+
+Nao exponha essa operacao em uma rota publica nem conceda acesso SQL a usuarios
+comuns. `GET /usuarios` exige token valido e papel `ADMIN`.

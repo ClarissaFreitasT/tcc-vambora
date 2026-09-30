@@ -12,6 +12,7 @@ model Usuario {
   nome            String         @db.VarChar(255)
   email           String         @unique @db.VarChar(255)
   senhaHash       String         @map("senha_hash") @db.VarChar(255)
+  role            UserRole       @default(USER)
   fotoUrl         String?        @map("foto_url") @db.VarChar(255)
   bio             String?        @db.Text
   personalidade   Personalidade?
@@ -127,4 +128,9 @@ enum Personalidade {
   CULTURAL
   FESTEIRA
   TRANQUILA
+}
+
+enum UserRole {
+  USER
+  ADMIN
 }

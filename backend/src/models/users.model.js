@@ -1,14 +1,26 @@
 import { prisma } from "../config/prisma.js";
 
+const camposUsuarioPublicos = {
+  id: true,
+  nome: true,
+  email: true,
+  role: true,
+  fotoUrl: true,
+  bio: true,
+  personalidade: true,
+  criadoEm: true,
+};
+
 // Retorna a lista completa de usuários cadastrados.
 export async function obterTodosUsuarios() {
-  return prisma.usuario.findMany();
+  return prisma.usuario.findMany({ select: camposUsuarioPublicos });
 }
 
 // Busca um usuário pelo seu identificador único.
 export async function obterUsuarioPorId(id) {
   return prisma.usuario.findUnique({
     where: { id },
+    select: camposUsuarioPublicos,
   });
 }
 
@@ -29,9 +41,17 @@ export async function atualizarUsuario(id, dadosAtualizados) {
     return null;
   }
 
+  const camposProtegidos = new Set(["role", "senhaHash"]);
+  const dadosPermitidos = Object.fromEntries(
+    Object.entries(dadosAtualizados).filter(
+      ([campo]) => !camposProtegidos.has(campo),
+    ),
+  );
+
   return prisma.usuario.update({
     where: { id },
-    data: dadosAtualizados,
+    data: dadosPermitidos,
+    select: camposUsuarioPublicos,
   });
 }
 
@@ -48,5 +68,6 @@ export async function deletarUsuario(id) {
     where: {
       id,
     },
+    select: camposUsuarioPublicos,
   });
 }

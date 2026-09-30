@@ -20,7 +20,7 @@ export default async function authMiddleware(req, res, next) {
   // TODO: verificar se o token foi enviado
   if (!authHeader) {
     return res.status(401).json({
-      message: "Token não informado"
+      message: "Token não informado",
     });
   }
 
@@ -29,7 +29,7 @@ export default async function authMiddleware(req, res, next) {
 
   if (parts.length !== 2) {
     return res.status(401).json({
-      message: "Token inválido"
+      message: "Token inválido",
     });
   }
 
@@ -37,7 +37,7 @@ export default async function authMiddleware(req, res, next) {
 
   if (prefix !== "Bearer") {
     return res.status(401).json({
-      message: "Token inválido"
+      message: "Token inválido",
     });
   }
 
@@ -46,25 +46,26 @@ export default async function authMiddleware(req, res, next) {
     decoded = jwt.verify(token, process.env.JWT_SECRET);
   } catch {
     return res.status(401).json({
-      message: "Token inválido ou expirado"
+      message: "Token inválido ou expirado",
     });
   }
 
   // TODO: buscar o usuário no banco pelo id que veio no token
   const usuario = await prisma.usuario.findUnique({
     where: {
-      id: decoded.id
+      id: decoded.id,
     },
     select: {
       id: true,
       nome: true,
-      email: true
-    }
+      email: true,
+      role: true,
+    },
   });
 
   if (!usuario) {
     return res.status(401).json({
-      message: "Usuário não encontrado"
+      message: "Usuário não encontrado",
     });
   }
 
