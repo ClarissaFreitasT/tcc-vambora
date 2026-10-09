@@ -6,6 +6,8 @@ import diaRoutes from "./routes/dia.routes.js";
 import itemRoutes from "./routes/item.routes.js";
 import usuarioRoutes from "./routes/users.routes.js";
 import authRoutes from "./routes/auth.routes.js";
+import publicacaoRoutes from "./routes/publicacao.routes.js";
+import categoriaRoutes from "./routes/categoria.routes.js";
 
 const app = express();
 
@@ -28,6 +30,8 @@ app.use("/roteiros", roteiroRoutes);
 app.use("/dias", diaRoutes);
 app.use("/itens", itemRoutes);
 app.use("/usuarios", usuarioRoutes);
+app.use("/publicacoes", publicacaoRoutes);
+app.use("/categorias", categoriaRoutes);
 app.use("/auth", authRoutes);
 
 export default app;

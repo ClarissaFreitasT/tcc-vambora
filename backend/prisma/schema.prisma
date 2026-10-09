@@ -8,18 +8,25 @@ datasource db {
 }
 
 model Usuario {
-  id              String         @id @default(uuid()) @db.Char(36)
-  nome            String         @db.VarChar(255)
-  email           String         @unique @db.VarChar(255)
-  senhaHash       String         @map("senha_hash") @db.VarChar(255)
-  role            UserRole       @default(USER)
-  fotoUrl         String?        @map("foto_url") @db.VarChar(255)
-  bio             String?        @db.Text
-  personalidade   Personalidade?
-  criadoEm        DateTime       @default(now()) @map("criado_em")
-  favoritos       Favorito[]
-  reviews         Review[]
-  roteiros        Roteiro[]
+  id               String              @id @default(uuid()) @db.Char(36)
+  nome             String              @db.VarChar(255)
+  email            String              @unique @db.VarChar(255)
+  username         String?             @unique @db.VarChar(80)
+  senhaHash        String              @map("senha_hash") @db.VarChar(255)
+  role             UserRole            @default(USER)
+  fotoUrl          String?             @map("foto_url") @db.VarChar(255)
+  bio              String?             @db.Text
+  personalidade    Personalidade?
+  criadoEm         DateTime            @default(now()) @map("criado_em")
+  favoritos        Favorito[]
+  reviews          Review[]
+  roteiros         Roteiro[]
+  publicacoes      Publicacao[]
+  comentarios      Comentario[]
+  curtidasPublica  CurtidaPublicacao[]
+  seguidores       Seguidor[]          @relation("SeguidorSeguido")
+  seguindo         Seguidor[]          @relation("SeguidorSeguidor")
+  roteirosSalvos   SalvoRoteiro[]
 
   @@map("usuarios")
 }
@@ -38,6 +45,8 @@ model Roteiro {
   favoritos          Favorito[]
   reviews            Review[]
   categorias         RoteiroCategoria[]
+  salvos             SalvoRoteiro[]
+  publicacoes        Publicacao[]
   roteiroOriginal    Roteiro?           @relation("DuplicacaoRoteiro", fields: [roteiroOriginalId], references: [id])
   roteirosDuplicados Roteiro[]          @relation("DuplicacaoRoteiro")
   usuario            Usuario            @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
@@ -121,6 +130,76 @@ model Review {
   @@index([usuarioId])
   @@index([roteiroId])
   @@map("reviews")
+}
+
+model Seguidor {
+  id          String @id @default(uuid()) @db.Char(36)
+  seguidorId  String @map("seguidor_id") @db.Char(36)
+  seguidoId   String @map("seguido_id") @db.Char(36)
+  seguidor    Usuario @relation("SeguidorSeguidor", fields: [seguidorId], references: [id], onDelete: Cascade)
+  seguido     Usuario @relation("SeguidorSeguido", fields: [seguidoId], references: [id], onDelete: Cascade)
+
+  @@unique([seguidorId, seguidoId])
+  @@index([seguidorId])
+  @@index([seguidoId])
+  @@map("seguidores")
+}
+
+model Publicacao {
+  id         String   @id @default(uuid()) @db.Char(36)
+  usuarioId  String   @map("usuario_id") @db.Char(36)
+  roteiroId  String?  @map("roteiro_id") @db.Char(36)
+  texto      String   @db.Text
+  criadoEm   DateTime @default(now()) @map("criado_em")
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  roteiro    Roteiro? @relation(fields: [roteiroId], references: [id], onDelete: SetNull)
+  comentarios Comentario[]
+  curtidas CurtidaPublicacao[]
+
+  @@index([usuarioId])
+  @@index([roteiroId])
+  @@map("publicacoes")
+}
+
+model Comentario {
+  id         String   @id @default(uuid()) @db.Char(36)
+  texto      String   @db.Text
+  usuarioId  String   @map("usuario_id") @db.Char(36)
+  publicacaoId String @map("publicacao_id") @db.Char(36)
+  comentarioPaiId String? @map("comentario_pai_id") @db.Char(36)
+  criadoEm   DateTime @default(now()) @map("criado_em")
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  publicacao Publicacao @relation(fields: [publicacaoId], references: [id], onDelete: Cascade)
+  comentarioPai Comentario? @relation("RespostasComentario", fields: [comentarioPaiId], references: [id], onDelete: Cascade)
+  respostas  Comentario[] @relation("RespostasComentario")
+
+  @@index([publicacaoId])
+  @@index([usuarioId])
+  @@map("comentarios")
+}
+
+model CurtidaPublicacao {
+  id         String   @id @default(uuid()) @db.Char(36)
+  usuarioId  String   @map("usuario_id") @db.Char(36)
+  publicacaoId String @map("publicacao_id") @db.Char(36)
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  publicacao Publicacao @relation(fields: [publicacaoId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, publicacaoId])
+  @@map("curtidas_publicacao")
+}
+
+model SalvoRoteiro {
+  id        String  @id @default(uuid()) @db.Char(36)
+  usuarioId  String  @map("usuario_id") @db.Char(36)
+  roteiroId  String  @map("roteiro_id") @db.Char(36)
+  usuario    Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  roteiro    Roteiro @relation(fields: [roteiroId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, roteiroId])
+  @@index([usuarioId])
+  @@index([roteiroId])
+  @@map("roteiros_salvos")
 }
 
 enum Personalidade {

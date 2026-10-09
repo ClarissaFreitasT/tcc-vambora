@@ -13,7 +13,21 @@ export async function obterUsuario(req, res) {
 
   if (!usuario) {
     return res.status(404).json({
-      erro: "Usuário não encontrado"
+      erro: "Usuário não encontrado",
+    });
+  }
+
+  res.json(usuario);
+}
+
+export async function obterUsuarioPorUsername(req, res) {
+  const { username } = req.params;
+
+  const usuario = await UsuarioModel.obterUsuarioPorUsername(username);
+
+  if (!usuario) {
+    return res.status(404).json({
+      erro: "Perfil não encontrado",
     });
   }
 
@@ -24,34 +38,147 @@ export async function atualizarUsuario(req, res) {
   const { id } = req.params;
   const dadosAtualizados = req.body;
 
+  const usuarioAutenticado = req.user;
+
+  if (
+    !usuarioAutenticado ||
+    (usuarioAutenticado.id !== id && usuarioAutenticado.role !== "ADMIN")
+  ) {
+    return res.status(403).json({
+      erro: "Você não tem permissão para atualizar este perfil",
+    });
+  }
+
   const usuario = await UsuarioModel.atualizarUsuario(id, dadosAtualizados);
 
   if (!usuario) {
     return res.status(404).json({
-      erro: "Usuário não encontrado"
+      erro: "Usuário não encontrado",
     });
   }
 
   res.json({
     mensagem: "Usuário atualizado com sucesso",
-    usuario
+    usuario,
   });
 }
 
-
 export async function deletarUsuario(req, res) {
-  const { id } = req.params;  
+  const { id } = req.params;
+  const usuarioAutenticado = req.user;
+
+  if (
+    !usuarioAutenticado ||
+    (usuarioAutenticado.id !== id && usuarioAutenticado.role !== "ADMIN")
+  ) {
+    return res.status(403).json({
+      erro: "Você não tem permissão para excluir este usuário",
+    });
+  }
 
   const usuario = await UsuarioModel.deletarUsuario(id);
 
   if (!usuario) {
     return res.status(404).json({
-      erro: "Usuário não encontrado"
+      erro: "Usuário não encontrado",
     });
   }
 
   res.json({
     mensagem: "Usuário deletado com sucesso",
-    usuario
+    usuario,
   });
+}
+
+export async function seguirUsuario(req, res) {
+  const { id } = req.params;
+  const usuarioAutenticado = req.user;
+
+  if (!usuarioAutenticado) {
+    return res.status(401).json({ erro: "Autenticação necessária" });
+  }
+
+  if (usuarioAutenticado.id === id) {
+    return res.status(400).json({ erro: "Você não pode seguir a si mesmo" });
+  }
+
+  const usuarioAlvo = await UsuarioModel.obterUsuarioPorId(id);
+
+  if (!usuarioAlvo) {
+    return res.status(404).json({ erro: "Usuário não encontrado" });
+  }
+
+  const relacionamento = await UsuarioModel.seguirUsuario(
+    usuarioAutenticado.id,
+    id,
+  );
+
+  if (!relacionamento) {
+    return res
+      .status(400)
+      .json({ erro: "Não foi possível seguir este usuário" });
+  }
+
+  return res.status(201).json({
+    mensagem: "Usuário seguido com sucesso",
+    relacionamento,
+  });
+}
+
+export async function deixarDeSeguirUsuario(req, res) {
+  const { id } = req.params;
+  const usuarioAutenticado = req.user;
+
+  if (!usuarioAutenticado) {
+    return res.status(401).json({ erro: "Autenticação necessária" });
+  }
+
+  const relacionamentoExistente = await UsuarioModel.obterSeguidor(
+    usuarioAutenticado.id,
+    id,
+  );
+
+  if (!relacionamentoExistente) {
+    return res
+      .status(404)
+      .json({ erro: "Relacionamento de seguir não encontrado" });
+  }
+
+  const relacionamento = await UsuarioModel.deixarDeSeguirUsuario(
+    usuarioAutenticado.id,
+    id,
+  );
+
+  return res.status(200).json({
+    mensagem: "Relacionamento removido com sucesso",
+    relacionamento,
+  });
+}
+
+export async function listarSeguidores(req, res) {
+  const { id } = req.params;
+
+  const usuario = await UsuarioModel.obterUsuarioPorId(id);
+
+  if (!usuario) {
+    return res.status(404).json({ erro: "Usuário não encontrado" });
+  }
+
+  const seguidores = await UsuarioModel.listarSeguidores(id);
+
+  return res.status(200).json(seguidores);
+}
+
+export async function listarSeguindo(req, res) {
+  const { id } = req.params;
+
+  const usuario = await UsuarioModel.obterUsuarioPorId(id);
+
+  if (!usuario) {
+    return res.status(404).json({ erro: "Usuário não encontrado" });
+  }
+
+  const seguindo = await UsuarioModel.listarSeguindo(id);
+
+  return res.status(200).json(seguindo);
 }

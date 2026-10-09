@@ -22,12 +22,14 @@ export async function criarItem(req, res) {
     ordem,
   } = req.body;
 
-  if (!diaId || typeof diaId !== "string") {
-    return res.status(400).json({ erro: "Dia obrigatório" });
-  }
-
-  if (typeof titulo !== "string" || titulo.trim() === "") {
-    return res.status(400).json({ erro: "Título obrigatório" });
+  if (
+    !diaId ||
+    typeof diaId !== "string" ||
+    !titulo ||
+    typeof titulo !== "string" ||
+    titulo.trim() === ""
+  ) {
+    return res.status(400).json({ erro: "Dados obrigatórios" });
   }
 
   const dia = await DiaModel.obterDiaPorId(diaId);

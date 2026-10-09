@@ -13,12 +13,59 @@ import authMiddleware, { optionalAuth } from "../middlewares/authMiddleware.js";
  * GET /roteiros - Lista todos os roteiros
  */
 router.get("/", optionalAuth, roteiroController.listarRoteiros);
-
 router.get("/publicos", optionalAuth, roteiroController.listarRoteirosPublicos);
+router.get("/salvos", authMiddleware, roteiroController.listarRoteirosSalvos);
+
+router.post(
+  "/:id/curtir",
+  authMiddleware,
+  roteiroController.adicionarCurtidaRoteiro,
+);
+router.delete(
+  "/:id/curtir",
+  authMiddleware,
+  roteiroController.removerCurtidaRoteiro,
+);
+router.get("/:id/curtidas", optionalAuth, async (req, res) => {
+  const { id } = req.params;
+  const totalCurtidas = await import("../models/roteiro.model.js").then((m) =>
+    m.contarCurtidas(id),
+  );
+  res.status(200).json({ roteiroId: id, totalCurtidas });
+});
+
+router.post(
+  "/:id/salvar",
+  authMiddleware,
+  roteiroController.salvarRoteiroUsuario,
+);
+router.delete(
+  "/:id/salvar",
+  authMiddleware,
+  roteiroController.removerRoteiroSalvoUsuario,
+);
+
+router.get(
+  "/:id/avaliacoes",
+  optionalAuth,
+  roteiroController.listarAvaliacoesRoteiro,
+);
+router.post(
+  "/:id/avaliar",
+  authMiddleware,
+  roteiroController.criarAvaliacaoRoteiro,
+);
+router.delete(
+  "/:id/avaliar",
+  authMiddleware,
+  roteiroController.removerAvaliacaoRoteiro,
+);
 
 /**
  * GET /roteiros/:id - Obtém um roteiro específico
  */
+router.post("/:id/duplicar", authMiddleware, roteiroController.duplicarRoteiro);
+
 router.get("/:id", optionalAuth, roteiroController.obterRoteiro);
 
 /**

@@ -4,11 +4,11 @@ import { prisma } from "../config/prisma.js";
 
 export async function register(req, res) {
   try {
-    const { nome, email, password } = req.body;
+    const { nome, email, password, username } = req.body;
 
     if (!nome || !email || !password) {
       return res.status(400).json({
-        message: "Nome, email e senha são obrigatórios"
+        message: "Nome, email e senha são obrigatórios",
       });
     }
 
@@ -16,18 +16,48 @@ export async function register(req, res) {
 
     if (usuarioExiste) {
       return res.status(400).json({
-        mensagem: "E-mail já cadastrado"
+        mensagem: "E-mail já cadastrado",
       });
+    }
+
+    let nomeUsuario = null;
+    if (username) {
+      nomeUsuario = username
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9._-]/g, "");
+
+      if (!nomeUsuario) {
+        return res.status(400).json({
+          mensagem: "Username inválido",
+        });
+      }
+
+      const usuarioComUsername = await prisma.usuario.findUnique({
+        where: { username: nomeUsuario },
+      });
+
+      if (usuarioComUsername) {
+        return res.status(400).json({
+          mensagem: "Username já está em uso",
+        });
+      }
     }
 
     const senhaHash = await bcrypt.hash(password, 10);
 
+    const data = {
+      nome,
+      email,
+      senhaHash,
+    };
+
+    if (nomeUsuario) {
+      data.username = nomeUsuario;
+    }
+
     const usuario = await prisma.usuario.create({
-      data: {
-        nome: nome,
-        email: email,
-        senhaHash
-      }
+      data,
     });
 
     return res.status(201).json({
@@ -35,8 +65,9 @@ export async function register(req, res) {
       usuario: {
         id: usuario.id,
         nome: usuario.nome,
-        email: usuario.email
-      }
+        email: usuario.email,
+        ...(usuario.username ? { username: usuario.username } : {}),
+      },
     });
   } catch (error) {
     console.error("Erro no cadastro:", error);
@@ -50,7 +81,7 @@ export async function login(req, res) {
 
     if (!email || !password) {
       return res.status(400).json({
-        message: "Email e senha são obrigatórios"
+        message: "Email e senha são obrigatórios",
       });
     }
 
@@ -58,7 +89,7 @@ export async function login(req, res) {
 
     if (!usuario) {
       return res.status(401).json({
-        mensagem: "E-mail ou senha inválidos"
+        mensagem: "E-mail ou senha inválidos",
       });
     }
 
@@ -66,18 +97,18 @@ export async function login(req, res) {
 
     if (!senhaValida) {
       return res.status(401).json({
-        mensagem: "E-mail ou senha inválidos"
+        mensagem: "E-mail ou senha inválidos",
       });
     }
 
     const token = jwt.sign(
       {
-        id: usuario.id
+        id: usuario.id,
       },
       process.env.JWT_SECRET,
       {
-        expiresIn: process.env.JWT_EXPIRES_IN
-      }
+        expiresIn: process.env.JWT_EXPIRES_IN,
+      },
     );
 
     return res.status(200).json({
@@ -86,8 +117,8 @@ export async function login(req, res) {
       usuario: {
         id: usuario.id,
         nome: usuario.nome,
-        email: usuario.email
-      }
+        email: usuario.email,
+      },
     });
   } catch (error) {
     console.error("Erro no login:", error);
