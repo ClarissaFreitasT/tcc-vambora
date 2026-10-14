@@ -14,6 +14,11 @@ import authMiddleware, { optionalAuth } from "../middlewares/authMiddleware.js";
  */
 router.get("/", optionalAuth, roteiroController.listarRoteiros);
 router.get("/publicos", optionalAuth, roteiroController.listarRoteirosPublicos);
+router.get(
+  "/populares",
+  optionalAuth,
+  roteiroController.listarRoteirosPopulares,
+);
 router.get("/salvos", authMiddleware, roteiroController.listarRoteirosSalvos);
 
 router.post(

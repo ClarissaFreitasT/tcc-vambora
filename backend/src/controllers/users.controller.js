@@ -1,5 +1,40 @@
 import * as UsuarioModel from "../models/users.model.js";
 
+const PERSONALIDADES_VALIDAS = new Set([
+  "AVENTUREIRA",
+  "CULTURAL",
+  "FESTEIRA",
+  "TRANQUILA",
+]);
+
+function normalizarPersonalidadeController(valor) {
+  if (typeof valor !== "string") {
+    return null;
+  }
+
+  const mapa = {
+    AVENTUREIRA: "AVENTUREIRA",
+    AVENTUREIRO: "AVENTUREIRA",
+    CULTURAL: "CULTURAL",
+    FESTEIRA: "FESTEIRA",
+    FESTEIRO: "FESTEIRA",
+    TRANQUILA: "TRANQUILA",
+    TRANQUILO: "TRANQUILA",
+  };
+
+  const chave = valor.trim();
+  if (!chave) {
+    return null;
+  }
+
+  const valorNormalizado = mapa[chave.toUpperCase()] ?? null;
+  if (!valorNormalizado || !PERSONALIDADES_VALIDAS.has(valorNormalizado)) {
+    return null;
+  }
+
+  return valorNormalizado;
+}
+
 export async function listarUsuarios(req, res) {
   const usuarios = await UsuarioModel.obterTodosUsuarios();
 
@@ -36,7 +71,19 @@ export async function obterUsuarioPorUsername(req, res) {
 
 export async function atualizarUsuario(req, res) {
   const { id } = req.params;
-  const dadosAtualizados = req.body;
+  const dadosAtualizados = { ...req.body };
+
+  if (Object.hasOwn(dadosAtualizados, "personalidade")) {
+    const personalidadeNormalizada = normalizarPersonalidadeController(
+      dadosAtualizados.personalidade,
+    );
+
+    if (!personalidadeNormalizada) {
+      return res.status(400).json({ erro: "Personalidade inválida" });
+    }
+
+    dadosAtualizados.personalidade = personalidadeNormalizada;
+  }
 
   const usuarioAutenticado = req.user;
 

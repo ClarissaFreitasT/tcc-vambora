@@ -32,6 +32,32 @@ function normalizarUsername(username) {
   return valorNormalizado || null;
 }
 
+export function normalizarPersonalidade(personalidade) {
+  if (typeof personalidade !== "string") {
+    return null;
+  }
+
+  const valor = personalidade.trim();
+  if (!valor) {
+    return null;
+  }
+
+  const mapa = {
+    AVENTUREIRA: "AVENTUREIRA",
+    AVENTUREIRO: "AVENTUREIRA",
+    AVENTUREIRA: "AVENTUREIRA",
+    CULTURAL: "CULTURAL",
+    CULTURAL: "CULTURAL",
+    FESTEIRA: "FESTEIRA",
+    FESTEIRO: "FESTEIRA",
+    TRANQUILA: "TRANQUILA",
+    TRANQUILO: "TRANQUILA",
+  };
+
+  const chave = valor.toUpperCase();
+  return mapa[chave] ?? null;
+}
+
 // Retorna a lista completa de usuários cadastrados para uso administrativo.
 export async function obterTodosUsuarios() {
   return prisma.usuario.findMany({ select: camposUsuarioAdmin });
@@ -120,6 +146,18 @@ export async function atualizarUsuario(id, dadosAtualizados) {
     }
 
     dadosPermitidos.username = usernameNormalizado;
+  }
+
+  if (Object.hasOwn(dadosPermitidos, "personalidade")) {
+    const personalidadeNormalizada = normalizarPersonalidade(
+      dadosPermitidos.personalidade,
+    );
+
+    if (!personalidadeNormalizada) {
+      return null;
+    }
+
+    dadosPermitidos.personalidade = personalidadeNormalizada;
   }
 
   return prisma.usuario.update({

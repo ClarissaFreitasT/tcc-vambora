@@ -5,11 +5,23 @@ import { jest } from "@jest/globals";
 const mockObterTodosUsuarios = jest.fn();
 const mockObterUsuarioPorId = jest.fn();
 const mockCriarUsuario = jest.fn();
+const mockAtualizarUsuario = jest.fn();
+
+const mockAuthMiddleware = jest.fn((req, res, next) => {
+  req.user = { id: "u1", role: "ADMIN" };
+  return next();
+});
+
+jest.unstable_mockModule("../middlewares/authMiddleware.js", () => ({
+  default: mockAuthMiddleware,
+  optionalAuth: mockAuthMiddleware,
+}));
 
 jest.unstable_mockModule("../models/users.model.js", () => ({
   obterTodosUsuarios: mockObterTodosUsuarios,
   obterUsuarioPorId: mockObterUsuarioPorId,
-  criarUsuario: mockCriarUsuario
+  criarUsuario: mockCriarUsuario,
+  atualizarUsuario: mockAtualizarUsuario,
 }));
 
 // Importa o app após configurar os mocks
@@ -32,7 +44,7 @@ describe("Testes das Rotas de Usuários", () => {
           fotoUrl: null,
           bio: null,
           personalidade: null,
-          orcamentoPerfil: null
+          orcamentoPerfil: null,
         },
         {
           id: "2",
@@ -41,8 +53,8 @@ describe("Testes das Rotas de Usuários", () => {
           fotoUrl: null,
           bio: null,
           personalidade: null,
-          orcamentoPerfil: null
-        }
+          orcamentoPerfil: null,
+        },
       ];
 
       mockObterTodosUsuarios.mockResolvedValue(usuariosMock);
@@ -80,7 +92,7 @@ describe("Testes das Rotas de Usuários", () => {
         fotoUrl: "https://example.com/foto.jpg",
         bio: "Desenvolvedor apaixonado por viagens",
         personalidade: "Aventureiro",
-        orcamentoPerfil: "Médio"
+        orcamentoPerfil: "Médio",
       };
 
       mockObterUsuarioPorId.mockResolvedValue(usuarioMock);
@@ -105,10 +117,47 @@ describe("Testes das Rotas de Usuários", () => {
       // Assert
       expect(response.status).toBe(404);
       expect(response.body).toEqual({
-        erro: "Usuário não encontrado"
+        erro: "Usuário não encontrado",
       });
       expect(mockObterUsuarioPorId).toHaveBeenCalledWith("999");
     });
   });
 
+  describe("PATCH /usuarios/:id", () => {
+    it("deve aceitar uma personalidade válida do quiz do perfil", async () => {
+      const usuarioAtualizado = {
+        id: "u1",
+        nome: "João Silva",
+        email: "joao@example.com",
+        personalidade: "AVENTUREIRA",
+      };
+
+      mockAtualizarUsuario.mockResolvedValue(usuarioAtualizado);
+
+      const response = await request(app)
+        .patch("/usuarios/u1")
+        .send({ personalidade: "Aventureira" });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        mensagem: "Usuário atualizado com sucesso",
+        usuario: usuarioAtualizado,
+      });
+      expect(mockAtualizarUsuario).toHaveBeenCalledWith("u1", {
+        personalidade: "AVENTUREIRA",
+      });
+    });
+
+    it("deve rejeitar uma personalidade inválida do quiz do perfil", async () => {
+      const response = await request(app)
+        .patch("/usuarios/u1")
+        .send({ personalidade: "Inexistente" });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({
+        erro: "Personalidade inválida",
+      });
+      expect(mockAtualizarUsuario).not.toHaveBeenCalled();
+    });
+  });
 });

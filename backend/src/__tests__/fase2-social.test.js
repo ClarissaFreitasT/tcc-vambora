@@ -13,6 +13,7 @@ const mockObterReview = jest.fn();
 const mockCriarReview = jest.fn();
 const mockListarReviews = jest.fn();
 const mockObterResumoAvaliacao = jest.fn();
+const mockObterRoteirosPopulares = jest.fn();
 
 jest.unstable_mockModule("../models/roteiro.model.js", () => ({
   obterRoteiroPorId: mockObterRoteiroPorId,
@@ -28,6 +29,7 @@ jest.unstable_mockModule("../models/roteiro.model.js", () => ({
   criarReview: mockCriarReview,
   listarReviewsDoRoteiro: mockListarReviews,
   obterResumoAvaliacao: mockObterResumoAvaliacao,
+  obterRoteirosPopulares: mockObterRoteirosPopulares,
 }));
 
 const {
@@ -37,6 +39,7 @@ const {
   salvarRoteiroUsuario,
   removerRoteiroSalvoUsuario,
   criarAvaliacaoRoteiro,
+  listarRoteirosPopulares,
 } = await import("../controllers/roteiro.controller.js");
 
 describe("Fase 2 - roteiro social", () => {
@@ -129,6 +132,18 @@ describe("Fase 2 - roteiro social", () => {
     await listarRoteirosSalvos({ user: { id: "u1" } }, res);
 
     expect(mockListarSalvos).toHaveBeenCalledWith("u1");
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  it("lista roteiros populares em ordem de interesse da comunidade", async () => {
+    mockObterRoteirosPopulares.mockResolvedValue([
+      { id: "r2", titulo: "Roteiro popular", publicos: true },
+      { id: "r1", titulo: "Outro roteiro", publicos: true },
+    ]);
+
+    await listarRoteirosPopulares({}, res);
+
+    expect(mockObterRoteirosPopulares).toHaveBeenCalledWith(10);
     expect(res.status).toHaveBeenCalledWith(200);
   });
 });

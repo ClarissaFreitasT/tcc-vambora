@@ -18,6 +18,19 @@ export async function listarRoteirosPublicos(req, res) {
   }
 }
 
+export async function listarRoteirosPopulares(req, res) {
+  try {
+    const roteiros = await RoteiroModel.obterRoteirosPopulares(10);
+    return res.status(200).json(roteiros);
+  } catch (error) {
+    console.error("Erro ao listar roteiros populares:", error);
+
+    return res.status(500).json({
+      erro: "Não foi possível listar os roteiros populares.",
+    });
+  }
+}
+
 export async function obterRoteiro(req, res) {
   const id = req.params.id;
 

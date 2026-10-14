@@ -9,7 +9,23 @@ const mockExcluirRoteiro = jest.fn();
 const mockCriarDia = jest.fn();
 const mockAtualizarDia = jest.fn();
 const mockDeletarDia = jest.fn();
+const mockObterDiaPorId = jest.fn();
+const mockListarDiasDoRoteiro = jest.fn();
 const mockCriarItem = jest.fn();
+const mockObterItemPorId = jest.fn();
+const mockAtualizarItem = jest.fn();
+const mockDeletarItem = jest.fn();
+const mockListarItensDoDia = jest.fn();
+
+const mockAuthMiddleware = jest.fn((req, res, next) => {
+  req.user = { id: "u1", role: "USER" };
+  return next();
+});
+
+jest.unstable_mockModule("../middlewares/authMiddleware.js", () => ({
+  default: mockAuthMiddleware,
+  optionalAuth: mockAuthMiddleware,
+}));
 
 jest.unstable_mockModule("../models/roteiro.model.js", () => ({
   obterTodasRoteiros: mockObterTodasRoteiros,
@@ -21,19 +37,44 @@ jest.unstable_mockModule("../models/roteiro.model.js", () => ({
 
 jest.unstable_mockModule("../models/dia.model.js", () => ({
   criarDia: mockCriarDia,
-  listarDiasDoRoteiro: jest.fn(),
-  obterDiaPorId: jest.fn(),
+  listarDiasDoRoteiro: mockListarDiasDoRoteiro,
+  obterDiaPorId: mockObterDiaPorId,
   atualizarDia: mockAtualizarDia,
   deletarDia: mockDeletarDia,
 }));
 
 jest.unstable_mockModule("../models/item.model.js", () => ({
   criarItem: mockCriarItem,
+  listarItensDoDia: mockListarItensDoDia,
+  obterItemPorId: mockObterItemPorId,
+  atualizarItem: mockAtualizarItem,
+  deletarItem: mockDeletarItem,
 }));
 
 const { default: app } = await import("../app.js");
 
 describe("Testes das rotas principais", () => {
+  beforeEach(() => {
+    mockObterRoteiroPorId.mockResolvedValue({
+      id: "1",
+      usuarioId: "u1",
+      titulo: "Roteiro de Fim de Semana",
+      destino: "Paraty",
+      publico: true,
+    });
+    mockObterDiaPorId.mockResolvedValue({
+      id: "10",
+      roteiroId: "1",
+      numeroDia: 1,
+      titulo: "Dia de Praias",
+    });
+    mockObterItemPorId.mockResolvedValue({
+      id: "100",
+      diaId: "10",
+      titulo: "Visita ao Museu",
+    });
+  });
+
   afterEach(() => {
     jest.clearAllMocks();
   });
@@ -161,6 +202,7 @@ describe("Testes das rotas principais", () => {
     });
 
     it("deve retornar 404 ao atualizar roteiro inexistente", async () => {
+      mockObterRoteiroPorId.mockResolvedValue(null);
       mockAtualizarRoteiro.mockResolvedValue(null);
 
       const response = await request(app)
@@ -169,13 +211,7 @@ describe("Testes das rotas principais", () => {
 
       expect(response.status).toBe(404);
       expect(response.body).toEqual({ erro: "Roteiro não encontrado" });
-      expect(mockAtualizarRoteiro).toHaveBeenCalledWith("999", {
-        titulo: "Roteiro Atualizado",
-        destino: undefined,
-        descricao: undefined,
-        orcamento: undefined,
-        publico: undefined,
-      });
+      expect(mockAtualizarRoteiro).not.toHaveBeenCalled();
     });
 
     it("deve excluir um roteiro existente", async () => {
@@ -199,13 +235,14 @@ describe("Testes das rotas principais", () => {
     });
 
     it("deve retornar 404 ao excluir roteiro inexistente", async () => {
+      mockObterRoteiroPorId.mockResolvedValue(null);
       mockExcluirRoteiro.mockResolvedValue(null);
 
       const response = await request(app).delete("/roteiros/999");
 
       expect(response.status).toBe(404);
       expect(response.body).toEqual({ erro: "Roteiro não encontrado" });
-      expect(mockExcluirRoteiro).toHaveBeenCalledWith("999");
+      expect(mockExcluirRoteiro).not.toHaveBeenCalled();
     });
   });
 
@@ -251,11 +288,9 @@ describe("Testes das rotas principais", () => {
         .send({ titulo: "Dia de museus" });
 
       expect(response.status).toBe(200);
-      expect(mockAtualizarDia).toHaveBeenCalledWith(
-        "10",
-        { titulo: "Dia de museus" },
-        "u1",
-      );
+      expect(mockAtualizarDia).toHaveBeenCalledWith("10", {
+        titulo: "Dia de museus",
+      });
     });
 
     it("deve retornar 400 quando roteiroId não for informado", async () => {
@@ -294,6 +329,9 @@ describe("Testes das rotas principais", () => {
         novoItem.titulo,
         novoItem.descricao,
         novoItem.localNome,
+        null,
+        null,
+        0,
       );
     });
 

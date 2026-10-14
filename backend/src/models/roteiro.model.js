@@ -29,6 +29,54 @@ export async function obterRoteirosPublicos() {
   });
 }
 
+export async function obterRoteirosPopulares(limit = 10) {
+  const roteiros = await prisma.roteiro.findMany({
+    where: { publico: true },
+    include: {
+      usuario: {
+        select: { id: true, nome: true, username: true },
+      },
+      categorias: {
+        include: { categoria: true },
+      },
+      favoritos: true,
+      reviews: {
+        select: { nota: true },
+      },
+    },
+    orderBy: { criadoEm: "desc" },
+  });
+
+  return roteiros
+    .map((roteiro) => {
+      const totalCurtidas = roteiro.favoritos.length;
+      const totalAvaliacoes = roteiro.reviews.length;
+      const mediaAvaliacao =
+        totalAvaliacoes > 0
+          ? roteiro.reviews.reduce((soma, review) => soma + review.nota, 0) /
+            totalAvaliacoes
+          : 0;
+
+      const popularidade =
+        totalCurtidas * 2 + totalAvaliacoes * 3 + mediaAvaliacao * 2;
+
+      return {
+        ...roteiro,
+        totalCurtidas,
+        totalAvaliacoes,
+        mediaAvaliacao: Number(mediaAvaliacao.toFixed(2)),
+        popularidade: Number(popularidade.toFixed(2)),
+      };
+    })
+    .sort(
+      (a, b) =>
+        b.popularidade - a.popularidade ||
+        new Date(b.criadoEm).getTime() - new Date(a.criadoEm).getTime(),
+    )
+    .slice(0, limit)
+    .map(({ favoritos, reviews, ...roteiro }) => roteiro);
+}
+
 // Busca um roteiro específico pelo seu identificador único.
 export async function obterRoteiroPorId(id, usuarioId) {
   return prisma.roteiro.findUnique({
