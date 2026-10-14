@@ -15,7 +15,11 @@ export async function apiFetch(path, options = {}) {
   const data = contentType.includes('application/json') ? await response.json() : null
 
   if (!response.ok) {
-    if (response.status === 401) localStorage.removeItem('vambora_token')
+    if (response.status === 401) {
+      localStorage.removeItem('vambora_token')
+      localStorage.removeItem('vambora_usuario')
+      window.dispatchEvent(new Event('vambora:unauthorized'))
+    }
     throw new Error(data?.erro || data?.message || data?.mensagem || API_ERROR_FALLBACK)
   }
 

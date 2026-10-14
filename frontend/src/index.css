@@ -57,6 +57,10 @@
   .input-field {
     @apply w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#2563EB] focus:bg-white;
   }
+
+  .eyebrow {
+    @apply text-sm font-bold uppercase tracking-[0.3em] text-[#2563EB];
+  }
 }
 
 button,

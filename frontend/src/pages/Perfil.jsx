@@ -1,293 +1,46 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { apiFetch } from '../data/api'
+import { useAuth } from '../context/useAuth'
+import Feedback from '../components/Feedback'
 
-const PERGUNTAS_PERSONALIDADE = [
-  {
-    id: 1,
-    pergunta: "Qual é seu estilo de viagem preferido?",
-    opcoes: [
-      "Aventura e trilhas",
-      "Cultura e história",
-      "Relaxamento e praia",
-      "Cidade e gastronomia",
-    ],
-  },
-  {
-    id: 2,
-    pergunta: "Quanto tempo costuma ficar em uma viagem?",
-    opcoes: [
-      "Fim de semana (2-3 dias)",
-      "Uma semana",
-      "Duas ou mais semanas",
-      "Viagens longas (mês+)",
-    ],
-  },
-  {
-    id: 3,
-    pergunta: "Qual é seu orçamento médio por viagem?",
-    opcoes: [
-      "Até R$ 1.000",
-      "R$ 1.000 a R$ 2.500",
-      "R$ 2.500 a R$ 5.000",
-      "Acima de R$ 5.000",
-    ],
-  },
-  {
-    id: 4,
-    pergunta: "Você prefere viajar sozinho ou em grupo?",
-    opcoes: [
-      "Sozinho",
-      "Com um companheiro",
-      "Com grupo pequeno (2-4)",
-      "Com grupo maior (5+)",
-    ],
-  },
-  {
-    id: 5,
-    pergunta: "Como você gosta de se locomover?",
-    opcoes: [
-      "Carro alugado",
-      "Transporte público",
-      "A pé ou bicicleta",
-      "Voos internacionais",
-    ],
-  },
-];
+function money(value) {
+  if (value === null || value === undefined || value === '') return 'Não informado'
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value))
+}
 
 export default function Perfil() {
-  const navigate = useNavigate();
-  const [stage, setStage] = useState("registro"); // 'registro' ou 'questionario'
-  const [nome, setNome] = useState("");
-  const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
-  const [dataNascimento, setDataNascimento] = useState("");
-  const [respostas, setRespostas] = useState({});
-  const [status, setStatus] = useState(null);
-  const [currentPergunta, setCurrentPergunta] = useState(0);
+  const { user, updateUser, logout } = useAuth()
+  const [form, setForm] = useState({ nome: '', email: '', bio: '' })
+  const [roteiros, setRoteiros] = useState([])
+  const [status, setStatus] = useState(null)
+  const [errors, setErrors] = useState({})
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
 
-  function calcularIdade(dataNascimentoStr) {
-    const hoje = new Date();
-    const dataNasc = new Date(dataNascimentoStr);
-    let idade = hoje.getFullYear() - dataNasc.getFullYear();
-    const mes = hoje.getMonth() - dataNasc.getMonth();
-    if (mes < 0 || (mes === 0 && hoje.getDate() < dataNasc.getDate())) {
-      idade--;
+  useEffect(() => {
+    async function loadProfileData() {
+      try {
+        const [profile, userRoteiros] = await Promise.all([apiFetch('/usuarios/me'), apiFetch('/roteiros')])
+        setForm({ nome: profile.nome || '', email: profile.email || '', bio: profile.bio || '' })
+        setRoteiros(userRoteiros)
+      } catch (error) { setStatus({ type: 'error', message: error.message }) } finally { setLoading(false) }
     }
-    return idade;
+    loadProfileData()
+  }, [])
+
+  async function handleSubmit(event) {
+    event.preventDefault()
+    const nextErrors = {}
+    if (!form.nome.trim()) nextErrors.nome = 'Informe seu nome.'
+    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) nextErrors.email = 'Informe um e-mail válido.'
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length) { setStatus({ type: 'error', message: 'Revise seus dados antes de salvar.' }); return }
+    setSaving(true); setStatus(null)
+    try { await updateUser(form); setStatus('Perfil atualizado com sucesso.') } catch (error) { setStatus({ type: 'error', message: error.message }) } finally { setSaving(false) }
   }
 
-  function handleContinuar(e) {
-    e.preventDefault();
+  if (loading) return <main className="container mx-auto px-4 py-16">Carregando perfil...</main>
 
-    if (!nome.trim() || !email.trim() || !senha || !dataNascimento) {
-      setStatus("✗ Preencha todos os campos.");
-      return;
-    }
-
-    if (!email.includes("@")) {
-      setStatus("✗ Email inválido.");
-      return;
-    }
-
-    if (senha.length < 6) {
-      setStatus("✗ A senha deve ter pelo menos 6 caracteres.");
-      return;
-    }
-
-    const idade = calcularIdade(dataNascimento);
-    if (idade < 18) {
-      setStatus("✗ Você precisa ter 18 anos ou mais para se registrar.");
-      return;
-    }
-
-    setStatus(null);
-    setStage("questionario");
-  }
-
-  function handleResposta(opcao) {
-    setRespostas((prev) => ({
-      ...prev,
-      [PERGUNTAS_PERSONALIDADE[currentPergunta].id]: opcao,
-    }));
-
-    if (currentPergunta < PERGUNTAS_PERSONALIDADE.length - 1) {
-      setCurrentPergunta(currentPergunta + 1);
-    }
-  }
-
-  async function handleFinalizarQuestionario() {
-    setStatus("Salvando perfil...");
-
-    try {
-      const response = await fetch("/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nome,
-          email,
-          password: senha,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setStatus("✓ Perfil criado com sucesso!");
-        setTimeout(() => navigate("/"), 1500);
-      } else {
-        setStatus(
-          `✗ Erro ao criar perfil: ${data.message || data.mensagem || data.erro || "Tente novamente."}`,
-        );
-      }
-    } catch {
-      setStatus("✗ Erro de conexão com o servidor.");
-    }
-  }
-
-  return (
-    <main className="container mx-auto px-4 py-16 lg:px-8">
-      {stage === "registro" ? (
-        <div className="mx-auto max-w-2xl">
-          <div className="space-y-6">
-            <div>
-              <p className="text-sm uppercase tracking-[0.24em] text-[#00B4D8]">
-                Crie sua conta
-              </p>
-              <h1 className="mt-3 text-4xl font-bold text-slate-900">
-                Bem-vindo ao Vambora!
-              </h1>
-              <p className="mt-3 max-w-2xl text-slate-600">
-                Crie seu perfil para começar a planejar suas viagens.
-                Responderemos algumas perguntas para personalizar suas
-                recomendações.
-              </p>
-            </div>
-
-            {status ? (
-              <p
-                className={`rounded-3xl p-4 text-sm font-medium ${status.includes("✓") ? "bg-[#E0F4FF] text-[#0077B6]" : "bg-red-50 text-red-900"}`}
-              >
-                {status}
-              </p>
-            ) : null}
-
-            <form className="card space-y-6 p-8" onSubmit={handleContinuar}>
-              <label className="space-y-2 text-sm font-medium text-slate-700">
-                Nome completo
-                <input
-                  className="w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-500"
-                  type="text"
-                  value={nome}
-                  onChange={(e) => setNome(e.target.value)}
-                  required
-                />
-              </label>
-              <label className="space-y-2 text-sm font-medium text-slate-700">
-                Email
-                <input
-                  className="w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-500"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </label>
-              <label className="space-y-2 text-sm font-medium text-slate-700">
-                Senha
-                <input
-                  className="w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-500"
-                  type="password"
-                  value={senha}
-                  onChange={(e) => setSenha(e.target.value)}
-                  minLength={6}
-                  required
-                />
-              </label>
-              <label className="space-y-2 text-sm font-medium text-slate-700">
-                Data de nascimento
-                <input
-                  className="w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-500"
-                  type="date"
-                  value={dataNascimento}
-                  onChange={(e) => setDataNascimento(e.target.value)}
-                  required
-                />
-              </label>
-              <button className="btn-primary w-full" type="submit">
-                Continuar
-              </button>
-            </form>
-          </div>
-        </div>
-      ) : (
-        <div className="mx-auto max-w-2xl">
-          <div className="space-y-6">
-            <div>
-              <p className="text-sm uppercase tracking-[0.24em] text-[#00B4D8]">
-                Questionário de personalidade
-              </p>
-              <h1 className="mt-3 text-4xl font-bold text-slate-900">
-                Conhecendo seu estilo de viagem
-              </h1>
-              <p className="mt-3 text-slate-600">
-                Progresso: {currentPergunta + 1} de{" "}
-                {PERGUNTAS_PERSONALIDADE.length}
-              </p>
-              <div className="mt-4 h-2 w-full rounded-full bg-slate-200">
-                <div
-                  className="h-full rounded-full bg-[#00B4D8] transition-all duration-300"
-                  style={{
-                    width: `${((currentPergunta + 1) / PERGUNTAS_PERSONALIDADE.length) * 100}%`,
-                  }}
-                />
-              </div>
-            </div>
-
-            {status ? (
-              <p
-                className={`rounded-3xl p-4 text-sm font-medium ${status.includes("✓") ? "bg-[#E0F4FF] text-[#0077B6]" : "bg-red-50 text-red-900"}`}
-              >
-                {status}
-              </p>
-            ) : null}
-
-            <div className="card space-y-6 p-8">
-              <h2 className="text-2xl font-semibold text-slate-900">
-                {PERGUNTAS_PERSONALIDADE[currentPergunta].pergunta}
-              </h2>
-              <div className="space-y-3">
-                {PERGUNTAS_PERSONALIDADE[currentPergunta].opcoes.map(
-                  (opcao) => (
-                    <button
-                      key={opcao}
-                      className={`w-full rounded-3xl border-2 p-4 text-left transition ${
-                        respostas[
-                          PERGUNTAS_PERSONALIDADE[currentPergunta].id
-                        ] === opcao
-                          ? "border-[#00B4D8] bg-[#E0F4FF]"
-                          : "border-slate-200 bg-white hover:border-[#00B4D8]/30"
-                      }`}
-                      onClick={() => handleResposta(opcao)}
-                    >
-                      <p className="font-medium text-slate-900">{opcao}</p>
-                    </button>
-                  ),
-                )}
-              </div>
-
-              {currentPergunta === PERGUNTAS_PERSONALIDADE.length - 1 &&
-              respostas[PERGUNTAS_PERSONALIDADE[currentPergunta].id] ? (
-                <button
-                  className="btn-primary w-full"
-                  onClick={handleFinalizarQuestionario}
-                >
-                  Finalizar e criar perfil
-                </button>
-              ) : null}
-            </div>
-          </div>
-        </div>
-      )}
-    </main>
-  );
+  return <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.1),_transparent_45%)] px-4 py-16 lg:px-8"><div className="container mx-auto max-w-5xl"><header className="flex flex-col gap-5 rounded-[36px] border border-slate-200 bg-white p-8 shadow-[0_20px_70px_rgba(15,23,42,0.08)] sm:flex-row sm:items-end sm:justify-between lg:p-10"><div><p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#2563EB]">Minha conta</p><h1 className="mt-4 text-4xl font-black text-slate-900">Olá, {user?.nome || form.nome}</h1><p className="mt-3 text-slate-600">Gerencie seus dados e acompanhe seus roteiros.</p></div><button className="btn-secondary border-red-200 text-red-700 hover:bg-red-50" onClick={logout}>Sair</button></header><div className="mt-6"><Feedback status={status} onDismiss={() => setStatus(null)} /></div><section className="mt-8 grid gap-8 lg:grid-cols-[0.8fr_1.2fr]"><form className="card grid gap-5 p-8" onSubmit={handleSubmit} noValidate><h2 className="text-xl font-bold text-slate-900">Dados pessoais</h2><label className="grid gap-2 text-sm font-medium text-slate-700">Nome<input className={`input-field ${errors.nome ? 'border-red-400' : ''}`} value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} maxLength={255} />{errors.nome ? <span className="text-xs font-normal text-red-700">{errors.nome}</span> : null}</label><label className="grid gap-2 text-sm font-medium text-slate-700">E-mail<input className={`input-field ${errors.email ? 'border-red-400' : ''}`} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />{errors.email ? <span className="text-xs font-normal text-red-700">{errors.email}</span> : null}</label><label className="grid gap-2 text-sm font-medium text-slate-700">Bio<textarea className="input-field" rows={4} maxLength={500} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} /><span className="text-right text-xs font-normal text-slate-500">{form.bio.length}/500</span></label><button className="btn-primary" disabled={saving}>{saving ? 'Salvando...' : 'Salvar alterações'}</button></form><div><div className="mb-4 flex items-end justify-between gap-3"><div><p className="text-sm font-semibold uppercase tracking-[0.25em] text-[#2563EB]">Histórico</p><h2 className="mt-2 text-2xl font-black text-slate-900">Seus roteiros</h2></div><Link className="text-sm font-semibold text-[#2563EB]" to="/roteiros">Ver todos</Link></div><div className="grid gap-4">{roteiros.map((roteiro) => <Link key={roteiro.id} to={`/roteiros/${roteiro.id}`} className="rounded-3xl border border-slate-200 bg-white p-5 transition hover:-translate-y-0.5 hover:border-blue-200"><div className="flex items-start justify-between gap-3"><div><h3 className="font-bold text-slate-900">{roteiro.titulo}</h3><p className="mt-1 text-sm text-slate-500">{roteiro.destino}</p></div><span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">{roteiro.dias?.length || 0} dias</span></div><div className="mt-4 flex justify-between text-sm text-slate-500"><span>{roteiro.publico ? 'Público' : 'Privado'}</span><span>{money(roteiro.orcamento)}</span></div></Link>)}{roteiros.length === 0 ? <div className="rounded-3xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">Seu histórico ainda está vazio.</div> : null}</div></div></section></div></main>
 }
