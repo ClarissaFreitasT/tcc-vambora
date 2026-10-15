@@ -140,6 +140,30 @@ export async function contarCurtidas(roteiroId) {
   });
 }
 
+export async function listarRoteirosCurtidosUsuario(usuarioId) {
+  const curtidas = await prisma.favorito.findMany({
+    where: {
+      usuarioId,
+      roteiro: { publico: true },
+    },
+    include: {
+      roteiro: {
+        include: {
+          usuario: {
+            select: { id: true, nome: true, username: true },
+          },
+          categorias: {
+            include: { categoria: true },
+          },
+        },
+      },
+    },
+    orderBy: { roteiro: { criadoEm: "desc" } },
+  });
+
+  return curtidas.map(({ roteiro }) => roteiro);
+}
+
 export async function obterRoteiroSalvo(usuarioId, roteiroId) {
   return prisma.salvoRoteiro.findUnique({
     where: {

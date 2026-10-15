@@ -31,13 +31,11 @@ router.delete(
   authMiddleware,
   roteiroController.removerCurtidaRoteiro,
 );
-router.get("/:id/curtidas", optionalAuth, async (req, res) => {
-  const { id } = req.params;
-  const totalCurtidas = await import("../models/roteiro.model.js").then((m) =>
-    m.contarCurtidas(id),
-  );
-  res.status(200).json({ roteiroId: id, totalCurtidas });
-});
+router.get(
+  "/:id/curtidas",
+  optionalAuth,
+  roteiroController.obterCurtidasRoteiro,
+);
 
 router.post(
   "/:id/salvar",

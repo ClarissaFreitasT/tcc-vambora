@@ -113,6 +113,7 @@ export default function RoteiroDetalhes() {
 
           if (likesResult.status === "fulfilled") {
             setTotalCurtidas(likesResult.value?.totalCurtidas || 0);
+            setCurtido(Boolean(likesResult.value?.curtiu));
           }
           if (reviewsResult.status === "fulfilled") {
             setAvaliacoes(reviewsResult.value?.avaliacoes || []);

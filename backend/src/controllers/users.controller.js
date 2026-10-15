@@ -1,4 +1,6 @@
 import * as UsuarioModel from "../models/users.model.js";
+import * as PublicacaoModel from "../models/publicacao.model.js";
+import * as RoteiroModel from "../models/roteiro.model.js";
 
 const PERSONALIDADES_VALIDAS = new Set([
   "AVENTUREIRA",
@@ -57,6 +59,15 @@ export async function obterMeuPerfil(req, res) {
   }
 
   return res.status(200).json(usuario);
+}
+
+export async function listarCurtidasDoUsuario(req, res) {
+  const [publicacoes, roteiros] = await Promise.all([
+    PublicacaoModel.listarPublicacoesCurtidasUsuario(req.user.id),
+    RoteiroModel.listarRoteirosCurtidosUsuario(req.user.id),
+  ]);
+
+  return res.status(200).json({ publicacoes, roteiros });
 }
 
 export async function atualizarMeuPerfil(req, res) {

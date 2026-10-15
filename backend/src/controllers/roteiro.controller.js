@@ -249,6 +249,30 @@ export async function removerCurtidaRoteiro(req, res) {
   });
 }
 
+export async function obterCurtidasRoteiro(req, res) {
+  const { id } = req.params;
+
+  if (!id || typeof id !== "string") {
+    return res.status(400).json({ erro: "ID inválido" });
+  }
+
+  const roteiro = await RoteiroModel.obterRoteiroPorId(id);
+  if (!roteiro || (!roteiro.publico && roteiro.usuarioId !== req.user?.id)) {
+    return res.status(404).json({ erro: "Roteiro não encontrado" });
+  }
+
+  const [totalCurtidas, curtida] = await Promise.all([
+    RoteiroModel.contarCurtidas(id),
+    req.user?.id ? RoteiroModel.obterCurtida(req.user.id, id) : null,
+  ]);
+
+  return res.status(200).json({
+    roteiroId: id,
+    totalCurtidas,
+    curtiu: Boolean(curtida),
+  });
+}
+
 export async function listarRoteirosSalvos(req, res) {
   const roteirosSalvos = await RoteiroModel.listarRoteirosSalvos(req.user.id);
 

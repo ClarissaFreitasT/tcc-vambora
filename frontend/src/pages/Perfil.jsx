@@ -14,8 +14,12 @@ function compactCount(value = 0) {
   return new Intl.NumberFormat("pt-BR", { notation: "compact" }).format(value);
 }
 
+function countLabel(value, singular, plural) {
+  return Number(value) === 1 ? singular : plural;
+}
+
 function formatDate(value) {
-  if (!value) return "No Vambora desde agora";
+  if (!value) return "agora";
   return new Intl.DateTimeFormat("pt-BR", {
     month: "long",
     year: "numeric",
@@ -28,7 +32,8 @@ function formatPersonality(value) {
   return normalized.charAt(0).toLocaleUpperCase("pt-BR") + normalized.slice(1);
 }
 
-function ProfileStat({ value, label, onClick }) {
+function ProfileStat({ value, singular, plural, onClick }) {
+  const label = countLabel(value, singular, plural);
   if (onClick) {
     return (
       <button
@@ -54,6 +59,110 @@ function ProfileStat({ value, label, onClick }) {
   );
 }
 
+function ProfileTabIcon({ name }) {
+  const paths = {
+    posts: (
+      <>
+        <rect x="3.5" y="3.5" width="7" height="7" rx="1" />
+        <rect x="13.5" y="3.5" width="7" height="7" rx="1" />
+        <rect x="3.5" y="13.5" width="7" height="7" rx="1" />
+        <rect x="13.5" y="13.5" width="7" height="7" rx="1" />
+      </>
+    ),
+    routes: (
+      <>
+        <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+        <circle cx="12" cy="10" r="2.5" />
+      </>
+    ),
+    saved: (
+      <path d="M6 4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5V21l-6-4-6 4V4.5Z" />
+    ),
+    likes: (
+      <path d="M20.8 8.8c0 5.2-8.8 10.2-8.8 10.2S3.2 14 3.2 8.8A4.8 4.8 0 0 1 12 6.1a4.8 4.8 0 0 1 8.8 2.7Z" />
+    ),
+  };
+
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-5 w-5"
+    >
+      {paths[name === "roteiros" ? "routes" : name]}
+    </svg>
+  );
+}
+
+function ProfileRouteCard({ roteiro }) {
+  return (
+    <Link
+      key={roteiro.id}
+      to={`/roteiros/${roteiro.id}`}
+      className="group relative flex aspect-square flex-col justify-end overflow-hidden rounded-xl border border-slate-200 bg-white p-4 transition hover:border-indigo-200 hover:shadow-md sm:rounded-2xl sm:p-5"
+    >
+      {roteiro.imagemUrl ? (
+        <img
+          src={roteiro.imagemUrl}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+          loading="lazy"
+        />
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-white to-cyan-50" />
+      )}
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/15 to-transparent" />
+      <span className="absolute left-3 top-3 rounded-full border border-white/70 bg-white/90 px-2.5 py-1 text-[10px] font-bold text-indigo-700">
+        Roteiro
+      </span>
+      <div className="relative text-white">
+        <p className="truncate text-xs font-semibold text-white/80">
+          {roteiro.destino}
+        </p>
+        <h2 className="mt-1 line-clamp-2 text-base font-extrabold leading-5 sm:text-lg">
+          {roteiro.titulo}
+        </h2>
+      </div>
+    </Link>
+  );
+}
+
+function ProfilePublicationCard({ post, onOpen }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(post)}
+      className="group relative flex aspect-square min-w-0 flex-col justify-between overflow-hidden rounded-md border border-slate-200/80 bg-white p-3 text-left transition hover:border-indigo-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5965F2] sm:rounded-lg sm:p-5"
+      aria-label={`Abrir publicação: ${post.texto}`}
+    >
+      <div className="flex w-full items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-wide text-indigo-700">
+        <span className="truncate">
+          {post.roteiro?.publico && post.roteiro?.titulo
+            ? "Roteiro compartilhado"
+            : "Publicação"}
+        </span>
+        <span
+          className="shrink-0 text-slate-500"
+          aria-label={`${post._count?.curtidas || 0} curtidas`}
+        >
+          ♥ {post._count?.curtidas || 0}
+        </span>
+      </div>
+      <p className="line-clamp-5 w-full whitespace-pre-wrap text-left text-sm font-semibold leading-5 text-[#171936] sm:text-base sm:leading-6">
+        {post.texto}
+      </p>
+      <time className="text-left text-[10px] text-slate-500">
+        {formatDate(post.criadoEm)}
+      </time>
+    </button>
+  );
+}
+
 export default function Perfil() {
   const { username: routeUsername, userId } = useParams();
   const location = useLocation();
@@ -62,6 +171,14 @@ export default function Perfil() {
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
   const [roteiros, setRoteiros] = useState([]);
+  const [savedRoutes, setSavedRoutes] = useState([]);
+  const [likedPosts, setLikedPosts] = useState([]);
+  const [likedRoutes, setLikedRoutes] = useState([]);
+  const [savedLoading, setSavedLoading] = useState(false);
+  const [savedError, setSavedError] = useState(null);
+  const [likesLoading, setLikesLoading] = useState(false);
+  const [likesError, setLikesError] = useState(null);
+  const [publicationModal, setPublicationModal] = useState(null);
   const [activeTab, setActiveTab] = useState("posts");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -89,6 +206,14 @@ export default function Perfil() {
   const loadProfile = useCallback(async () => {
     setLoading(true);
     setStatus(null);
+    setActiveTab("posts");
+    setSavedRoutes([]);
+    setSavedError(null);
+    setSavedLoading(isOwnProfile);
+    setLikedPosts([]);
+    setLikedRoutes([]);
+    setLikesError(null);
+    setLikesLoading(isOwnProfile);
     try {
       if (userId && !isAuthenticated) {
         navigate("/login", { state: { from: location.pathname } });
@@ -103,23 +228,45 @@ export default function Perfil() {
             )
           : await apiFetch(`/usuarios/${encodeURIComponent(userId)}`);
 
-      const [loadedPosts, loadedRoteiros, followers, followingUsers] =
-        await Promise.all([
-          apiFetch(`/publicacoes/usuario/${loadedProfile.id}`),
-          isOwnProfile
-            ? apiFetch("/roteiros")
-            : routeUsername
-              ? Promise.resolve(loadedProfile.roteiros || [])
-              : apiFetch("/roteiros/publicos").then((items) =>
-                  items.filter((item) => item.usuarioId === loadedProfile.id),
-                ),
-          userId && !isOwnProfile
-            ? apiFetch(`/usuarios/${loadedProfile.id}/seguidores`)
-            : Promise.resolve(null),
-          userId && !isOwnProfile
-            ? apiFetch(`/usuarios/${loadedProfile.id}/seguindo`)
-            : Promise.resolve(null),
-        ]);
+      const [
+        loadedPosts,
+        loadedRoteiros,
+        followers,
+        followingUsers,
+        saved,
+        likes,
+      ] = await Promise.all([
+        apiFetch(`/publicacoes/usuario/${loadedProfile.id}`),
+        isOwnProfile
+          ? apiFetch("/roteiros")
+          : routeUsername
+            ? Promise.resolve(loadedProfile.roteiros || [])
+            : apiFetch("/roteiros/publicos").then((items) =>
+                items.filter((item) => item.usuarioId === loadedProfile.id),
+              ),
+        userId && !isOwnProfile
+          ? apiFetch(`/usuarios/${loadedProfile.id}/seguidores`)
+          : Promise.resolve(null),
+        userId && !isOwnProfile
+          ? apiFetch(`/usuarios/${loadedProfile.id}/seguindo`)
+          : Promise.resolve(null),
+        isOwnProfile
+          ? apiFetch("/roteiros/salvos")
+              .then((entries) =>
+                entries.map((entry) => entry.roteiro).filter(Boolean),
+              )
+              .catch((error) => {
+                setSavedError(error.message);
+                return [];
+              })
+          : Promise.resolve([]),
+        isOwnProfile
+          ? apiFetch("/usuarios/me/curtidas").catch((error) => {
+              setLikesError(error.message);
+              return { publicacoes: [], roteiros: [] };
+            })
+          : Promise.resolve({ publicacoes: [], roteiros: [] }),
+      ]);
 
       const profileWithStats =
         userId && !isOwnProfile
@@ -133,7 +280,10 @@ export default function Perfil() {
 
       setProfile(profileWithStats);
       setPosts(loadedPosts);
-      setRoteiros(loadedRoteiros);
+      setRoteiros(loadedRoteiros.filter((roteiro) => roteiro.publico === true));
+      setSavedRoutes(saved);
+      setLikedPosts(likes.publicacoes || []);
+      setLikedRoutes(likes.roteiros || []);
       setFollowing(Boolean(profileWithStats.seguindo));
       setForm({
         nome: profileWithStats.nome || "",
@@ -146,6 +296,8 @@ export default function Perfil() {
       setProfile(null);
     } finally {
       setLoading(false);
+      setSavedLoading(false);
+      setLikesLoading(false);
     }
   }, [
     isAuthenticated,
@@ -161,9 +313,29 @@ export default function Perfil() {
   }, [loadProfile]);
 
   const activeContent = useMemo(
-    () => (activeTab === "posts" ? posts : roteiros),
-    [activeTab, posts, roteiros],
+    () =>
+      activeTab === "posts"
+        ? posts.map((item) => ({ type: "post", item }))
+        : activeTab === "saved"
+          ? savedRoutes.map((item) => ({ type: "route", item }))
+          : activeTab === "likes"
+            ? [
+                ...likedPosts.map((item) => ({ type: "post", item })),
+                ...likedRoutes.map((item) => ({ type: "route", item })),
+              ]
+            : roteiros.map((item) => ({ type: "route", item })),
+    [activeTab, posts, roteiros, savedRoutes, likedPosts, likedRoutes],
   );
+
+  async function openPublication(post) {
+    setPublicationModal({ loading: true, data: null, error: null });
+    try {
+      const data = await apiFetch(`/publicacoes/${post.id}`);
+      setPublicationModal({ loading: false, data, error: null });
+    } catch (error) {
+      setPublicationModal({ loading: false, data: null, error: error.message });
+    }
+  }
 
   async function saveProfile(event) {
     event.preventDefault();
@@ -281,11 +453,13 @@ export default function Perfil() {
   if (loading) {
     return (
       <main className="container mx-auto min-h-[70vh] px-4 py-16">
-        <div className="mx-auto max-w-4xl animate-pulse overflow-hidden rounded-[32px] border border-slate-200 bg-white">
-          <div className="h-48 bg-slate-200" />
-          <div className="space-y-4 p-8">
-            <div className="h-6 w-48 rounded bg-slate-200" />
-            <div className="h-4 w-72 rounded bg-slate-100" />
+        <div className="mx-auto max-w-5xl animate-pulse rounded-3xl border border-slate-200 bg-white p-6">
+          <div className="flex items-center gap-5">
+            <div className="h-20 w-20 rounded-full bg-slate-200 sm:h-24 sm:w-24" />
+            <div className="space-y-3">
+              <div className="h-6 w-48 rounded bg-slate-200" />
+              <div className="h-4 w-32 rounded bg-slate-100" />
+            </div>
           </div>
         </div>
       </main>
@@ -304,111 +478,97 @@ export default function Perfil() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f9fc] px-4 py-8 sm:px-6 lg:py-12">
+    <main className="min-h-screen bg-[#F6F8FC] px-4 py-6 sm:px-6 lg:py-10">
       <div className="mx-auto max-w-5xl">
-        <div className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_18px_55px_rgba(15,23,42,0.06)]">
-          <div className="relative h-36 overflow-hidden bg-[linear-gradient(120deg,#101B3D_0%,#2563EB_55%,#67E8F9_100%)] sm:h-52">
-            <div className="absolute -right-8 -top-28 h-72 w-72 rounded-full border-[36px] border-white/10" />
-            <div className="absolute -bottom-32 left-1/3 h-64 w-64 rounded-full bg-cyan-200/20 blur-2xl" />
-            <span className="absolute bottom-5 left-6 rounded-full border border-white/20 bg-slate-950/20 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.28em] text-white/85 backdrop-blur sm:left-10">
-              Vambora · perfil de viajante
-            </span>
-          </div>
-
-          <section className="relative px-5 pb-7 sm:px-10">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <UserAvatar
-                user={profile}
-                alt={`Foto de ${profile.nome}`}
-                className="-mt-14 h-28 w-28 rounded-full border-4 border-white bg-white object-cover shadow-md sm:-mt-[74px] sm:h-36 sm:w-36"
-              />
-              <div className="flex flex-wrap gap-2 sm:pb-2">
-                {isOwnProfile ? (
+        <section className="pb-7 sm:pb-8">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-8">
+            <UserAvatar
+              user={profile}
+              alt={`Foto de ${profile.nome}`}
+              className="h-28 w-28 shrink-0 rounded-full object-cover ring-2 ring-white sm:h-32 sm:w-32"
+            />
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-4">
+                <div className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-3">
+                  <div className="min-w-0">
+                    <h1 className="truncate text-2xl font-black tracking-tight text-[#171936] sm:text-3xl">
+                      {profile.nome}
+                    </h1>
+                    <p className="mt-0.5 text-sm text-slate-500">
+                      @{profile.username || "viajante"}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-x-5 gap-y-2">
+                    <ProfileStat
+                      value={roteiros.length}
+                      singular="roteiro"
+                      plural="roteiros"
+                    />
+                    <ProfileStat
+                      value={profile.totalSeguidores ?? 0}
+                      singular="seguidor"
+                      plural="seguidores"
+                      onClick={() => openRelationshipList("seguidores")}
+                    />
+                    <ProfileStat
+                      value={profile.totalSeguindo ?? 0}
+                      singular="seguido"
+                      plural="seguidos"
+                      onClick={() => openRelationshipList("seguindo")}
+                    />
+                  </div>
+                </div>
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  {isOwnProfile ? (
+                    <button
+                      type="button"
+                      onClick={() => setEditOpen(true)}
+                      className="rounded-full border border-slate-300 bg-white px-5 py-2 text-sm font-bold text-slate-800 transition hover:bg-slate-50"
+                    >
+                      Editar perfil
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={toggleFollow}
+                      disabled={followBusy}
+                      className={`rounded-full px-5 py-2 text-sm font-bold transition disabled:opacity-60 ${following ? "border border-slate-300 bg-white text-slate-800 hover:border-red-200 hover:text-red-600" : "bg-[#5965F2] text-white hover:bg-indigo-700"}`}
+                    >
+                      {followBusy
+                        ? "Aguarde…"
+                        : following
+                          ? "Deixar de seguir"
+                          : "Seguir"}
+                    </button>
+                  )}
                   <button
                     type="button"
-                    onClick={() => setEditOpen(true)}
-                    className="rounded-full border border-slate-300 bg-white px-5 py-2.5 text-sm font-bold text-slate-800 transition hover:bg-slate-50"
+                    onClick={shareProfile}
+                    className="grid h-9 w-9 place-items-center rounded-full border border-slate-300 text-lg text-slate-700 transition hover:bg-slate-50"
+                    aria-label="Compartilhar perfil"
+                    title="Compartilhar perfil"
                   >
-                    Editar perfil
+                    ↗
                   </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={toggleFollow}
-                    disabled={followBusy}
-                    className={`rounded-full px-6 py-2.5 text-sm font-bold transition disabled:opacity-60 ${following ? "border border-slate-300 bg-white text-slate-800 hover:border-red-200 hover:text-red-600" : "bg-slate-950 text-white hover:bg-slate-800"}`}
-                  >
-                    {followBusy
-                      ? "Aguarde…"
-                      : following
-                        ? "Seguindo"
-                        : "Seguir"}
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={shareProfile}
-                  className="grid h-10 w-10 place-items-center rounded-full border border-slate-300 text-lg text-slate-700 transition hover:bg-slate-50"
-                  aria-label="Compartilhar perfil"
-                >
-                  ↗
-                </button>
+                </div>
               </div>
-            </div>
 
-            <div className="mt-4">
-              <h1 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
-                {profile.nome}
-              </h1>
-              <p className="mt-1 text-sm text-slate-500">
-                @{profile.username || "viajante"}
-              </p>
-              <p className="mt-4 max-w-2xl whitespace-pre-wrap text-sm leading-6 text-slate-700">
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-700">
                 {profile.bio ||
                   "Ainda não adicionou uma bio. Cada viagem é uma nova história."}
               </p>
-
-              <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-500">
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
                 {profile.personalidade ? (
                   <span className="inline-flex items-center gap-1.5">
                     <span aria-hidden="true">✦</span>
                     {formatPersonality(profile.personalidade)}
                   </span>
                 ) : null}
-                <span className="inline-flex items-center gap-1.5">
-                  <span aria-hidden="true">◷</span>No Vambora desde{" "}
-                  {formatDate(profile.criadoEm)}
-                </span>
+                <span>No Vambora desde {formatDate(profile.criadoEm)}</span>
               </div>
-
-              <div className="mt-5 flex flex-wrap gap-x-6 gap-y-3 border-t border-slate-100 pt-4">
-                <ProfileStat
-                  value={profile.totalPublicacoes ?? posts.length}
-                  label="publicações"
-                />
-                <ProfileStat
-                  value={profile.totalSeguidores ?? 0}
-                  label="seguidores"
-                  onClick={() => openRelationshipList("seguidores")}
-                />
-                <ProfileStat
-                  value={profile.totalSeguindo ?? 0}
-                  label="seguindo"
-                  onClick={() => openRelationshipList("seguindo")}
-                />
-                <ProfileStat value={roteiros.length} label="roteiros" />
-              </div>
-              {isOwnProfile ? (
-                <Link
-                  to="/roteiros/salvos"
-                  className="mt-5 inline-flex rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100"
-                >
-                  🔖 Abrir minha biblioteca de roteiros salvos
-                </Link>
-              ) : null}
             </div>
-          </section>
-        </div>
+          </div>
+        </section>
 
         {status ? (
           <div className="mt-4">
@@ -416,131 +576,250 @@ export default function Perfil() {
           </div>
         ) : null}
 
-        <section className="mt-7 overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_12px_35px_rgba(15,23,42,0.04)]">
+        <section className="relative mt-1">
           <div
             role="tablist"
             aria-label="Conteúdo do perfil"
-            className="grid grid-cols-2 border-b border-slate-200"
+            className={`grid border-b border-slate-200/90 ${isOwnProfile ? "grid-cols-4" : "grid-cols-2"}`}
           >
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === "posts"}
-              onClick={() => setActiveTab("posts")}
-              className={`relative flex items-center justify-center gap-2 px-4 py-4 text-sm transition hover:bg-slate-50 ${activeTab === "posts" ? "font-extrabold text-slate-950" : "font-semibold text-slate-500"}`}
-            >
-              <span aria-hidden="true">▦</span>Publicações
-              {activeTab === "posts" ? (
-                <span className="absolute inset-x-10 bottom-0 h-0.5 rounded bg-blue-600" />
-              ) : null}
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === "roteiros"}
-              onClick={() => setActiveTab("roteiros")}
-              className={`relative flex items-center justify-center gap-2 px-4 py-4 text-sm transition hover:bg-slate-50 ${activeTab === "roteiros" ? "font-extrabold text-slate-950" : "font-semibold text-slate-500"}`}
-            >
-              <span aria-hidden="true">⌖</span>Roteiros
-              {activeTab === "roteiros" ? (
-                <span className="absolute inset-x-10 bottom-0 h-0.5 rounded bg-blue-600" />
-              ) : null}
-            </button>
+            {[
+              { id: "posts", label: "Publicações" },
+              { id: "roteiros", label: "Roteiros" },
+              ...(isOwnProfile
+                ? [
+                    { id: "saved", label: "Salvos" },
+                    { id: "likes", label: "Curtidas" },
+                  ]
+                : []),
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-label={tab.label}
+                aria-selected={activeTab === tab.id}
+                title={tab.label}
+                onClick={() => setActiveTab(tab.id)}
+                className={`group relative flex min-h-14 items-center justify-center text-[#5965F2] transition hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#5965F2] ${activeTab === tab.id ? "" : "text-slate-400"}`}
+              >
+                <ProfileTabIcon name={tab.id} />
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute top-[calc(100%+0.4rem)] z-10 hidden whitespace-nowrap rounded-md bg-[#171936] px-2 py-1 text-xs font-medium text-white shadow-md group-hover:block group-focus-visible:block"
+                >
+                  {tab.label}
+                </span>
+                {activeTab === tab.id ? (
+                  <span className="absolute inset-x-1/4 bottom-0 h-0.5 rounded-full bg-[#5965F2]" />
+                ) : null}
+              </button>
+            ))}
           </div>
 
-          {activeContent.length ? (
-            activeTab === "posts" ? (
+          {activeTab === "saved" && savedError ? (
+            <div
+              className="m-4 rounded-2xl bg-red-50 p-4 text-sm text-red-700"
+              role="alert"
+            >
+              Não foi possível carregar seus roteiros salvos: {savedError}
+            </div>
+          ) : null}
+          {activeTab === "saved" && savedLoading ? (
+            <p
+              className="px-6 py-12 text-center text-sm text-slate-500"
+              role="status"
+            >
+              Carregando seus roteiros salvos…
+            </p>
+          ) : null}
+
+          {activeTab === "likes" && likesError ? (
+            <div
+              className="m-4 rounded-2xl bg-red-50 p-4 text-sm text-red-700"
+              role="alert"
+            >
+              Não foi possível carregar suas curtidas: {likesError}
+            </div>
+          ) : null}
+          {activeTab === "likes" && likesLoading ? (
+            <p
+              className="px-6 py-12 text-center text-sm text-slate-500"
+              role="status"
+            >
+              Carregando suas curtidas…
+            </p>
+          ) : null}
+
+          {!(activeTab === "saved" && (savedLoading || savedError)) &&
+            !(activeTab === "likes" && (likesLoading || likesError)) &&
+            (activeContent.length ? (
               <div className="grid grid-cols-2 gap-1 p-1 sm:grid-cols-3 sm:gap-2 sm:p-2">
-                {posts.map((post, index) => (
-                  <article
-                    key={post.id}
-                    className={`group relative flex aspect-square flex-col justify-between overflow-hidden rounded-xl p-4 text-white sm:rounded-2xl sm:p-5 ${["bg-gradient-to-br from-blue-700 to-cyan-500", "bg-gradient-to-br from-indigo-800 to-blue-500", "bg-gradient-to-br from-slate-800 to-sky-600"][index % 3]}`}
-                  >
-                    <div className="absolute inset-0 opacity-0 transition group-hover:opacity-100 group-hover:bg-slate-950/10" />
-                    <div className="relative flex items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-white/75">
-                      <span>
-                        {post.roteiro?.publico && post.roteiro?.titulo
-                          ? "Roteiro"
-                          : "Diário de viagem"}
-                      </span>
-                      <span
-                        aria-label={`${post._count?.curtidas || 0} curtidas`}
-                      >
-                        ♥ {post._count?.curtidas || 0}
-                      </span>
-                    </div>
-                    <p className="relative line-clamp-5 whitespace-pre-wrap text-sm font-semibold leading-6 sm:text-base">
-                      {post.texto}
-                    </p>
-                    <time className="relative text-[10px] text-white/70">
-                      {formatDate(post.criadoEm)}
-                    </time>
-                  </article>
-                ))}
+                {activeContent.map(({ type, item }) =>
+                  type === "post" ? (
+                    <ProfilePublicationCard
+                      key={`post-${item.id}`}
+                      post={item}
+                      onOpen={openPublication}
+                    />
+                  ) : (
+                    <ProfileRouteCard key={`route-${item.id}`} roteiro={item} />
+                  ),
+                )}
               </div>
             ) : (
-              <div className="grid gap-4 p-4 sm:grid-cols-2 sm:p-6">
-                {roteiros.map((roteiro) => (
+              <div className="px-5 py-12 text-center sm:px-6 sm:py-14">
+                <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-indigo-50 text-indigo-600">
+                  <ProfileTabIcon
+                    name={
+                      activeTab === "posts"
+                        ? "posts"
+                        : activeTab === "likes"
+                          ? "likes"
+                          : "routes"
+                    }
+                  />
+                </span>
+                <h2 className="mt-4 text-lg font-extrabold text-[#171936]">
+                  {activeTab === "posts"
+                    ? "Ainda sem publicações"
+                    : activeTab === "saved"
+                      ? "Nenhum roteiro salvo por enquanto"
+                      : activeTab === "likes"
+                        ? "Você ainda não curtiu nenhum conteúdo"
+                        : "Ainda sem roteiros públicos"}
+                </h2>
+                <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">
+                  {activeTab === "posts"
+                    ? isOwnProfile
+                      ? "Compartilhe uma dica de viagem para começar sua coleção de publicações."
+                      : "Este viajante ainda não compartilhou publicações por aqui."
+                    : activeTab === "saved"
+                      ? "Salve roteiros públicos interessantes para encontrá-los facilmente aqui."
+                      : activeTab === "likes"
+                        ? "Publicações e roteiros que você curtir aparecerão nesta coleção privada."
+                        : isOwnProfile
+                          ? "Crie e compartilhe seu primeiro roteiro para inspirar outros viajantes."
+                          : "Este viajante ainda não compartilhou roteiros públicos."}
+                </p>
+                {isOwnProfile &&
+                activeTab !== "saved" &&
+                activeTab !== "likes" ? (
                   <Link
-                    key={roteiro.id}
-                    to={`/roteiros/${roteiro.id}`}
-                    className="group rounded-2xl border border-slate-200 p-5 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg"
+                    to={
+                      activeTab === "posts" ? "/comunidade" : "/roteiros/novo"
+                    }
+                    className="mt-5 inline-flex rounded-full bg-[#5965F2] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-indigo-700"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <span className="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-blue-700">
-                        {roteiro.publico === false
-                          ? "Privado"
-                          : "Compartilhado"}
-                      </span>
-                      <span
-                        aria-hidden="true"
-                        className="text-blue-600 transition group-hover:translate-x-1"
-                      >
-                        ↗
-                      </span>
-                    </div>
-                    <h2 className="mt-4 text-lg font-black text-slate-950 group-hover:text-blue-700">
-                      {roteiro.titulo}
-                    </h2>
-                    <p className="mt-1 text-sm font-semibold text-slate-500">
-                      {roteiro.destino}
-                    </p>
-                    {roteiro.descricao ? (
-                      <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-600">
-                        {roteiro.descricao}
-                      </p>
-                    ) : null}
+                    {activeTab === "posts"
+                      ? "Criar publicação"
+                      : "Criar roteiro"}
                   </Link>
-                ))}
+                ) : null}
+                {activeTab === "saved" ? (
+                  <Link
+                    to="/roteiros/publicos"
+                    className="mt-5 inline-flex rounded-full border border-indigo-200 bg-indigo-50 px-5 py-2.5 text-sm font-bold text-indigo-700 transition hover:bg-indigo-100"
+                  >
+                    Explorar roteiros
+                  </Link>
+                ) : null}
               </div>
-            )
-          ) : (
-            <div className="px-6 py-14 text-center">
-              <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-blue-50 text-2xl text-blue-600">
-                {activeTab === "posts" ? "✦" : "⌖"}
-              </span>
-              <h2 className="mt-4 text-lg font-extrabold text-slate-900">
-                {activeTab === "posts"
-                  ? "Ainda sem publicações"
-                  : "Ainda sem roteiros"}
-              </h2>
-              <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">
-                {isOwnProfile
-                  ? "Compartilhe uma dica de viagem ou publique um roteiro para preencher seu perfil."
-                  : "Este viajante ainda não compartilhou conteúdo por aqui."}
-              </p>
-              {isOwnProfile ? (
-                <Link
-                  to={activeTab === "posts" ? "/comunidade" : "/roteiros/novo"}
-                  className="mt-5 inline-flex rounded-full bg-blue-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700"
-                >
-                  {activeTab === "posts" ? "Criar publicação" : "Criar roteiro"}
-                </Link>
-              ) : null}
-            </div>
-          )}
+            ))}
         </section>
       </div>
+
+      {publicationModal ? (
+        <div
+          className="fixed inset-0 z-40 grid place-items-center bg-slate-950/55 p-4 backdrop-blur-sm"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setPublicationModal(null);
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="profile-publication-title"
+            className="w-full max-w-xl overflow-hidden rounded-3xl bg-white shadow-2xl"
+          >
+            <header className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <h2
+                id="profile-publication-title"
+                className="text-lg font-extrabold text-[#171936]"
+              >
+                Publicação
+              </h2>
+              <button
+                type="button"
+                onClick={() => setPublicationModal(null)}
+                className="grid h-9 w-9 place-items-center rounded-full bg-slate-100 text-xl text-slate-600 hover:bg-slate-200"
+                aria-label="Fechar publicação"
+              >
+                ×
+              </button>
+            </header>
+            <div className="p-5 sm:p-7">
+              {publicationModal.loading ? (
+                <p
+                  className="py-8 text-center text-sm text-slate-500"
+                  role="status"
+                >
+                  Carregando publicação…
+                </p>
+              ) : null}
+              {publicationModal.error ? (
+                <p
+                  className="rounded-2xl bg-red-50 p-4 text-sm text-red-700"
+                  role="alert"
+                >
+                  Não foi possível carregar esta publicação:{" "}
+                  {publicationModal.error}
+                </p>
+              ) : null}
+              {publicationModal.data ? (
+                <>
+                  <div className="flex items-center gap-3">
+                    <UserAvatar
+                      user={publicationModal.data.usuario || profile}
+                      alt=""
+                      className="h-11 w-11 rounded-full object-cover"
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-slate-900">
+                        {publicationModal.data.usuario?.nome || profile.nome}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {formatDate(publicationModal.data.criadoEm)}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="mt-5 whitespace-pre-wrap text-sm leading-7 text-slate-700">
+                    {publicationModal.data.texto}
+                  </p>
+                  <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4 text-xs text-slate-500">
+                    <span>
+                      ♥ {publicationModal.data._count?.curtidas || 0} curtidas
+                    </span>
+                    <span>
+                      {publicationModal.data._count?.comentarios || 0}{" "}
+                      comentários
+                    </span>
+                  </div>
+                  {publicationModal.data.roteiro?.publico ? (
+                    <Link
+                      to={`/roteiros/${publicationModal.data.roteiro.id}`}
+                      onClick={() => setPublicationModal(null)}
+                      className="mt-5 inline-flex rounded-full bg-indigo-50 px-4 py-2 text-sm font-bold text-indigo-700 hover:bg-indigo-100"
+                    >
+                      Ver roteiro: {publicationModal.data.roteiro.titulo}
+                    </Link>
+                  ) : null}
+                </>
+              ) : null}
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       {relationshipList ? (
         <div
@@ -564,7 +843,7 @@ export default function Perfil() {
                 >
                   {relationshipList.type === "seguidores"
                     ? "Seguidores"
-                    : "Pessoas que segue"}
+                    : "Seguidos"}
                 </h2>
                 <p className="mt-0.5 text-xs text-slate-500">{profile.nome}</p>
               </div>

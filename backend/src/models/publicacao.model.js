@@ -51,6 +51,36 @@ export async function listarPublicacoesUsuario(usuarioId) {
   });
 }
 
+export async function listarPublicacoesCurtidasUsuario(usuarioId) {
+  const curtidas = await prisma.curtidaPublicacao.findMany({
+    where: { usuarioId },
+    include: {
+      publicacao: {
+        include: {
+          usuario: {
+            select: { id: true, nome: true, username: true, fotoUrl: true },
+          },
+          roteiro: {
+            select: { id: true, titulo: true, publico: true },
+          },
+          _count: {
+            select: { curtidas: true, comentarios: true },
+          },
+        },
+      },
+    },
+    orderBy: { publicacao: { criadoEm: "desc" } },
+  });
+
+  return curtidas
+    .map(({ publicacao }) => ({
+      ...publicacao,
+      roteiro: publicacao.roteiro?.publico ? publicacao.roteiro : null,
+      curtiu: true,
+    }))
+    .filter((publicacao) => publicacao.usuarioId);
+}
+
 export async function listarFeedUsuario(usuarioId) {
   return prisma.publicacao.findMany({
     where: {

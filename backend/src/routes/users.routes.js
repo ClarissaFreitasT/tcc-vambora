@@ -4,6 +4,7 @@ import {
   listarUsuarios,
   listarComunidade,
   obterMeuPerfil,
+  listarCurtidasDoUsuario,
   atualizarMeuPerfil,
   obterUsuario,
   obterUsuarioPorUsername,
@@ -22,6 +23,7 @@ const router = Router();
 router.get("/", optionalAuth, listarUsuarios);
 router.get("/comunidade", authMiddleware, listarComunidade);
 router.get("/me", authMiddleware, obterMeuPerfil);
+router.get("/me/curtidas", authMiddleware, listarCurtidasDoUsuario);
 router.patch("/me", authMiddleware, atualizarMeuPerfil);
 router.get("/perfil/:username", optionalAuth, obterUsuarioPorUsername);
 router.get("/username/:username", optionalAuth, obterUsuarioPorUsername);
