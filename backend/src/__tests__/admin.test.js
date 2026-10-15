@@ -35,27 +35,61 @@ describe("Autorização de administrador", () => {
     mockVerify.mockImplementation((token) => ({ id: token }));
   });
 
-  it("retorna 401 em GET /usuarios sem token", async () => {
+  it("retorna perfis públicos em GET /usuarios sem token", async () => {
+    mockFindMany.mockResolvedValue([
+      {
+        id: "user-1",
+        nome: "Viajante",
+        username: "viajante",
+        _count: { seguidores: 2, publicacoes: 3 },
+      },
+    ]);
+
     const response = await request(app).get("/usuarios");
 
-    expect(response.status).toBe(401);
-    expect(mockFindMany).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual([
+      {
+        id: "user-1",
+        nome: "Viajante",
+        username: "viajante",
+        seguindo: false,
+        totalSeguidores: 2,
+        totalPublicacoes: 3,
+      },
+    ]);
+    expect(mockFindMany.mock.calls[0][0].select).not.toHaveProperty("email");
+    expect(mockFindMany.mock.calls[0][0].select).not.toHaveProperty("role");
   });
 
-  it("retorna 403 em GET /usuarios para usuário comum", async () => {
+  it("retorna perfis públicos para usuário comum", async () => {
     mockFindUnique.mockResolvedValue({
       id: "user-token",
       nome: "Usuário comum",
       email: "user@example.com",
       role: "USER",
     });
+    mockFindMany.mockResolvedValue([
+      {
+        id: "user-2",
+        nome: "Outro viajante",
+        username: "outro",
+        _count: { seguidores: 1, publicacoes: 0 },
+        seguidores: [],
+      },
+    ]);
 
     const response = await request(app)
       .get("/usuarios")
       .set("Authorization", "Bearer user-token");
 
-    expect(response.status).toBe(403);
-    expect(mockFindMany).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    expect(mockFindMany).toHaveBeenCalledTimes(1);
+    expect(mockFindMany.mock.calls[0][0].where).toEqual({
+      id: { not: "user-token" },
+    });
+    expect(mockFindMany.mock.calls[0][0].select).not.toHaveProperty("email");
+    expect(mockFindMany.mock.calls[0][0].select).not.toHaveProperty("role");
   });
 
   it("retorna 200 para admin sem incluir senhaHash", async () => {

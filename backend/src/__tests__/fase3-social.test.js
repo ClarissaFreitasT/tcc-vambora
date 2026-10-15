@@ -8,6 +8,7 @@ const mockObterCurtidaPublicacao = jest.fn();
 const mockContarCurtidasPublicacao = jest.fn();
 const mockSeguirUsuario = jest.fn();
 const mockObterUsuarioPorId = jest.fn();
+const mockListarTimelinePublica = jest.fn();
 
 jest.unstable_mockModule("../models/publicacao.model.js", () => ({
   criarPublicacao: mockCriarPublicacao,
@@ -16,6 +17,7 @@ jest.unstable_mockModule("../models/publicacao.model.js", () => ({
   criarCurtidaPublicacao: mockCurtirPublicacao,
   contarCurtidasPublicacao: mockContarCurtidasPublicacao,
   criarComentarioPublicacao: mockAdicionarComentario,
+  listarTimelinePublica: mockListarTimelinePublica,
 }));
 
 jest.unstable_mockModule("../models/users.model.js", () => ({
@@ -30,8 +32,12 @@ jest.unstable_mockModule("../models/users.model.js", () => ({
   listarSeguindo: jest.fn(),
 }));
 
-const { criarPublicacao, curtirPublicacao, adicionarComentarioPublicacao } =
-  await import("../controllers/publicacao.controller.js");
+const {
+  criarPublicacao,
+  curtirPublicacao,
+  adicionarComentarioPublicacao,
+  listarTimelinePublica,
+} = await import("../controllers/publicacao.controller.js");
 const { seguirUsuario } = await import("../controllers/users.controller.js");
 
 describe("Fase 3 - comunidade social", () => {
@@ -68,6 +74,26 @@ describe("Fase 3 - comunidade social", () => {
       "Viagem incrível",
       null,
     );
+  });
+
+  it("lista a timeline pública e informa se o usuário autenticado curtiu", async () => {
+    mockListarTimelinePublica.mockResolvedValue([
+      {
+        id: "p1",
+        texto: "Roteiro incrível",
+        curtidas: [{ id: "like-1" }],
+      },
+      { id: "p2", texto: "Dica de viagem", curtidas: [] },
+    ]);
+
+    await listarTimelinePublica({ user: { id: "u1" } }, res);
+
+    expect(mockListarTimelinePublica).toHaveBeenCalledWith("u1");
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith([
+      { id: "p1", texto: "Roteiro incrível", curtiu: true },
+      { id: "p2", texto: "Dica de viagem", curtiu: false },
+    ]);
   });
 
   it("curte uma publicação pública", async () => {

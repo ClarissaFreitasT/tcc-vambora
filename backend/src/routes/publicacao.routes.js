@@ -8,6 +8,11 @@ const router = Router();
 
 router.get("/feed", authMiddleware, publicacaoController.listarFeedUsuario);
 router.get(
+  "/timeline",
+  optionalAuth,
+  publicacaoController.listarTimelinePublica,
+);
+router.get(
   "/usuario/:usuarioId",
   optionalAuth,
   publicacaoController.listarPublicacoesUsuario,

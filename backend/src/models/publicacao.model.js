@@ -15,7 +15,7 @@ export async function obterPublicacaoPorId(id) {
     where: { id },
     include: {
       usuario: {
-        select: { id: true, nome: true, username: true },
+        select: { id: true, nome: true, username: true, fotoUrl: true },
       },
       roteiro: {
         select: { id: true, titulo: true, publico: true },
@@ -35,7 +35,7 @@ export async function listarPublicacoesUsuario(usuarioId) {
     where: { usuarioId },
     include: {
       usuario: {
-        select: { id: true, nome: true, username: true },
+        select: { id: true, nome: true, username: true, fotoUrl: true },
       },
       roteiro: {
         select: { id: true, titulo: true, publico: true },
@@ -61,7 +61,7 @@ export async function listarFeedUsuario(usuarioId) {
     },
     include: {
       usuario: {
-        select: { id: true, nome: true, username: true },
+        select: { id: true, nome: true, username: true, fotoUrl: true },
       },
       roteiro: {
         select: { id: true, titulo: true, publico: true },
@@ -72,6 +72,38 @@ export async function listarFeedUsuario(usuarioId) {
           comentarios: true,
         },
       },
+      curtidas: {
+        where: { usuarioId },
+        select: { id: true },
+      },
+    },
+    orderBy: { criadoEm: "desc" },
+  });
+}
+
+export async function listarTimelinePublica(usuarioId) {
+  return prisma.publicacao.findMany({
+    include: {
+      usuario: {
+        select: { id: true, nome: true, username: true, fotoUrl: true },
+      },
+      roteiro: {
+        select: { id: true, titulo: true, publico: true },
+      },
+      _count: {
+        select: {
+          curtidas: true,
+          comentarios: true,
+        },
+      },
+      ...(usuarioId
+        ? {
+            curtidas: {
+              where: { usuarioId },
+              select: { id: true },
+            },
+          }
+        : {}),
     },
     orderBy: { criadoEm: "desc" },
   });
@@ -135,7 +167,7 @@ export async function listarComentariosPublicacao(publicacaoId) {
     where: { publicacaoId },
     include: {
       usuario: {
-        select: { id: true, nome: true, username: true },
+        select: { id: true, nome: true, username: true, fotoUrl: true },
       },
       comentarioPai: true,
       respostas: true,
@@ -149,7 +181,7 @@ export async function obterComentarioPorId(id) {
     where: { id },
     include: {
       usuario: {
-        select: { id: true, nome: true, username: true },
+        select: { id: true, nome: true, username: true, fotoUrl: true },
       },
       publicacao: {
         select: { id: true, texto: true },

@@ -1,42 +1,48 @@
-describe('Perfil front-end integration', () => {
-  async function postUsuario(body) {
-    const frontendUrl = 'http://localhost:5173/usuarios'
-    const backendUrl = 'http://localhost:3000/usuarios'
+import { describe, expect, it } from "@jest/globals";
+import {
+  buildProfileUpdatePayload,
+  validateProfilePhotoUrl,
+} from "../utils/profile.js";
 
-    try {
-      return await fetch(frontendUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      })
-    } catch (error) {
-      return await fetch(backendUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      })
-    }
-  }
+describe("profile form payload", () => {
+  it("trims editable fields and omits a blank username", () => {
+    expect(
+      buildProfileUpdatePayload({
+        nome: "  Ana Costa ",
+        username: "   ",
+        bio: "  Viajante  ",
+        fotoUrl: " https://images.example.com/ana.jpg ",
+      }),
+    ).toEqual({
+      nome: "Ana Costa",
+      bio: "Viajante",
+      fotoUrl: "https://images.example.com/ana.jpg",
+    });
+  });
 
-  it('should create a user through the frontend proxy or backend', async () => {
-    const body = {
-      nome: `Teste Front ${Date.now()}`,
-      email: `teste_front_${Date.now()}@example.com`,
-      senhaHash: 'senha123',
-      fotoUrl: 'https://ui-avatars.com/api/?name=Teste',
-      bio: 'Teste',
-      personalidade: 'AVENTUREIRA',
-      orcamentoPerfil: 2500
-    }
+  it("keeps a configured username and clears an empty photo URL", () => {
+    expect(
+      buildProfileUpdatePayload({
+        nome: "Ana",
+        username: " ana.costa ",
+        bio: "",
+        fotoUrl: "  ",
+      }),
+    ).toEqual({
+      nome: "Ana",
+      username: "ana.costa",
+      bio: "",
+      fotoUrl: null,
+    });
+  });
 
-    const response = await postUsuario(body)
-
-    expect(response.status).toBeGreaterThanOrEqual(200)
-    expect(response.status).toBeLessThan(500)
-
-    const data = await response.json()
-    expect(data).toHaveProperty('mensagem', 'Usuário criado com sucesso')
-    expect(data).toHaveProperty('usuario')
-    expect(data.usuario).toHaveProperty('email', body.email)
-  })
-})
+  it("validates photo links before the profile update request", () => {
+    expect(
+      validateProfilePhotoUrl("https://example.com/avatar.webp"),
+    ).toBeNull();
+    expect(validateProfilePhotoUrl("file:///photo.jpg")).toContain("http://");
+    expect(
+      validateProfilePhotoUrl(`https://e.test/${"x".repeat(250)}`),
+    ).toContain("255");
+  });
+});

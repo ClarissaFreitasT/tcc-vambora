@@ -63,6 +63,37 @@ export async function obterTodosUsuarios() {
   return prisma.usuario.findMany({ select: camposUsuarioAdmin });
 }
 
+export async function listarUsuariosComunidade(usuarioId) {
+  const usuarios = await prisma.usuario.findMany({
+    where: usuarioId ? { id: { not: usuarioId } } : {},
+    select: {
+      ...camposUsuarioPublicos,
+      ...(usuarioId
+        ? {
+            seguidores: {
+              where: { seguidorId: usuarioId },
+              select: { id: true },
+            },
+          }
+        : {}),
+      _count: {
+        select: {
+          seguidores: true,
+          publicacoes: true,
+        },
+      },
+    },
+    orderBy: { nome: "asc" },
+  });
+
+  return usuarios.map(({ seguidores = [], _count, ...usuario }) => ({
+    ...usuario,
+    seguindo: seguidores.length > 0,
+    totalSeguidores: _count.seguidores,
+    totalPublicacoes: _count.publicacoes,
+  }));
+}
+
 // Busca um usuário pelo seu identificador único.
 export async function obterUsuarioPorId(id) {
   return prisma.usuario.findUnique({
@@ -71,15 +102,49 @@ export async function obterUsuarioPorId(id) {
   });
 }
 
+export async function obterPerfilPorId(id, viewerId = null) {
+  const usuario = await prisma.usuario.findUnique({
+    where: { id },
+    select: {
+      ...camposUsuarioPublicos,
+      ...(viewerId
+        ? {
+            seguidores: {
+              where: { seguidorId: viewerId },
+              select: { id: true },
+            },
+          }
+        : {}),
+      _count: {
+        select: {
+          seguidores: true,
+          seguindo: true,
+          publicacoes: true,
+        },
+      },
+    },
+  });
+
+  if (!usuario) return null;
+  const { seguidores = [], _count, ...perfil } = usuario;
+  return {
+    ...perfil,
+    seguindo: seguidores.length > 0,
+    totalSeguidores: _count.seguidores,
+    totalSeguindo: _count.seguindo,
+    totalPublicacoes: _count.publicacoes,
+  };
+}
+
 // Busca um usuário pelo username no perfil público.
-export async function obterUsuarioPorUsername(username) {
+export async function obterUsuarioPorUsername(username, viewerId = null) {
   const usernameNormalizado = normalizarUsername(username);
 
   if (!usernameNormalizado) {
     return null;
   }
 
-  return prisma.usuario.findUnique({
+  const usuario = await prisma.usuario.findUnique({
     where: { username: usernameNormalizado },
     select: {
       ...camposUsuarioPublicos,
@@ -102,8 +167,33 @@ export async function obterUsuarioPorUsername(username) {
         },
         orderBy: { criadoEm: "desc" },
       },
+      ...(viewerId
+        ? {
+            seguidores: {
+              where: { seguidorId: viewerId },
+              select: { id: true },
+            },
+          }
+        : {}),
+      _count: {
+        select: {
+          seguidores: true,
+          seguindo: true,
+          publicacoes: true,
+        },
+      },
     },
   });
+
+  if (!usuario) return null;
+  const { seguidores = [], _count, ...perfil } = usuario;
+  return {
+    ...perfil,
+    seguindo: seguidores.length > 0,
+    totalSeguidores: _count.seguidores,
+    totalSeguindo: _count.seguindo,
+    totalPublicacoes: _count.publicacoes,
+  };
 }
 
 // Busca um usuário pelo endereço de e-mail.

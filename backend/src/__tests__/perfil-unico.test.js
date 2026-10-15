@@ -41,19 +41,43 @@ describe("Perfil único do usuário", () => {
       username: "ana",
       roteiros: [],
       publicacoes: [],
+      seguidores: [{ id: "follow-1" }],
+      _count: { seguidores: 4, seguindo: 2, publicacoes: 3 },
     });
 
-    await UsuarioModel.obterUsuarioPorUsername(" Ana ");
+    const perfil = await UsuarioModel.obterUsuarioPorUsername(
+      " Ana ",
+      "viewer-1",
+    );
 
     const chamada = mockFindUnique.mock.calls[0][0];
     expect(chamada.where).toEqual({ username: "ana" });
     expect(chamada.select).not.toHaveProperty("email");
     expect(chamada.select.roteiros.where).toEqual({ publico: true });
-    expect(chamada.select.publicacoes.select).toEqual({
-      id: true,
-      texto: true,
-      criadoEm: true,
+    expect(chamada.select.publicacoes.select).toEqual(
+      expect.objectContaining({
+        id: true,
+        texto: true,
+        criadoEm: true,
+      }),
+    );
+    expect(chamada.select._count.select).toEqual({
+      seguidores: true,
+      seguindo: true,
+      publicacoes: true,
     });
+    expect(chamada.select.seguidores).toEqual({
+      where: { seguidorId: "viewer-1" },
+      select: { id: true },
+    });
+    expect(perfil).toEqual(
+      expect.objectContaining({
+        seguindo: true,
+        totalSeguidores: 4,
+        totalSeguindo: 2,
+        totalPublicacoes: 3,
+      }),
+    );
   });
 
   it("bloqueia alteração de e-mail e role no perfil", async () => {

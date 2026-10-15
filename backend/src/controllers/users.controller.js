@@ -36,9 +36,32 @@ function normalizarPersonalidadeController(valor) {
 }
 
 export async function listarUsuarios(req, res) {
-  const usuarios = await UsuarioModel.obterTodosUsuarios();
+  const usuarios =
+    req.user?.role === "ADMIN"
+      ? await UsuarioModel.obterTodosUsuarios()
+      : await UsuarioModel.listarUsuariosComunidade(req.user?.id);
 
   res.json(usuarios);
+}
+
+export async function listarComunidade(req, res) {
+  const usuarios = await UsuarioModel.listarUsuariosComunidade(req.user.id);
+  return res.status(200).json(usuarios);
+}
+
+export async function obterMeuPerfil(req, res) {
+  const usuario = await UsuarioModel.obterPerfilPorId(req.user.id, req.user.id);
+
+  if (!usuario) {
+    return res.status(404).json({ erro: "Usuário não encontrado" });
+  }
+
+  return res.status(200).json(usuario);
+}
+
+export async function atualizarMeuPerfil(req, res) {
+  req.params.id = req.user.id;
+  return atualizarUsuario(req, res);
 }
 
 export async function obterUsuario(req, res) {
@@ -58,7 +81,10 @@ export async function obterUsuario(req, res) {
 export async function obterUsuarioPorUsername(req, res) {
   const { username } = req.params;
 
-  const usuario = await UsuarioModel.obterUsuarioPorUsername(username);
+  const usuario = await UsuarioModel.obterUsuarioPorUsername(
+    username,
+    req.user?.id,
+  );
 
   if (!usuario) {
     return res.status(404).json({

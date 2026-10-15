@@ -34,4 +34,6 @@ UPDATE usuarios SET role = 'ADMIN' WHERE email = 'admin@example.com';
 ```
 
 Nao exponha essa operacao em uma rota publica nem conceda acesso SQL a usuarios
-comuns. `GET /usuarios` exige token valido e papel `ADMIN`.
+comuns. `GET /usuarios` retorna apenas campos de perfil público para visitantes
+e usuários comuns; com token de `ADMIN`, retorna a listagem administrativa,
+também sem incluir `senhaHash`.

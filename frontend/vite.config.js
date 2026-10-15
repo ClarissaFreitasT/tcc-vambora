@@ -11,6 +11,8 @@ export default defineConfig({
       "/usuarios": "http://localhost:3000",
       "/dias": "http://localhost:3000",
       "/itens": "http://localhost:3000",
+      "/publicacoes": "http://localhost:3000",
+      "/categorias": "http://localhost:3000",
     },
   },
 });

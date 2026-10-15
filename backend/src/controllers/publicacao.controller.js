@@ -38,7 +38,23 @@ export async function listarPublicacoesUsuario(req, res) {
 export async function listarFeedUsuario(req, res) {
   const publicacoes = await PublicacaoModel.listarFeedUsuario(req.user.id);
 
-  return res.status(200).json(publicacoes);
+  return res.status(200).json(
+    publicacoes.map(({ curtidas, ...publicacao }) => ({
+      ...publicacao,
+      curtiu: curtidas.length > 0,
+    })),
+  );
+}
+
+export async function listarTimelinePublica(req, res) {
+  const publicacoes = await PublicacaoModel.listarTimelinePublica(req.user?.id);
+
+  return res.status(200).json(
+    publicacoes.map(({ curtidas = [], ...publicacao }) => ({
+      ...publicacao,
+      curtiu: curtidas.length > 0,
+    })),
+  );
 }
 
 export async function obterPublicacao(req, res) {

@@ -1,8 +1,11 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/useAuth";
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [status, setStatus] = useState(null);
@@ -14,26 +17,10 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const response = await fetch("/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password: senha }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setStatus(
-          data.message || data.mensagem || "E-mail ou senha inválidos.",
-        );
-        return;
-      }
-
-      localStorage.setItem("vambora_token", data.token);
-      localStorage.setItem("vambora_usuario", JSON.stringify(data.usuario));
-      navigate("/");
-    } catch {
-      setStatus("Não foi possível conectar ao servidor.");
+      await login(email, senha);
+      navigate(location.state?.from || "/", { replace: true });
+    } catch (error) {
+      setStatus(error.message || "Não foi possível conectar ao servidor.");
     } finally {
       setLoading(false);
     }
@@ -57,6 +44,14 @@ export default function Login() {
         {status ? (
           <div className="mb-6 rounded-3xl bg-red-50 p-4 text-sm font-medium text-red-800">
             {status}
+          </div>
+        ) : null}
+        {location.state?.message ? (
+          <div
+            className="mb-6 rounded-3xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-800"
+            role="status"
+          >
+            {location.state.message}
           </div>
         ) : null}
 
@@ -96,7 +91,7 @@ export default function Login() {
             Ainda não tem uma conta?{" "}
             <Link
               className="font-semibold text-[#2563EB] hover:underline"
-              to="/perfil"
+              to="/cadastro"
             >
               Criar perfil
             </Link>

@@ -1,27 +1,13 @@
-import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/useAuth";
 
 export default function Navbar() {
   const navigate = useNavigate();
-  const [isLoggedIn, setIsLoggedIn] = useState(
-    Boolean(localStorage.getItem("vambora_token")),
-  );
-
-  useEffect(() => {
-    function syncLoginState() {
-      setIsLoggedIn(Boolean(localStorage.getItem("vambora_token")));
-    }
-
-    syncLoginState();
-    window.addEventListener("storage", syncLoginState);
-
-    return () => window.removeEventListener("storage", syncLoginState);
-  }, []);
+  const { isAuthenticated, loading, logout } = useAuth();
+  const isLoggedIn = isAuthenticated;
 
   function handleLogout() {
-    localStorage.removeItem("vambora_token");
-    localStorage.removeItem("vambora_usuario");
-    setIsLoggedIn(false);
+    logout();
     navigate("/login");
   }
 
@@ -35,7 +21,12 @@ export default function Navbar() {
           ✈️ VAMBORA
         </Link>
 
-        {isLoggedIn ? (
+        {loading ? (
+          <div
+            className="h-8 w-40 animate-pulse rounded-full bg-slate-100"
+            aria-label="Verificando sessão"
+          />
+        ) : isLoggedIn ? (
           <div className="flex flex-wrap items-center gap-4">
             <Link
               className="text-sm font-semibold text-slate-600 transition hover:text-[#2563EB]"
@@ -45,6 +36,12 @@ export default function Navbar() {
             </Link>
             <Link
               className="text-sm font-semibold text-slate-600 transition hover:text-[#2563EB]"
+              to="/roteiros/salvos"
+            >
+              Salvos
+            </Link>
+            <Link
+              className="text-sm font-semibold text-slate-600 transition hover:text-[#2563EB]"
               to="/comunidade"
             >
               Comunidade
@@ -53,28 +50,30 @@ export default function Navbar() {
               className="text-sm font-semibold text-slate-600 transition hover:text-[#2563EB]"
               to="/perfil"
             >
-              Perfil
+              Meu perfil
             </Link>
           </div>
         ) : (
           <div className="flex flex-wrap items-center gap-4">
             <Link
               className="text-sm font-semibold text-slate-600 transition hover:text-[#2563EB]"
-              to="/comunidade"
+              to="/roteiros/publicos"
             >
-              Comunidade
+              Explorar roteiros
             </Link>
             <Link
               className="text-sm font-semibold text-slate-600 transition hover:text-[#2563EB]"
-              to="/perfil"
+              to="/comunidade"
             >
-              Perfil
+              Comunidade
             </Link>
           </div>
         )}
 
         <div className="flex flex-wrap items-center gap-3">
-          {isLoggedIn ? (
+          {loading ? (
+            <span className="text-xs text-slate-500">Verificando sessão…</span>
+          ) : isLoggedIn ? (
             <>
               <button
                 type="button"
@@ -96,8 +95,8 @@ export default function Navbar() {
               <Link to="/login" className="btn-secondary">
                 Entrar
               </Link>
-              <Link to="/perfil" className="btn-primary">
-                Criar perfil
+              <Link to="/cadastro" className="btn-primary">
+                Criar conta
               </Link>
             </>
           )}
