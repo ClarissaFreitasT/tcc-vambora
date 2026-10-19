@@ -60,6 +60,12 @@ export default function Navbar() {
           <div className="flex flex-wrap items-center gap-4">
             <Link
               className="text-sm font-semibold text-slate-600 transition hover:text-[#2563EB]"
+              to="/explorar"
+            >
+              Explorar globo
+            </Link>
+            <Link
+              className="text-sm font-semibold text-slate-600 transition hover:text-[#2563EB]"
               to="/roteiros"
             >
               Meus roteiros
@@ -79,6 +85,12 @@ export default function Navbar() {
           </div>
         ) : (
           <div className="flex flex-wrap items-center gap-4">
+            <Link
+              className="text-sm font-semibold text-slate-600 transition hover:text-[#2563EB]"
+              to="/explorar"
+            >
+              Explorar globo
+            </Link>
             <Link
               className="text-sm font-semibold text-slate-600 transition hover:text-[#2563EB]"
               to="/roteiros/publicos"
