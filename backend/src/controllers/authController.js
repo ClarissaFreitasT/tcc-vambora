@@ -1,14 +1,32 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { prisma } from "../config/prisma.js";
+import { parseBirthDate, isAtLeast18 } from "../utils/birthDate.js";
 
 export async function register(req, res) {
   try {
-    const { nome, email, password, username } = req.body;
+    const { nome, email, password, username, dataNascimento } = req.body;
 
-    if (!nome || !email || !password) {
+    if (!nome || !email || !password || !dataNascimento) {
       return res.status(400).json({
-        message: "Nome, email e senha são obrigatórios",
+        message: "Nome, email, data de nascimento e senha são obrigatórios",
+      });
+    }
+    if (typeof password !== "string" || password.length < 6) {
+      return res.status(400).json({
+        message: "A senha deve ter pelo menos 6 caracteres.",
+      });
+    }
+
+    const nascimento = parseBirthDate(dataNascimento);
+    if (!nascimento) {
+      return res.status(400).json({
+        message: "Data de nascimento inválida. Use o formato DD/MM/AAAA.",
+      });
+    }
+    if (!isAtLeast18(nascimento)) {
+      return res.status(400).json({
+        message: "É necessário ter pelo menos 18 anos para criar uma conta.",
       });
     }
 
@@ -50,6 +68,7 @@ export async function register(req, res) {
       nome,
       email,
       senhaHash,
+      dataNascimento: nascimento,
     };
 
     if (nomeUsuario) {

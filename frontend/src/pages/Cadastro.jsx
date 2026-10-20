@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { apiFetch } from "../data/api";
+import { getAdultBirthDateIso, maskBrazilianDate } from "../utils/birthDate.js";
 
 export default function Cadastro() {
   const navigate = useNavigate();
@@ -8,6 +9,7 @@ export default function Cadastro() {
   const [form, setForm] = useState({
     nome: "",
     email: "",
+    dataNascimento: "",
     password: "",
     confirmPassword: "",
   });
@@ -15,12 +17,18 @@ export default function Cadastro() {
   const [loading, setLoading] = useState(false);
 
   function updateField(event) {
-    setForm({ ...form, [event.target.name]: event.target.value });
+    const { name, value } = event.target;
+    setForm({ ...form, [name]: name === "dataNascimento" ? maskBrazilianDate(value) : value });
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
     setStatus(null);
+    const dataNascimento = getAdultBirthDateIso(form.dataNascimento);
+    if (!dataNascimento) {
+      setStatus("Informe uma data válida. É necessário ter pelo menos 18 anos para criar uma conta.");
+      return;
+    }
     if (form.password !== form.confirmPassword) {
       setStatus("As senhas precisam ser iguais.");
       return;
@@ -36,6 +44,7 @@ export default function Cadastro() {
         body: JSON.stringify({
           nome: form.nome,
           email: form.email,
+          dataNascimento,
           password: form.password,
         }),
       });
@@ -91,6 +100,24 @@ export default function Cadastro() {
               onChange={updateField}
               required
             />
+          </label>
+          <label className="grid gap-2 text-sm font-medium text-slate-700">
+            Data de nascimento
+            <input
+              className="input-field"
+              name="dataNascimento"
+              type="text"
+              inputMode="numeric"
+              autoComplete="bday"
+              placeholder="DD/MM/AAAA"
+              aria-describedby="birth-date-help"
+              value={form.dataNascimento}
+              onChange={updateField}
+              required
+            />
+            <span id="birth-date-help" className="text-xs font-normal text-slate-500">
+              Você precisa ter pelo menos 18 anos para criar uma conta.
+            </span>
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
             Senha
