@@ -22,8 +22,6 @@ export default function Comunidade() {
   const [selectedPostCategoryIds, setSelectedPostCategoryIds] = useState([]);
   const [search, setSearch] = useState("");
   const [postText, setPostText] = useState("");
-  const [photoPreviews, setPhotoPreviews] = useState([]);
-  const selectedPhotos = photoPreviews.map(({ file }) => file);
   const [selectedRoteiroId, setSelectedRoteiroId] = useState("");
   const [feedMode, setFeedMode] = useState("for-you");
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -48,18 +46,6 @@ export default function Comunidade() {
   const feedRequestId = useRef(0);
   const nextCursorRef = useRef(null);
   const feedEndRef = useRef(null);
-  const photoPreviewsRef = useRef([]);
-
-  useEffect(() => {
-    photoPreviewsRef.current = photoPreviews;
-  }, [photoPreviews]);
-
-  useEffect(
-    () => () =>
-      photoPreviewsRef.current.forEach(({ url }) => URL.revokeObjectURL(url)),
-    [],
-  );
-
   const loadUsers = useCallback(async () => {
     setLoadingUsers(true);
     try {
@@ -260,20 +246,15 @@ export default function Comunidade() {
     setPosting(true);
     setStatus(null);
     try {
-      const body = new FormData();
-      body.append("texto", texto);
-      if (selectedRoteiroId) body.append("roteiroId", selectedRoteiroId);
-      body.append("categoriaIds", JSON.stringify(selectedPostCategoryIds));
-      selectedPhotos.forEach((photo) => body.append("fotos", photo));
       await apiFetch("/publicacoes", {
         method: "POST",
-        body,
+        body: JSON.stringify({
+          texto,
+          roteiroId: selectedRoteiroId || null,
+          categoriaIds: selectedPostCategoryIds,
+        }),
       });
       setPostText("");
-      setPhotoPreviews((current) => {
-        current.forEach(({ url }) => URL.revokeObjectURL(url));
-        return [];
-      });
       setSelectedRoteiroId("");
       setSelectedPostCategoryIds([]);
       setStatus({ type: "success", message: "Publicação enviada." });
@@ -283,45 +264,6 @@ export default function Comunidade() {
     } finally {
       setPosting(false);
     }
-  }
-
-  function addPhotos(event) {
-    const incoming = [...(event.target.files || [])];
-    event.target.value = "";
-    const valid = incoming.filter((file) =>
-      ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(
-        file.type,
-      ),
-    );
-    if (valid.length !== incoming.length) {
-      setStatus({ type: "error", message: "Use fotos JPG, PNG, WebP ou GIF." });
-    }
-    if (valid.some((file) => file.size > 8 * 1024 * 1024)) {
-      setStatus({ type: "error", message: "Cada foto deve ter até 8 MB." });
-    }
-    const withinLimit = valid.filter((file) => file.size <= 8 * 1024 * 1024);
-    if (selectedPhotos.length + withinLimit.length > 8) {
-      setStatus({ type: "error", message: "Você pode anexar até 8 fotos." });
-    }
-    setPhotoPreviews((current) => {
-      const combined = [
-        ...current,
-        ...withinLimit.map((file) => ({
-          file,
-          url: URL.createObjectURL(file),
-        })),
-      ];
-      combined.slice(8).forEach(({ url }) => URL.revokeObjectURL(url));
-      return combined.slice(0, 8);
-    });
-  }
-
-  function removeSelectedPhoto(index) {
-    setPhotoPreviews((current) => {
-      const removed = current[index];
-      if (removed) URL.revokeObjectURL(removed.url);
-      return current.filter((_, itemIndex) => itemIndex !== index);
-    });
   }
 
   async function toggleFollow(traveler) {
@@ -706,17 +648,6 @@ export default function Comunidade() {
                   className="w-full resize-none border-0 bg-transparent py-1 text-lg leading-7 text-slate-900 outline-none placeholder:text-slate-400 focus:ring-0"
                 />
                 <div className="mb-3 flex flex-wrap items-center gap-2">
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-blue-300 hover:text-blue-700">
-                    <span aria-hidden="true">▧</span>
-                    Adicionar fotos
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp,image/gif"
-                      multiple
-                      onChange={addPhotos}
-                      className="sr-only"
-                    />
-                  </label>
                   {categories.map((category) => (
                     <button
                       key={category.id}
@@ -737,33 +668,6 @@ export default function Comunidade() {
                     </button>
                   ))}
                 </div>
-                {photoPreviews.length ? (
-                  <div
-                    className="mb-3 flex gap-2 overflow-x-auto pb-1"
-                    aria-label="Fotos selecionadas"
-                  >
-                    {photoPreviews.map(({ file, url }, index) => (
-                      <div
-                        key={`${file.name}-${file.lastModified}-${index}`}
-                        className="relative h-20 w-20 shrink-0"
-                      >
-                        <img
-                          src={url}
-                          alt={file.name}
-                          className="h-full w-full rounded-xl object-cover"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeSelectedPhoto(index)}
-                          aria-label={`Remover foto ${file.name}`}
-                          className="absolute -right-1 -top-1 grid h-6 w-6 place-items-center rounded-full bg-slate-950 text-sm text-white shadow"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
                 {roteirosVinculaveis.length ? (
                   <label className="mb-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
                     <span aria-hidden="true">🧭</span>

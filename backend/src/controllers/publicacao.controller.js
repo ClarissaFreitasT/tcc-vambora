@@ -1,41 +1,20 @@
 import * as PublicacaoModel from "../models/publicacao.model.js";
-import { rename, unlink } from "node:fs/promises";
-import path from "node:path";
-import { randomUUID } from "node:crypto";
-import { fileTypeFromFile } from "file-type";
-import { uploadDirectory } from "../config/uploads.js";
-
-async function removeUploadedFiles(files = []) {
-  await Promise.all(files.map((file) => unlink(file.path).catch(() => {})));
-}
-
-async function removePublicationPhotos(publication) {
-  const directory = uploadDirectory;
-  await Promise.all(
-    (publication?.fotos || []).map((photo) =>
-      unlink(path.join(directory, path.basename(photo.url))).catch(() => {}),
-    ),
-  );
-}
 
 export async function criarPublicacao(req, res) {
-  const { texto, roteiroId } = req.body;
-  const uploadedFiles = req.files || [];
+  const { texto, roteiroId } = req.body || {};
   let categoriaIds = [];
   try {
-    const rawCategoryIds = req.body.categoriaIds;
+    const rawCategoryIds = req.body?.categoriaIds;
     categoriaIds = Array.isArray(rawCategoryIds)
       ? rawCategoryIds
       : rawCategoryIds
         ? JSON.parse(rawCategoryIds)
         : [];
   } catch {
-    await removeUploadedFiles(uploadedFiles);
     return res.status(400).json({ erro: "Categorias inválidas" });
   }
 
   if (!texto || typeof texto !== "string" || texto.trim() === "") {
-    await removeUploadedFiles(uploadedFiles);
     return res.status(400).json({ erro: "Texto da publicação é obrigatório" });
   }
   if (
@@ -43,36 +22,14 @@ export async function criarPublicacao(req, res) {
     categoriaIds.length > 3 ||
     categoriaIds.some((id) => typeof id !== "string")
   ) {
-    await removeUploadedFiles(uploadedFiles);
     return res.status(400).json({ erro: "Selecione categorias válidas" });
   }
   categoriaIds = [...new Set(categoriaIds)];
 
   try {
-    const allowedImageTypes = new Set([
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-      "image/gif",
-    ]);
-    for (const file of uploadedFiles) {
-      const detected = await fileTypeFromFile(file.path);
-      if (!detected || !allowedImageTypes.has(detected.mime)) {
-        await removeUploadedFiles(uploadedFiles);
-        return res
-          .status(400)
-          .json({ erro: "Um ou mais arquivos não são imagens válidas" });
-      }
-      const filename = `${randomUUID()}.${detected.ext}`;
-      const destination = path.join(path.dirname(file.path), filename);
-      await rename(file.path, destination);
-      file.path = destination;
-      file.filename = filename;
-    }
     const categories = await PublicacaoModel.listarCategoriasPublicacao();
     const allowedIds = new Set(categories.map(({ id }) => id));
     if (categoriaIds.some((id) => !allowedIds.has(id))) {
-      await removeUploadedFiles(uploadedFiles);
       return res
         .status(400)
         .json({ erro: "Uma ou mais categorias não são válidas" });
@@ -83,7 +40,6 @@ export async function criarPublicacao(req, res) {
         req.user.id,
       );
       if (!roteiro?.publico) {
-        await removeUploadedFiles(uploadedFiles);
         return res.status(400).json({
           erro: "Só é possível compartilhar um roteiro público seu",
         });
@@ -94,13 +50,12 @@ export async function criarPublicacao(req, res) {
       req.user.id,
       texto.trim(),
       roteiroId || null,
-      uploadedFiles.map((file) => `/uploads/community/${file.filename}`),
+      [],
       categoriaIds,
     );
 
     return res.status(201).json(publicacao);
   } catch (error) {
-    await removeUploadedFiles(uploadedFiles);
     console.error("Erro ao criar publicação:", error);
     return res.status(500).json({
       erro: "Não foi possível criar a publicação",
@@ -279,7 +234,6 @@ export async function excluirPublicacaoPropria(req, res) {
       .status(403)
       .json({ erro: "Você só pode excluir suas próprias publicações" });
   await PublicacaoModel.excluirPublicacao(req.params.id);
-  await removePublicationPhotos(publication);
   return res.status(204).send();
 }
 
@@ -429,7 +383,6 @@ export async function excluirPublicacaoAdmin(req, res) {
   }
 
   const publicacaoRemovida = await PublicacaoModel.excluirPublicacao(id);
-  await removePublicationPhotos(publicacaoExistente);
 
   return res.status(200).json({
     mensagem: "Publicação removida pelo administrador",

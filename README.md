@@ -3,15 +3,15 @@
 Monorepositório com dois projetos npm independentes (não há workspace npm na raiz):
 
 - `frontend/`: React 18, Vite 8, React Router 6 com `BrowserRouter`, Tailwind e Three.js. Entrada: `src/main.jsx`. Scripts: `dev`, `build`, `preview`, `lint`, `test`.
-- `backend/`: JavaScript ESM, Express 5, Prisma 7.10.1 com adaptador MariaDB para MySQL, JWT Bearer e Multer. Entrada: `src/server.js`; aplicação: `src/app.js`. Scripts: `dev`, `start`, `test`, `test:watch`, `test:coverage`.
+- `backend/`: JavaScript ESM, Express 5, Prisma 7.10.1 com adaptador MariaDB para MySQL, JWT Bearer. Entrada: `src/server.js`; aplicação: `src/app.js`. Scripts: `dev`, `start`, `test`, `test:watch`, `test:coverage`.
 - `backend/prisma/`: schema e oito migrations. Cliente gerado em `backend/generated/prisma/`, não versionado.
-- `backend/uploads/community/`: fotos locais. Produção exige volume persistente.
+- Upload de fotos separado na branch local `feature/upload-fotos`, preservada a partir do commit `12017b4`. A `main` publica texto, categorias e roteiros vinculados, sem receber arquivos. Schema, migrations e arquivos antigos foram preservados; fotos de publicações não são exibidas nesta versão.
 
 Use Node **24.11.1** (ou patch de segurança compatível da série 24, atualizando os arquivos `.node-version`). Os manifests aceitam `>=24.11.0 <25`. Os lockfiles devem acompanhar os manifests no Git.
 
 ## Deploy
 
-Situação: **PRONTO COM PENDÊNCIAS**. As configurações de deploy estão preparadas, mas faltam as URLs reais, credenciais e validação do MySQL, disco persistente e teste integrado. Não publique a build de auditoria: ela usa uma origem `.invalid` exclusivamente para testar a compilação. Gere uma nova build com a API real.
+Situação: **PRONTO COM PENDÊNCIAS**. As configurações de deploy estão preparadas, mas faltam as URLs reais, credenciais e validação do MySQL e teste integrado. Não publique a build de auditoria: ela usa uma origem `.invalid` exclusivamente para testar a compilação. Gere uma nova build com a API real.
 
 ### Frontend — Hostinger / Apache
 
@@ -26,7 +26,7 @@ O valor deve ser a origem da API, sem `/health`, sem subpasta e sem credenciais.
 - Public path / Vite `base`: `/tecti/2026/gpec01/`, em `vite.config.js`.
 - `BrowserRouter basename`: `import.meta.env.BASE_URL`, resolvido para o mesmo caminho.
 - Favicon, textura do globo e compartilhamento de perfil respeitam a base.
-- Chamadas de API e fotos em `/uploads/` usam `VITE_API_URL`.
+- Chamadas de API usam `VITE_API_URL`. Fotos de perfil e capas de roteiros por URL continuam funcionando.
 - `public/.htaccess` é copiado para `dist/.htaccess`. Apache precisa de `mod_rewrite` e permissão de override para as diretivas do arquivo. O preview do Vite não executa `.htaccess`; confirme no servidor.
 
 ```bash
@@ -84,17 +84,16 @@ NODE_ENV=production
 DATABASE_URL=<URL MySQL fornecida pelo administrador do banco>
 JWT_SECRET=<chave aleatória exclusiva, pelo menos 32 caracteres>
 FRONTEND_URL=<origem HTTPS real da Hostinger, sem /tecti/2026/gpec01/>
-UPLOAD_DIR=/var/data/uploads
 JWT_EXPIRES_IN=1d
 ```
 
-`JWT_EXPIRES_IN` é opcional: padrão `1d`. Configure um **Persistent Disk** com mount path `/var/data`, usando um plano que suporte disco. Os uploads serão gravados em `/var/data/uploads/community`. Disco não é criado pela variável. A API exige `UPLOAD_DIR` em produção, mas isso não prova que um disco foi montado: confirme no painel. Caso já existam fotos vinculadas no banco, copie-as manualmente para esse diretório e valide seus links. Não dependa dos dois arquivos de exemplo versionados em `backend/uploads`.
+`JWT_EXPIRES_IN` é opcional: padrão `1d`. A `main` não recebe uploads e não exige disco persistente nem `UPLOAD_DIR`. `POST /publicacoes` aceita JSON; multipart retorna 415.
 
 CORS usa a origem exata, pois o cabeçalho Origin contém protocolo, domínio e porta, **nunca subpasta**. A autenticação existente usa `Authorization: Bearer`, não cookies; não é necessário `credentials: true`. Ferramentas sem Origin e health checks continuam aceitos. CORS não substitui autorização.
 
 O servidor só escuta após `SELECT 1`; banco indisponível causa saída com código 1 e mensagem sem credenciais. `GET /health` responde `{"status":"ok"}` sem consultar banco. Isso é liveness, não comprovação contínua de acesso ao MySQL. SIGTERM/SIGINT encerram conexões de modo controlado.
 
-Referências oficiais: [discos persistentes](https://render.com/docs/disks), [fluxo de deploy](https://render.com/docs/deploys), [MySQL no Prisma 7](https://docs.prisma.io/docs/orm/v7/core-concepts/supported-databases/mysql).
+Referências oficiais: [fluxo de deploy](https://render.com/docs/deploys), [MySQL no Prisma 7](https://docs.prisma.io/docs/orm/v7/core-concepts/supported-databases/mysql).
 
 ### Banco
 
@@ -148,7 +147,7 @@ A numeração abaixo mantém os ambientes separados. Dependências obrigatórias
 Copy-Item backend/.env.example backend/.env
 ```
 
-2. Preencha `backend/.env`: `NODE_ENV=development`, `PORT=3000`, `FRONTEND_URL=http://localhost:5173`, `DATABASE_URL` do seu MySQL e `JWT_SECRET` aleatória. `JWT_EXPIRES_IN=1d` é opcional; `UPLOAD_DIR` pode ficar vazio localmente. Gere sua chave localmente com:
+2. Preencha `backend/.env`: `NODE_ENV=development`, `PORT=3000`, `FRONTEND_URL=http://localhost:5173`, `DATABASE_URL` do seu MySQL e `JWT_SECRET` aleatória. `JWT_EXPIRES_IN=1d` é opcional. Gere sua chave localmente com:
 
 ```bash
 node -e "console.log(require('node:crypto').randomBytes(48).toString('hex'))"
@@ -193,7 +192,7 @@ npm run dev
 ### Ambiente 3 — Render
 
 1. Prepare o banco no ambiente 4, com backup/revisão quando existente.
-2. Configure exatamente os campos e variáveis da subseção Backend — Render. Selecione plano com Persistent Disk e monte `/var/data`. Confirme que o código atualizado está no GitHub.
+2. Configure exatamente os campos e variáveis da subseção Backend — Render. Confirme que o código atualizado está no GitHub.
 3. Mantenha Auto Deploy desabilitado inicialmente. `FRONTEND_URL` deve apontar à origem real da Hostinger, mesmo que o frontend ainda não tenha sido enviado. Não configure PORT.
 4. Execute as migrations manualmente no ambiente controlado, antes do deploy da versão correspondente. O build gera Prisma Client; não aplica SQL.
 5. Faça o deploy manual pelo painel. Consulte os logs e teste `<URL_REAL_RENDER>/health`, depois `<URL_REAL_RENDER>/roteiros/publicos`. A primeira deve retornar status ok e a segunda JSON com dados ou lista vazia, sem erro 500.
@@ -211,11 +210,11 @@ npm run dev
 
 1. Abra a página inicial na subpasta real; confira CSS, imagens, favicon e globo.
 2. Acesse uma rota interna diretamente, atualize e confirme ausência de 404.
-3. No Network, confirme que chamadas vão ao Render por HTTPS, sem localhost ou origem Apache para API/uploads.
+3. No Network, confirme que chamadas vão ao Render por HTTPS, sem localhost ou origem Apache para a API.
 4. Cadastre um usuário de teste adulto, faça login, recarregue e confira a sessão.
 5. Crie um roteiro com dias/itens; leia, atualize, publique e confira a listagem pública.
 6. Teste salvar/curtir/avaliar e o compartilhamento de perfil na subpasta.
-7. Publique uma foto na comunidade, confira seu carregamento e permanência após reinício/redeploy manual. Isso valida o disco persistente.
+7. Publique texto na comunidade, selecione categorias e vincule um roteiro público. Confirme que não existe opção de anexar arquivos.
 8. Teste exclusão somente dos registros de teste, quando disponível e autorizado.
 9. Confira Console, Network (incluindo preflight OPTIONS) e logs do Render. Não compartilhe tokens ou senhas capturados nos logs.
 
@@ -224,7 +223,7 @@ npm run dev
 - `npm install` e `npm ci --include=dev`: passaram nos dois projetos; lockfiles atualizados com correções compatíveis de segurança.
 - `npm run build`: passou com origem HTTPS fictícia `.invalid` usada somente na auditoria, pois a URL Render não foi fornecida. `dist/` foi criada e assets conferidos.
 - Preview HTTP: 200 para início, login, roteiros públicos, CSS, JS, favicon e textura. Não equivale a teste visual de navegador nem execução de regras Apache.
-- Testes: frontend 29/29; backend 71/71 (incluindo health, CORS e configuração MySQL/TLS). Testes de modelos usam mocks; não provam conexão real.
+- Testes: frontend 29/29; backend 73/73 (incluindo health, CORS e configuração MySQL/TLS). Testes de modelos usam mocks; não provam conexão real.
 - Lint frontend: passou.
 - Prisma 7.10.1: generate e validate passaram; oito migrations inspecionadas, nenhuma aplicada.
 - API real em porta temporária: `/health` 200, preflight 204, origem permitida ecoada, outra origem sem liberação CORS.

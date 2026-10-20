@@ -57,7 +57,7 @@ describe("apiFetch session handling", () => {
     });
   });
 
-  it("does not override the multipart content type for photo uploads", async () => {
+  it("does not override the multipart content type for FormData", async () => {
     installStorage({ vambora_token: "valid-token" });
     const fetchSpy = jest.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ id: "post-1" }), {

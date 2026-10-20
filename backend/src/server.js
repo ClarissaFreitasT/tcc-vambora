@@ -12,10 +12,6 @@ if (!process.env.JWT_SECRET || (
 )) {
   throw new Error("Configure JWT_SECRET; em produção use uma chave aleatória com pelo menos 32 caracteres.");
 }
-if (process.env.NODE_ENV === "production" && !process.env.UPLOAD_DIR) {
-  throw new Error("Configure UPLOAD_DIR no disco persistente do Render.");
-}
-
 let server;
 try {
   await prisma.$connect();

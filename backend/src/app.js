@@ -1,6 +1,5 @@
 import cors from "cors";
 import express from "express";
-import { uploadDirectory } from "./config/uploads.js";
 import { corsOptions } from "./config/cors.js";
 
 import roteiroRoutes from "./routes/roteiro.routes.js";
@@ -17,15 +16,6 @@ app.use(cors(corsOptions));
 
 // Middleware para JSON
 app.use(express.json());
-app.use(
-  "/uploads/community",
-  express.static(uploadDirectory, {
-    dotfiles: "deny",
-    index: false,
-    maxAge: "7d",
-  }),
-);
-
 // Rota de teste
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
@@ -46,7 +36,7 @@ app.use("/auth", authRoutes);
 
 app.use((error, _req, res, next) => {
   if (res.headersSent) return next(error);
-  const status = error.status || (error.name === "MulterError" ? 400 : 500);
+  const status = error.status || 500;
   return res.status(status).json({
     erro: status >= 500 && process.env.NODE_ENV === "production"
       ? "Não foi possível processar a solicitação."

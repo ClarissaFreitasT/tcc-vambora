@@ -3,9 +3,38 @@ import request from "supertest";
 import { databaseConfig } from "../config/database.js";
 
 jest.unstable_mockModule("../config/prisma.js", () => ({ prisma: {} }));
+const createPost = jest.fn().mockResolvedValue({ id: "p1", texto: "Viagem" });
+jest.unstable_mockModule("../models/publicacao.model.js", () => ({
+  criarPublicacao: createPost,
+  listarCategoriasPublicacao: jest.fn().mockResolvedValue([]),
+}));
+const authenticated = (req, _res, next) => {
+  req.user = { id: "u1", role: "USER" };
+  next();
+};
+jest.unstable_mockModule("../middlewares/authMiddleware.js", () => ({
+  default: authenticated,
+  optionalAuth: authenticated,
+}));
 const { default: app } = await import("../app.js");
 
 describe("deploy", () => {
+  it("mantém publicações JSON sem fotos", async () => {
+    const response = await request(app).post("/publicacoes")
+      .send({ texto: "Viagem", categoriaIds: [] });
+    expect(response.status).toBe(201);
+    expect(createPost).toHaveBeenCalledWith("u1", "Viagem", null, [], []);
+  });
+
+  it("recusa upload multipart sem criar publicação", async () => {
+    createPost.mockClear();
+    const response = await request(app).post("/publicacoes")
+      .field("texto", "Viagem")
+      .attach("fotos", Buffer.from("arquivo de teste"), "foto.png");
+    expect(response.status).toBe(415);
+    expect(createPost).not.toHaveBeenCalled();
+  });
+
   it("health responde sem acessar banco", async () => {
     const response = await request(app).get("/health");
     expect(response.status).toBe(200);

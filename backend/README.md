@@ -28,10 +28,7 @@ A migration `20261016120000_expand_community` adiciona categorias/fotos às
 publicações, salvamentos e denúncias. Aplique-a com `npx prisma migrate deploy`
 e regenere o cliente com `npx prisma generate` dentro da pasta `backend`.
 
-As fotos são aceitas em JPG, PNG, WebP e GIF, até 8 MB cada e 8 por publicação.
-O conteúdo é validado pelo formato real, guardado em `backend/uploads/community`
-e servido em `/uploads/community`. Preserve essa pasta em backups e use um volume
-persistente se a API for executada em contêiner ou hospedagem efêmera.
+O upload foi separado na branch `feature/upload-fotos`. Na `main`, publicações usam JSON com texto, categorias e roteiro opcional. Não há gravação de arquivos nem exigência de disco persistente. O schema e as migrations anteriores foram mantidos para preservar os dados existentes.
 
 ## Home e busca de roteiros
 
@@ -57,8 +54,7 @@ Rotas adicionais da Comunidade:
   público cursor-paginado; múltiplas categorias usam correspondência OR.
 - `GET /publicacoes/feed?limit=12&cursor=...&categorias=id1,id2` — feed de
   seguindo (inclui as próprias publicações do usuário).
-- `POST /publicacoes` — criação JSON ou multipart; campos multipart `texto`,
-  `roteiroId` (opcional), `categoriaIds` (JSON em string) e múltiplos `fotos`.
+- `POST /publicacoes` — criação JSON com `texto`, `roteiroId` opcional e `categoriaIds` como array. Multipart retorna 415.
 - `GET /publicacoes/:id/curtidas`, `POST|DELETE /publicacoes/:id/salvar` —
   consulta de curtidas e salvamento de publicação autenticado.
 - `GET /publicacoes/salvas` — conteúdo salvo do usuário autenticado.
@@ -95,4 +91,4 @@ também sem incluir `senhaHash`.
 
 ## Deploy
 
-Consulte o [guia de deploy na raiz](../README.md#deploy) para a configuração exata do Render, Node 24.11.1, geração do Prisma Client, TLS, disco persistente, CORS e migrations manuais. A configuração de conexão atual usa somente `DATABASE_URL`.
+Consulte o [guia de deploy na raiz](../README.md#deploy) para a configuração exata do Render, Node 24.11.1, geração do Prisma Client, TLS, CORS e migrations manuais. A configuração de conexão atual usa somente `DATABASE_URL`.

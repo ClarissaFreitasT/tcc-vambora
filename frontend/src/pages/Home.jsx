@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { apiFetch, apiAssetUrl } from "../data/api";
+import { apiFetch } from "../data/api";
 import { useAuth } from "../context/useAuth";
 import ImageFallback from "../components/ImageFallback";
 import RoteiroSearchPanel from "../components/RoteiroSearchPanel";
@@ -93,27 +93,18 @@ function HomeRouteCard({ route, featured = false, recent = false }) {
 }
 
 function CommunityPreview({ post }) {
-  const image = apiAssetUrl(post.fotos?.[0]?.url);
   return (
     <Link
       to={`/comunidade?publicacao=${encodeURIComponent(post.id)}`}
       className="group flex min-w-0 gap-4 border-b border-slate-200 py-4 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:px-3"
       aria-label={`Abrir publicação de ${post.usuario?.nome || "viajante"}`}
     >
-      {image ? (
-        <ImageFallback
-          src={image}
-          alt="Foto da publicação"
-          className="h-20 w-24 shrink-0 rounded-2xl object-cover sm:h-24 sm:w-32"
-        />
-      ) : (
         <div
           className="grid h-20 w-24 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-cyan-100 to-blue-100 text-3xl text-blue-700 sm:h-24 sm:w-32"
           aria-hidden="true"
         >
           ✈
         </div>
-      )}
       <div className="min-w-0 py-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
           <span className="font-bold text-slate-800">
