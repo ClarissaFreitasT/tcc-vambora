@@ -16,10 +16,13 @@ describe('globe data helpers', () => {
 
   it('maps latitude and longitude to a point on the requested sphere', () => {
     const equator = getDestinationVector(0, 90, 2)
+    const greenwich = getDestinationVector(0, 0, 2)
     const northPole = getDestinationVector(90, 42, 3)
-    expect(equator[0]).toBeCloseTo(2)
+    expect(equator[0]).toBeCloseTo(0)
     expect(equator[1]).toBeCloseTo(0)
-    expect(getDestinationVector(0, 0, 2)[2]).toBeCloseTo(-2)
+    expect(equator[2]).toBeCloseTo(-2)
+    expect(greenwich[0]).toBeCloseTo(2)
+    expect(greenwich[2]).toBeCloseTo(0)
     expect(Math.hypot(...northPole)).toBeCloseTo(3)
     expect(northPole[1]).toBeCloseTo(3)
   })

@@ -19,13 +19,14 @@ function disposeGroup(group) {
   group.clear()
 }
 
-export default function GlobeCanvas({ destinations, allDestinations, selectedDestinationId, routeDestinationIds, autoRotate, onSelectDestination, onStatus, controlsRef }) {
+export default function GlobeCanvas({ destinations, allDestinations, selectedDestinationId, routeDestinationIds, autoRotate, interactionEnabled = true, onSelectDestination, onStatus, controlsRef }) {
   const hostRef = useRef(null)
   const onSelectRef = useRef(onSelectDestination)
   const onStatusRef = useRef(onStatus)
   const selectedIdRef = useRef(selectedDestinationId)
   const routeIdsRef = useRef(routeDestinationIds)
   const autoRotateRef = useRef(autoRotate)
+  const interactionEnabledRef = useRef(interactionEnabled)
   const destinationsRef = useRef(destinations)
   const allDestinationsRef = useRef(allDestinations)
   const scenePartsRef = useRef(null)
@@ -36,9 +37,16 @@ export default function GlobeCanvas({ destinations, allDestinations, selectedDes
     selectedIdRef.current = selectedDestinationId
     routeIdsRef.current = routeDestinationIds
     autoRotateRef.current = autoRotate
+    interactionEnabledRef.current = interactionEnabled
+    const canvas = hostRef.current?.querySelector('canvas')
+    if (canvas) {
+      canvas.style.touchAction = 'pan-y'
+      canvas.style.cursor = interactionEnabled ? 'grab' : 'default'
+      canvas.style.pointerEvents = interactionEnabled ? 'auto' : 'none'
+    }
     destinationsRef.current = destinations
     allDestinationsRef.current = allDestinations
-  }, [allDestinations, autoRotate, destinations, onSelectDestination, onStatus, routeDestinationIds, selectedDestinationId])
+  }, [allDestinations, autoRotate, destinations, interactionEnabled, onSelectDestination, onStatus, routeDestinationIds, selectedDestinationId])
 
   useEffect(() => {
     const host = hostRef.current
@@ -51,15 +59,13 @@ export default function GlobeCanvas({ destinations, allDestinations, selectedDes
     let disposed = false
     let dragging = false
     let didDrag = false
-    let pinching = false
     let previousX = 0
     let previousY = 0
     let lastFocusedId = null
     let resetting = false
+    let focusing = false
     let lastRouteSignature = ''
-    let targetCameraZ = 6.8
-    let pinchStartDistance = 0
-    let pinchStartZoom = 6.8
+    let hoveredDestinationId = null
     const activePointers = new Map()
     const pointer = new THREE.Vector2()
     const raycaster = new THREE.Raycaster()
@@ -77,8 +83,11 @@ export default function GlobeCanvas({ destinations, allDestinations, selectedDes
       renderer.toneMapping = THREE.ACESFilmicToneMapping
       renderer.toneMappingExposure = 1.15
       renderer.domElement.className = 'globe-canvas'
-      renderer.domElement.setAttribute('aria-label', 'Globo terrestre tridimensional interativo. Arraste para girar e use a roda do mouse para aproximar.')
+      renderer.domElement.setAttribute('aria-label', 'Globo terrestre tridimensional interativo. Arraste para girar. Zoom desativado.')
       renderer.domElement.setAttribute('role', 'img')
+      renderer.domElement.style.touchAction = 'pan-y'
+      renderer.domElement.style.cursor = interactionEnabledRef.current ? 'grab' : 'default'
+      renderer.domElement.style.pointerEvents = interactionEnabledRef.current ? 'auto' : 'none'
       host.appendChild(renderer.domElement)
     } catch {
       onStatusRef.current?.('Seu navegador não conseguiu iniciar o WebGL. A lista de destinos continua disponível abaixo.')
@@ -89,6 +98,8 @@ export default function GlobeCanvas({ destinations, allDestinations, selectedDes
     const camera = new THREE.PerspectiveCamera(34, host.clientWidth / Math.max(host.clientHeight, 1), 0.1, 100)
     camera.position.set(0, 0, 6.8)
     const world = new THREE.Group()
+    const homeOrientation = new THREE.Quaternion().setFromAxisAngle(worldUp, -Math.PI / 2)
+    world.quaternion.copy(homeOrientation)
     const markers = new THREE.Group()
     const routes = new THREE.Group()
     scene.add(world)
@@ -163,14 +174,14 @@ export default function GlobeCanvas({ destinations, allDestinations, selectedDes
       const correction = new THREE.Quaternion().setFromUnitVectors(currentDirection, front)
       targetQuaternion.copy(correction.multiply(world.quaternion.clone()))
       lastFocusedId = destination.id
+      focusing = true
     }
 
     if (controlsRef) {
       controlsRef.current = {
-        zoom: (amount) => { targetCameraZ = THREE.MathUtils.clamp(targetCameraZ + amount, 5.2, 9.2) },
         reset: () => {
-          targetCameraZ = 6.8
-          targetQuaternion.identity()
+          targetQuaternion.copy(homeOrientation)
+          focusing = false
           resetting = true
           lastFocusedId = null
           selectedIdRef.current = null
@@ -180,52 +191,68 @@ export default function GlobeCanvas({ destinations, allDestinations, selectedDes
     }
 
     function onPointerDown(event) {
+      if (!interactionEnabledRef.current) return
+      clearHover()
+      if (activePointers.size) return
       activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
-      if (activePointers.size >= 2) {
-        const points = [...activePointers.values()]
-        pinchStartDistance = Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y)
-        pinchStartZoom = targetCameraZ
-        pinching = true
-        dragging = false
-        didDrag = true
-        renderer.domElement.setPointerCapture(event.pointerId)
-        return
-      }
       dragging = true
       didDrag = false
+      focusing = false
+      resetting = false
+      targetQuaternion.copy(world.quaternion)
       previousX = event.clientX
       previousY = event.clientY
       renderer.domElement.setPointerCapture(event.pointerId)
     }
 
     function onPointerMove(event) {
-      if (activePointers.has(event.pointerId)) activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
-      if (pinching && activePointers.size >= 2) {
-        const points = [...activePointers.values()]
-        const distance = Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y)
-        targetCameraZ = THREE.MathUtils.clamp(pinchStartZoom * pinchStartDistance / Math.max(distance, 1), 5.2, 9.2)
+      if (!interactionEnabledRef.current) {
+        clearHover()
         return
       }
-      if (!dragging) return
+      if (dragging && !activePointers.has(event.pointerId)) return
+      if (activePointers.has(event.pointerId)) activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+      if (!dragging) {
+        const rect = renderer.domElement.getBoundingClientRect()
+        pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1)
+        raycaster.setFromCamera(pointer, camera)
+        const hit = raycaster.intersectObjects(markers.children, false).find((intersection) => intersection.object.userData.destination)
+        const destination = hit?.object.userData.destination || null
+        if (destination?.id !== hoveredDestinationId) {
+          hoveredDestinationId = destination?.id || null
+        }
+        if (destination) {
+          hoverLabel.textContent = destination.nome
+          hoverLabel.style.left = `${event.clientX - rect.left}px`
+          hoverLabel.style.top = `${event.clientY - rect.top}px`
+          hoverLabel.style.display = 'block'
+        } else {
+          hoverLabel.style.display = 'none'
+        }
+        canvas.style.cursor = destination ? 'pointer' : 'grab'
+        return
+      }
+      if (hoveredDestinationId) {
+        hoveredDestinationId = null
+      }
+      clearHover()
       const dx = event.clientX - previousX
       const dy = event.clientY - previousY
       if (Math.abs(dx) + Math.abs(dy) > 2) didDrag = true
       const yaw = new THREE.Quaternion().setFromAxisAngle(worldUp, dx * 0.006)
       const pitch = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), dy * 0.006)
       world.quaternion.premultiply(yaw).premultiply(pitch).normalize()
+      targetQuaternion.copy(world.quaternion)
       previousX = event.clientX
       previousY = event.clientY
     }
 
     function onPointerUp(event) {
+      if (!activePointers.has(event.pointerId)) return
       activePointers.delete(event.pointerId)
-      if (pinching) {
-        if (activePointers.size < 2) pinching = false
-        dragging = false
-        return
-      }
       if (!dragging) return
       dragging = false
+      canvas.style.cursor = 'grab'
       if (didDrag) return
       const rect = renderer.domElement.getBoundingClientRect()
       pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1)
@@ -234,22 +261,28 @@ export default function GlobeCanvas({ destinations, allDestinations, selectedDes
       if (hit?.object.userData.destination) onSelectRef.current?.(hit.object.userData.destination)
     }
 
-    function onWheel(event) {
-      event.preventDefault()
-      targetCameraZ = THREE.MathUtils.clamp(targetCameraZ + event.deltaY * 0.004, 5.2, 9.2)
-    }
-
     function onContextLost(event) {
       event.preventDefault()
       onStatusRef.current?.('A sessão gráfica foi interrompida. Atualize a página para tentar novamente; a lista de destinos permanece acessível.')
     }
 
     const canvas = renderer.domElement
+    const hoverLabel = document.createElement('div')
+    hoverLabel.className = 'globe-hover-label'
+    hoverLabel.setAttribute('aria-hidden', 'true')
+    host.appendChild(hoverLabel)
+
+    function clearHover() {
+      hoveredDestinationId = null
+      hoverLabel.style.display = 'none'
+      canvas.style.cursor = 'grab'
+    }
+
     canvas.addEventListener('pointerdown', onPointerDown)
     canvas.addEventListener('pointermove', onPointerMove)
     canvas.addEventListener('pointerup', onPointerUp)
     canvas.addEventListener('pointercancel', onPointerUp)
-    canvas.addEventListener('wheel', onWheel, { passive: false })
+    canvas.addEventListener('pointerleave', clearHover)
     canvas.addEventListener('webglcontextlost', onContextLost)
 
     function resize() {
@@ -267,19 +300,19 @@ export default function GlobeCanvas({ destinations, allDestinations, selectedDes
       const delta = Math.min((currentFrameTime - previousFrameTime) / 1000, 0.05)
       previousFrameTime = currentFrameTime
       if (document.hidden) return
-      camera.position.z += (targetCameraZ - camera.position.z) * (1 - Math.exp(-delta * 8))
       syncRoutes()
-      if (selectedIdRef.current && selectedIdRef.current !== lastFocusedId) {
+      if (!dragging && selectedIdRef.current && selectedIdRef.current !== lastFocusedId) {
         const destination = destinationsRef.current.find((item) => item.id === selectedIdRef.current)
         if (destination) focusDestination(destination)
       }
       if (!selectedIdRef.current) lastFocusedId = null
-      if (selectedIdRef.current || resetting) {
+      if (focusing || resetting) {
         if (reduceMotion) world.quaternion.copy(targetQuaternion)
         else world.quaternion.slerp(targetQuaternion, 1 - Math.exp(-delta * 2.6))
+        if (focusing && Math.abs(world.quaternion.dot(targetQuaternion)) > 0.9999) focusing = false
         if (resetting && Math.abs(world.quaternion.dot(targetQuaternion)) > 0.9999) resetting = false
       }
-      if (autoRotateRef.current && !dragging && !selectedIdRef.current && !resetting && !reduceMotion) {
+      if (autoRotateRef.current && !dragging && !resetting && !focusing && !reduceMotion) {
         world.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(worldUp, delta * 0.035))
       }
       renderer.render(scene, camera)
@@ -294,11 +327,12 @@ export default function GlobeCanvas({ destinations, allDestinations, selectedDes
       canvas.removeEventListener('pointermove', onPointerMove)
       canvas.removeEventListener('pointerup', onPointerUp)
       canvas.removeEventListener('pointercancel', onPointerUp)
-      canvas.removeEventListener('wheel', onWheel)
+      canvas.removeEventListener('pointerleave', clearHover)
       canvas.removeEventListener('webglcontextlost', onContextLost)
       texture?.dispose()
       if (controlsRef) controlsRef.current = null
       disposeGroup(world)
+      hoverLabel.remove()
       renderer.dispose()
       renderer.domElement.remove()
       scenePartsRef.current = null

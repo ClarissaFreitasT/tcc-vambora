@@ -19,6 +19,6 @@ export function getDestinationVector(latitude, longitude, radius = 1) {
   const lat = (latitude * Math.PI) / 180
   const lon = (longitude * Math.PI) / 180
   const cosLat = Math.cos(lat)
-  // Three.js SphereGeometry maps the texture's central meridian to local -Z.
-  return [cosLat * Math.sin(lon) * radius, Math.sin(lat) * radius, -cosLat * Math.cos(lon) * radius]
+  // Match Three.js SphereGeometry UVs: texture U=0.5 (Greenwich) lies on +X.
+  return [cosLat * Math.cos(lon) * radius, Math.sin(lat) * radius, -cosLat * Math.sin(lon) * radius]
 }

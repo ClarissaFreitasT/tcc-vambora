@@ -85,12 +85,9 @@ export default function Explorar() {
             <GlobeCanvas destinations={visibleDestinations} allDestinations={validDestinations} selectedDestinationId={selected?.id} routeDestinationIds={routeIds} autoRotate={autoRotate} onSelectDestination={selectDestination} onStatus={setGlobeStatus} controlsRef={globeControls} />
             {globeStatus !== 'ready' ? <div className={`globe-status ${globeStatus === 'loading' ? '' : 'warning'}`} role={globeStatus === 'loading' ? 'status' : 'alert'}>{globeStatus === 'loading' ? <><span className="loading-orbit" />Carregando textura terrestre…</> : globeStatus}</div> : null}
             <div className="globe-controls" aria-label="Controles do globo">
-              <button type="button" aria-label="Aproximar globo" onClick={() => globeControls.current?.zoom(-0.65)}>＋</button>
-              <button type="button" aria-label="Afastar globo" onClick={() => globeControls.current?.zoom(0.65)}>−</button>
-              <span />
               <button type="button" aria-label="Voltar à visão global" onClick={() => { setSelected(null); setQuery(''); globeControls.current?.reset() }}>◎</button>
             </div>
-            <div className="globe-caption"><span>Arraste para girar</span><span>Scroll para aproximar</span></div>
+            <div className="globe-caption"><span>Arraste para girar</span><span>Zoom desativado</span></div>
             <button type="button" className={`rotation-toggle ${autoRotate ? 'is-on' : ''}`} aria-pressed={autoRotate} onClick={() => setAutoRotate((current) => !current)}><span>{autoRotate ? 'Ⅱ' : '▶'}</span>{autoRotate ? 'Pausar rotação' : 'Retomar rotação'}</button>
             {routeDestinations.length ? <div className="route-legend"><span /> Rota visual · {routeDestinations.length} locais</div> : null}
           </div>
