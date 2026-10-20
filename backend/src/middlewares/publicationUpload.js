@@ -1,10 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { unlink } from "node:fs/promises";
-import path from "node:path";
+import { uploadDirectory } from "../config/uploads.js";
 import multer from "multer";
 
-const uploadDirectory = path.resolve(process.cwd(), "uploads", "community");
 mkdirSync(uploadDirectory, { recursive: true });
 
 const allowedMimeTypes = new Set([

@@ -12,7 +12,7 @@ npx prisma migrate deploy
 npx prisma generate
 ```
 
-O `.env` local usa a configuracao padrao do XAMPP: MySQL em `localhost:3306`, usuario `root` e senha vazia. Se a senha ou a porta do XAMPP forem diferentes, ajuste `DATABASE_URL`, `DATABASE_PASSWORD` e `DATABASE_HOST`.
+Copie `.env.example` para `.env` e preencha `DATABASE_URL` com os dados do seu MySQL local e `JWT_SECRET` com uma chave aleatória. Host, porta, usuário, senha e banco são lidos da mesma URL pelo Prisma CLI e pela aplicação. Consulte o README da raiz para TLS e produção.
 
 ## Iniciar a API
 
@@ -92,3 +92,7 @@ Nao exponha essa operacao em uma rota publica nem conceda acesso SQL a usuarios
 comuns. `GET /usuarios` retorna apenas campos de perfil público para visitantes
 e usuários comuns; com token de `ADMIN`, retorna a listagem administrativa,
 também sem incluir `senhaHash`.
+
+## Deploy
+
+Consulte o [guia de deploy na raiz](../README.md#deploy) para a configuração exata do Render, Node 24.11.1, geração do Prisma Client, TLS, disco persistente, CORS e migrations manuais. A configuração de conexão atual usa somente `DATABASE_URL`.

@@ -1,5 +1,3 @@
-import { motion } from 'framer-motion'
-
-export default function HeroBlobs({ className = '' }) {
+export default function HeroBlobs() {
   return null
 }

@@ -3,6 +3,7 @@ import UserAvatar from "./UserAvatar";
 import { Link } from "react-router-dom";
 import { formatCommunityDate } from "../utils/community";
 import { profilePath } from "../utils/profile";
+import { apiAssetUrl } from "../data/api";
 
 export default function CommunityPost({
   post,
@@ -250,7 +251,7 @@ export default function CommunityPost({
               {post.fotos.map((photo) => (
                 <img
                   key={photo.id}
-                  src={photo.url}
+                  src={apiAssetUrl(photo.url)}
                   alt="Foto da publicação"
                   loading="lazy"
                   className={`w-full bg-slate-100 object-cover ${post.fotos.length === 1 ? "max-h-[480px] rounded-2xl" : "h-48 sm:h-60"}`}

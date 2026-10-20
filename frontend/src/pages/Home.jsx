@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { apiFetch } from "../data/api";
+import { apiFetch, apiAssetUrl } from "../data/api";
 import { useAuth } from "../context/useAuth";
 import ImageFallback from "../components/ImageFallback";
 import RoteiroSearchPanel from "../components/RoteiroSearchPanel";
@@ -93,7 +93,7 @@ function HomeRouteCard({ route, featured = false, recent = false }) {
 }
 
 function CommunityPreview({ post }) {
-  const image = post.fotos?.[0]?.url;
+  const image = apiAssetUrl(post.fotos?.[0]?.url);
   return (
     <Link
       to={`/comunidade?publicacao=${encodeURIComponent(post.id)}`}

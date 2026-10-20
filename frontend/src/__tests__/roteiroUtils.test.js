@@ -1,3 +1,4 @@
+import { describe, it, expect } from "@jest/globals";
 import { getActivitySuggestions, replaceActivityInRoteiro } from '../utils/roteiroUtils.js'
 
 describe('roteiroUtils', () => {
@@ -29,3 +30,4 @@ describe('roteiroUtils', () => {
     expect(updated.dias[0].acoes[2]).toBe('Praia')
   })
 })
+import { describe, it, expect } from "@jest/globals";

@@ -1,4 +1,9 @@
 const API_ERROR_FALLBACK = "Não foi possível concluir a operação.";
+const API_URL = (import.meta.env?.VITE_API_URL || "").replace(/\/+$/, "");
+
+export function apiAssetUrl(url) {
+  return url?.startsWith("/uploads/") ? `${API_URL}${url}` : url;
+}
 
 export async function apiFetch(path, options = {}) {
   const token = localStorage.getItem("vambora_token");
@@ -12,7 +17,7 @@ export async function apiFetch(path, options = {}) {
 
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const response = await fetch(path, { ...options, headers });
+  const response = await fetch(`${API_URL}${path}`, { ...options, headers });
   const contentType = response.headers.get("content-type") || "";
   const data = contentType.includes("application/json")
     ? await response.json()

@@ -131,7 +131,7 @@ export default function GlobeCanvas({ destinations, allDestinations, selectedDes
     world.add(new THREE.Mesh(atmosphereGeometry, atmosphereMaterial))
 
     const loader = new THREE.TextureLoader()
-    loader.load('/textures/earth-topography.jpg', (loadedTexture) => {
+    loader.load(`${import.meta.env.BASE_URL}textures/earth-topography.jpg`, (loadedTexture) => {
       if (disposed) {
         loadedTexture.dispose()
         return

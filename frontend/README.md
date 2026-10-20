@@ -22,3 +22,7 @@ Para iniciar a aplicação a partir desta pasta, execute `npm install` e depois 
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+## Deploy
+
+Consulte o [guia de deploy na raiz](../README.md#deploy) para Hostinger na subpasta `/tecti/2026/gpec01/`, variáveis de produção, build e FileZilla. Não publique a build de auditoria sem preencher a URL real da API e gerar novamente.

@@ -3,13 +3,14 @@ import { rename, unlink } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { fileTypeFromFile } from "file-type";
+import { uploadDirectory } from "../config/uploads.js";
 
 async function removeUploadedFiles(files = []) {
   await Promise.all(files.map((file) => unlink(file.path).catch(() => {})));
 }
 
 async function removePublicationPhotos(publication) {
-  const directory = path.resolve(process.cwd(), "uploads", "community");
+  const directory = uploadDirectory;
   await Promise.all(
     (publication?.fotos || []).map((photo) =>
       unlink(path.join(directory, path.basename(photo.url))).catch(() => {}),
@@ -103,7 +104,7 @@ export async function criarPublicacao(req, res) {
     console.error("Erro ao criar publicação:", error);
     return res.status(500).json({
       erro: "Não foi possível criar a publicação",
-      detalhe: error.message,
+      detalhe: process.env.NODE_ENV === "production" ? undefined : error.message,
     });
   }
 }

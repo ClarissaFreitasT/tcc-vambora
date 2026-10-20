@@ -30,7 +30,7 @@ export async function criarCategoria(req, res) {
 
     return res.status(500).json({
       erro: "Não foi possível criar a categoria",
-      detalhe: error.message,
+      detalhe: process.env.NODE_ENV === "production" ? undefined : error.message,
     });
   }
 }

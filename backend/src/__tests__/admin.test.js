@@ -137,6 +137,7 @@ describe("Autorização de administrador", () => {
       nome: "Novo usuário",
       email: "novo@example.com",
       password: "senha123",
+      dataNascimento: "01/01/2000",
       role: "ADMIN",
     });
 
@@ -146,6 +147,7 @@ describe("Autorização de administrador", () => {
         nome: "Novo usuário",
         email: "novo@example.com",
         senhaHash: "senha-hash",
+        dataNascimento: new Date("2000-01-01T00:00:00.000Z"),
       },
     });
     expect(response.body.usuario).not.toHaveProperty("senhaHash");

@@ -444,7 +444,7 @@ export default function Perfil() {
       });
       return;
     }
-    const url = `${window.location.origin}/perfil/${profile.username}`;
+    const url = `${window.location.origin}${import.meta.env.BASE_URL}perfil/${encodeURIComponent(profile.username)}`;
     try {
       await navigator.clipboard.writeText(url);
       setStatus({ type: "success", message: "Link do perfil copiado." });
