@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiFetch } from "../data/api";
 import { useAuth } from "../context/useAuth";
@@ -12,6 +12,10 @@ import {
   getRouteDestinations,
 } from "../utils/homeRoutes";
 import { formatCommunityDate } from "../utils/community";
+import { destinosGlobo } from "../data/destinosGlobo";
+import "./Home.css";
+
+const GlobeCanvas = lazy(() => import("../components/GlobeCanvas.jsx"));
 
 function formatMoney(value) {
   if (value === null || value === undefined || value === "")
@@ -173,6 +177,9 @@ export default function Home() {
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [routesError, setRoutesError] = useState(null);
   const [postsError, setPostsError] = useState(null);
+  const [globeStatus, setGlobeStatus] = useState("loading");
+  const [globeInteractive, setGlobeInteractive] = useState(false);
+  const globeRef = useRef(null);
   const [filters, setFilters] = useState({ ...emptyRouteFilters });
   const [appliedFilters, setAppliedFilters] = useState(null);
 
@@ -227,6 +234,82 @@ export default function Home() {
     loadSections();
     return () => {
       active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const globe = globeRef.current;
+    if (!globe) return undefined;
+    const observer = new IntersectionObserver(([entry]) => {
+      setGlobeInteractive(entry.isIntersecting);
+    }, { threshold: 0.62 });
+    observer.observe(globe);
+    return () => observer.disconnect();
+  }, []);
+
+  useLayoutEffect(() => {
+    const globe = globeRef.current;
+    const section = globe?.closest(".home-globe-section");
+    if (!globe || !section) return undefined;
+    const shell = globe.closest(".site-shell");
+    let animationFrame = 0;
+    let naturalCenterX = 0;
+    let naturalCenterY = 0;
+    let startScale = 1;
+    let sectionTop = 0;
+    let headerHeight = 0;
+
+    const measureLayout = () => {
+      const header = document.querySelector("header") || document.querySelector("nav");
+      const position = header ? getComputedStyle(header).position : "static";
+      headerHeight = position === "sticky" || position === "fixed"
+        ? header.getBoundingClientRect().height
+        : 0;
+      shell?.style.setProperty("--home-screen-height", `${Math.max(1, window.innerHeight - headerHeight)}px`);
+      const previousTransform = globe.style.transform;
+      globe.style.transform = "none";
+      const rect = globe.getBoundingClientRect();
+      globe.style.transform = previousTransform;
+      naturalCenterX = rect.left + window.scrollX + rect.width / 2;
+      naturalCenterY = rect.top + window.scrollY + rect.height / 2;
+      sectionTop = section.getBoundingClientRect().top + window.scrollY;
+      const diameter = Math.min(window.innerWidth * 0.5, (window.innerHeight - headerHeight) * 0.95);
+      startScale = diameter / Math.max(rect.height * 0.86, 1);
+    };
+
+    const updatePosition = () => {
+      animationFrame = 0;
+      const viewportCenterY = headerHeight + (window.innerHeight - headerHeight) / 2;
+      const transitionEnd = Math.max(1, sectionTop - headerHeight);
+      const rawProgress = Math.min(1, Math.max(0, window.scrollY / transitionEnd));
+      const progress = rawProgress * rawProgress * (3 - 2 * rawProgress);
+      const naturalScreenX = naturalCenterX - window.scrollX;
+      const naturalScreenY = naturalCenterY - window.scrollY;
+      const targetCenterX = window.innerWidth + (naturalScreenX - window.innerWidth) * progress;
+      const targetCenterY = viewportCenterY - Math.max(0, window.scrollY - transitionEnd);
+      const offsetX = targetCenterX - naturalScreenX;
+      const offsetY = targetCenterY - naturalScreenY;
+      const scale = startScale + (1 - startScale) * progress;
+      globe.style.transform = `translate3d(${offsetX}px, ${offsetY}px, 0) scale(${scale})`;
+    };
+    const scheduleUpdate = () => {
+      if (!animationFrame) animationFrame = window.requestAnimationFrame(updatePosition);
+    };
+    const handleResize = () => {
+      measureLayout();
+      scheduleUpdate();
+    };
+
+    measureLayout();
+    scheduleUpdate();
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("resize", handleResize);
+      window.cancelAnimationFrame(animationFrame);
+      globe.style.transform = "";
+      shell?.style.removeProperty("--home-screen-height");
     };
   }, []);
 
@@ -308,7 +391,7 @@ export default function Home() {
 
   return (
     <main className="site-shell overflow-hidden">
-      <section className="relative isolate min-h-[780px] overflow-hidden bg-[#07182e] text-white sm:min-h-[700px] lg:min-h-[680px]">
+      <section className="home-hero-section relative isolate overflow-hidden bg-[#07182e] text-white">
         <ImageFallback
           src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=2200&q=85"
           alt="Paisagem litorânea ao entardecer"
@@ -316,7 +399,7 @@ export default function Home() {
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#061629]/95 via-[#082044]/75 to-[#082044]/40" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#061629]/85 via-transparent to-[#061629]/15" />
-        <div className="relative mx-auto grid min-h-[780px] max-w-[1440px] items-center gap-10 px-5 py-12 sm:min-h-[700px] sm:px-8 lg:min-h-[680px] lg:grid-cols-[1.02fr_.98fr] lg:px-12 lg:py-16">
+        <div className="relative mx-auto grid max-w-[1440px] items-center gap-10 px-5 py-12 sm:px-8 lg:grid-cols-[1.02fr_.98fr] lg:px-12 lg:py-16">
           <div className="max-w-2xl">
             <p className="text-xs font-extrabold uppercase tracking-[.27em] text-cyan-200 sm:text-sm">
               Vambora · viagens planejadas em comunidade
@@ -417,6 +500,50 @@ export default function Home() {
             </div>
             <p className="relative mt-4 text-center text-xs font-medium text-white/80">
               Encontre inspiração e transforme ideias em um plano.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="home-globe-section" aria-labelledby="home-globe-title">
+        <div className="container grid items-center gap-6 py-12 sm:py-16 lg:grid-cols-[0.8fr_1.2fr] lg:gap-10">
+          <div className="home-globe-copy">
+            <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">O mundo em perspectiva</p>
+            <h2 id="home-globe-title" className="mt-3 text-3xl font-black text-white sm:text-4xl">
+              Sua próxima descoberta pode estar em qualquer lugar.
+            </h2>
+            <p className="mt-4 max-w-xl leading-7 text-slate-300">
+              {globeInteractive
+                ? "Gire o planeta e passe pelos pontos para conhecer os destinos."
+                : "Continue descendo: o globo acompanha a página e fica interativo quando chegar até ele."}
+            </p>
+            <Link to="/explorar" className="btn-primary mt-6 inline-flex">Explorar destinos</Link>
+          </div>
+          <div ref={globeRef} className="home-globe-float" aria-label="Globo terrestre interativo">
+            <div className="home-globe-label"><span /> {destinosGlobo.length} DESTINOS PARA DESCOBRIR</div>
+            <div className="home-globe-stage">
+              <Suspense fallback={<div className="home-globe-loading" role="status">Preparando o globo 3D…</div>}>
+                <GlobeCanvas
+                  destinations={destinosGlobo}
+                  allDestinations={destinosGlobo}
+                  selectedDestinationId={null}
+                  routeDestinationIds={[]}
+                  autoRotate={globeInteractive}
+                  interactionEnabled={globeInteractive}
+                  onSelectDestination={() => navigate("/explorar")}
+                  onStatus={setGlobeStatus}
+                />
+              </Suspense>
+            </div>
+            {globeStatus !== "ready" ? (
+              <p className={`home-globe-status ${globeStatus === "loading" ? "" : "is-warning"}`} role={globeStatus === "loading" ? "status" : "alert"}>
+                {globeStatus === "loading" ? "Carregando textura terrestre…" : globeStatus}
+              </p>
+            ) : null}
+            <p className="home-globe-hint">
+              {globeInteractive
+                ? "Arraste para girar · passe sobre os pontos para ver os destinos"
+                : "Desça a página para liberar a interação com o globo"}
             </p>
           </div>
         </div>
