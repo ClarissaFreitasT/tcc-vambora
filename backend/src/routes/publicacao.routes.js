@@ -3,9 +3,16 @@ import { Router } from "express";
 import * as publicacaoController from "../controllers/publicacao.controller.js";
 import authMiddleware, { optionalAuth } from "../middlewares/authMiddleware.js";
 import adminMiddleware from "../middlewares/adminMiddleware.js";
+import { uploadPublicationPhotos } from "../middlewares/publicationUpload.js";
 
 const router = Router();
 
+router.get("/categorias", publicacaoController.listarCategoriasPublicacao);
+router.get(
+  "/salvas",
+  authMiddleware,
+  publicacaoController.listarPublicacoesSalvas,
+);
 router.get("/feed", authMiddleware, publicacaoController.listarFeedUsuario);
 router.get(
   "/timeline",
@@ -17,11 +24,48 @@ router.get(
   optionalAuth,
   publicacaoController.listarPublicacoesUsuario,
 );
+router.get(
+  "/admin/denuncias",
+  authMiddleware,
+  adminMiddleware,
+  publicacaoController.listarDenunciasPublicacoes,
+);
+router.patch(
+  "/admin/denuncias/:denunciaId",
+  authMiddleware,
+  adminMiddleware,
+  publicacaoController.atualizarEstadoDenuncia,
+);
 router.delete(
   "/admin/:id",
   authMiddleware,
   adminMiddleware,
   publicacaoController.excluirPublicacaoAdmin,
+);
+router.delete(
+  "/:id",
+  authMiddleware,
+  publicacaoController.excluirPublicacaoPropria,
+);
+router.get(
+  "/:id/curtidas",
+  optionalAuth,
+  publicacaoController.listarCurtidasPublicacao,
+);
+router.post(
+  "/:id/salvar",
+  authMiddleware,
+  publicacaoController.salvarPublicacao,
+);
+router.delete(
+  "/:id/salvar",
+  authMiddleware,
+  publicacaoController.removerPublicacaoSalva,
+);
+router.post(
+  "/:id/denunciar",
+  authMiddleware,
+  publicacaoController.denunciarPublicacao,
 );
 router.delete(
   "/comentarios/:comentarioId/admin",
@@ -35,8 +79,18 @@ router.get(
   optionalAuth,
   publicacaoController.listarComentariosPublicacao,
 );
+router.get(
+  "/:id/preview-comentarios",
+  optionalAuth,
+  publicacaoController.obterPreviewComentarios,
+);
 
-router.post("/", authMiddleware, publicacaoController.criarPublicacao);
+router.post(
+  "/",
+  authMiddleware,
+  uploadPublicationPhotos,
+  publicacaoController.criarPublicacao,
+);
 router.post(
   "/:id/curtir",
   authMiddleware,

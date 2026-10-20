@@ -74,6 +74,7 @@ export default function RoteiroDetalhes() {
         titulo: data.titulo,
         destino: data.destino,
         descricao: data.descricao || "",
+        imagemUrl: data.imagemUrl || "",
         orcamento: data.orcamento ?? "",
         publico: data.publico,
       });
@@ -87,7 +88,7 @@ export default function RoteiroDetalhes() {
   useEffect(() => {
     async function loadInitialRoteiro() {
       if (!localStorage.getItem("vambora_token")) {
-        navigate("/login");
+        navigate("/login", { state: { from: `/roteiros/${id}` } });
         return;
       }
       try {
@@ -97,6 +98,7 @@ export default function RoteiroDetalhes() {
           titulo: data.titulo,
           destino: data.destino,
           descricao: data.descricao || "",
+          imagemUrl: data.imagemUrl || "",
           orcamento: data.orcamento ?? "",
           publico: data.publico,
         });
@@ -688,6 +690,21 @@ export default function RoteiroDetalhes() {
                     setRoteiroForm({
                       ...roteiroForm,
                       descricao: e.target.value,
+                    })
+                  }
+                />
+              </Field>
+              <Field label="Fotografia do roteiro (opcional)">
+                <input
+                  className="input-field"
+                  type="url"
+                  maxLength={500}
+                  placeholder="https://…"
+                  value={roteiroForm.imagemUrl || ""}
+                  onChange={(event) =>
+                    setRoteiroForm({
+                      ...roteiroForm,
+                      imagemUrl: event.target.value,
                     })
                   }
                 />

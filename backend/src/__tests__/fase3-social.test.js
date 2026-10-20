@@ -4,11 +4,18 @@ const mockCriarPublicacao = jest.fn();
 const mockEncontrarPublicacao = jest.fn();
 const mockCurtirPublicacao = jest.fn();
 const mockAdicionarComentario = jest.fn();
+const mockObterComentarioDaPublicacao = jest.fn();
 const mockObterCurtidaPublicacao = jest.fn();
 const mockContarCurtidasPublicacao = jest.fn();
 const mockSeguirUsuario = jest.fn();
 const mockObterUsuarioPorId = jest.fn();
 const mockListarTimelinePublica = jest.fn();
+const mockListarCategoriasPublicacao = jest.fn();
+const mockObterRoteiroVinculavel = jest.fn();
+const mockObterDenuncia = jest.fn();
+const mockCriarDenuncia = jest.fn();
+const mockSalvarPublicacao = jest.fn();
+const mockExcluirPublicacao = jest.fn();
 
 jest.unstable_mockModule("../models/publicacao.model.js", () => ({
   criarPublicacao: mockCriarPublicacao,
@@ -17,7 +24,14 @@ jest.unstable_mockModule("../models/publicacao.model.js", () => ({
   criarCurtidaPublicacao: mockCurtirPublicacao,
   contarCurtidasPublicacao: mockContarCurtidasPublicacao,
   criarComentarioPublicacao: mockAdicionarComentario,
+  obterComentarioDaPublicacao: mockObterComentarioDaPublicacao,
   listarTimelinePublica: mockListarTimelinePublica,
+  listarCategoriasPublicacao: mockListarCategoriasPublicacao,
+  obterRoteiroVinculavel: mockObterRoteiroVinculavel,
+  obterDenuncia: mockObterDenuncia,
+  criarDenuncia: mockCriarDenuncia,
+  salvarPublicacao: mockSalvarPublicacao,
+  excluirPublicacao: mockExcluirPublicacao,
 }));
 
 jest.unstable_mockModule("../models/users.model.js", () => ({
@@ -37,6 +51,9 @@ const {
   curtirPublicacao,
   adicionarComentarioPublicacao,
   listarTimelinePublica,
+  salvarPublicacao,
+  denunciarPublicacao,
+  excluirPublicacaoPropria,
 } = await import("../controllers/publicacao.controller.js");
 const { seguirUsuario } = await import("../controllers/users.controller.js");
 
@@ -44,13 +61,16 @@ describe("Fase 3 - comunidade social", () => {
   const res = {
     status: jest.fn().mockReturnThis(),
     json: jest.fn().mockReturnThis(),
+    send: jest.fn().mockReturnThis(),
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
     mockObterUsuarioPorId.mockResolvedValue({ id: "u2", nome: "Maria" });
+    mockListarCategoriasPublicacao.mockResolvedValue([]);
     mockObterCurtidaPublicacao.mockResolvedValue(null);
     mockContarCurtidasPublicacao.mockResolvedValue(1);
+    mockObterDenuncia.mockResolvedValue(null);
   });
 
   it("cria uma publicação de um usuário autenticado", async () => {
@@ -64,6 +84,7 @@ describe("Fase 3 - comunidade social", () => {
       {
         body: { texto: "Viagem incrível" },
         user: { id: "u1" },
+        files: [],
       },
       res,
     );
@@ -73,6 +94,8 @@ describe("Fase 3 - comunidade social", () => {
       "u1",
       "Viagem incrível",
       null,
+      [],
+      [],
     );
   });
 
@@ -88,11 +111,11 @@ describe("Fase 3 - comunidade social", () => {
 
     await listarTimelinePublica({ user: { id: "u1" } }, res);
 
-    expect(mockListarTimelinePublica).toHaveBeenCalledWith("u1");
+    expect(mockListarTimelinePublica).toHaveBeenCalledWith("u1", null);
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith([
-      { id: "p1", texto: "Roteiro incrível", curtiu: true },
-      { id: "p2", texto: "Dica de viagem", curtiu: false },
+      { id: "p1", texto: "Roteiro incrível", curtiu: true, salvo: false },
+      { id: "p2", texto: "Dica de viagem", curtiu: false, salvo: false },
     ]);
   });
 
@@ -135,6 +158,107 @@ describe("Fase 3 - comunidade social", () => {
       "Parabéns!",
       null,
     );
+  });
+
+  it("permite responder a um comentário da mesma publicação", async () => {
+    mockEncontrarPublicacao.mockResolvedValue({ id: "p1", usuarioId: "u2" });
+    mockObterComentarioDaPublicacao.mockResolvedValue({ id: "c-parent" });
+    mockAdicionarComentario.mockResolvedValue({
+      id: "c2",
+      texto: "Resposta",
+      usuarioId: "u1",
+      publicacaoId: "p1",
+      comentarioPaiId: "c-parent",
+    });
+
+    await adicionarComentarioPublicacao(
+      {
+        params: { id: "p1" },
+        body: { texto: "Resposta", comentarioPaiId: "c-parent" },
+        user: { id: "u1" },
+      },
+      res,
+    );
+
+    expect(mockObterComentarioDaPublicacao).toHaveBeenCalledWith(
+      "c-parent",
+      "p1",
+    );
+    expect(mockAdicionarComentario).toHaveBeenCalledWith(
+      "u1",
+      "p1",
+      "Resposta",
+      "c-parent",
+    );
+    expect(res.status).toHaveBeenCalledWith(201);
+  });
+
+  it("rejeita resposta a comentário de outra publicação", async () => {
+    mockEncontrarPublicacao.mockResolvedValue({ id: "p1", usuarioId: "u2" });
+    mockObterComentarioDaPublicacao.mockResolvedValue(null);
+
+    await adicionarComentarioPublicacao(
+      {
+        params: { id: "p1" },
+        body: { texto: "Resposta", comentarioPaiId: "c-other-post" },
+        user: { id: "u1" },
+      },
+      res,
+    );
+
+    expect(mockAdicionarComentario).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      erro: "O comentário respondido não pertence a esta publicação",
+    });
+  });
+
+  it("salva uma publicação existente para o perfil pessoal", async () => {
+    mockEncontrarPublicacao.mockResolvedValue({ id: "p1", usuarioId: "u2" });
+
+    await salvarPublicacao({ params: { id: "p1" }, user: { id: "u1" } }, res);
+
+    expect(mockSalvarPublicacao).toHaveBeenCalledWith("u1", "p1");
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ salvo: true });
+  });
+
+  it("registra denúncia sem apagar o conteúdo", async () => {
+    mockEncontrarPublicacao.mockResolvedValue({ id: "p1", usuarioId: "u2" });
+
+    await denunciarPublicacao(
+      {
+        params: { id: "p1" },
+        user: { id: "u1" },
+        body: { motivo: "Spam", detalhe: "Link suspeito" },
+      },
+      res,
+    );
+
+    expect(mockCriarDenuncia).toHaveBeenCalledWith(
+      "u1",
+      "p1",
+      "Spam",
+      "Link suspeito",
+    );
+    expect(mockExcluirPublicacao).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(201);
+  });
+
+  it("permite excluir somente a publicação própria", async () => {
+    mockEncontrarPublicacao.mockResolvedValue({
+      id: "p1",
+      usuarioId: "u1",
+      fotos: [],
+    });
+
+    await excluirPublicacaoPropria(
+      { params: { id: "p1" }, user: { id: "u1" } },
+      res,
+    );
+
+    expect(mockExcluirPublicacao).toHaveBeenCalledWith("p1");
+    expect(res.status).toHaveBeenCalledWith(204);
   });
 
   it("segue um usuário sem repetir relacionamento", async () => {

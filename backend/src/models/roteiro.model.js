@@ -9,72 +9,166 @@ export async function obterTodasRoteiros(usuarioId) {
       categorias: {
         include: { categoria: true },
       },
+      dias: { select: { id: true, numeroDia: true } },
     },
     orderBy: { criadoEm: "desc" },
   });
 }
 
-export async function obterRoteirosPublicos() {
-  return prisma.roteiro.findMany({
+function routeMetrics(roteiro) {
+  const totalCurtidas = roteiro.favoritos?.length || 0;
+  const totalAvaliacoes = roteiro.reviews?.length || 0;
+  const mediaAvaliacao = totalAvaliacoes
+    ? roteiro.reviews.reduce((sum, review) => sum + review.nota, 0) /
+      totalAvaliacoes
+    : 0;
+  const totalUsos = roteiro._count?.roteirosDuplicados || 0;
+  const ageDays = Math.max(
+    0,
+    (Date.now() - new Date(roteiro.criadoEm).getTime()) / 86_400_000,
+  );
+  const popularidade =
+    Math.log1p(totalCurtidas) * 2 +
+    Math.log1p(totalAvaliacoes) * 2 +
+    (mediaAvaliacao / 5) * 1.5 +
+    Math.log1p(totalUsos) * 1.5 +
+    2 / (1 + ageDays / 30);
+
+  return {
+    totalCurtidas,
+    totalAvaliacoes,
+    mediaAvaliacao: Number(mediaAvaliacao.toFixed(2)),
+    totalUsos,
+    popularidade: Number(popularidade.toFixed(3)),
+    totalDias: roteiro.dias?.length || 0,
+  };
+}
+
+function withRouteMetrics(roteiro) {
+  const { favoritos, reviews, _count, ...safeRoteiro } = roteiro;
+  return {
+    ...safeRoteiro,
+    ...routeMetrics({ ...roteiro, favoritos, reviews, _count }),
+  };
+}
+
+function matchesPublicRouteFilters(roteiro, filters = {}) {
+  const destination = filters.destino?.toLocaleLowerCase("pt-BR");
+  if (
+    destination &&
+    !roteiro.destino?.toLocaleLowerCase("pt-BR").includes(destination)
+  )
+    return false;
+  const term = filters.termo?.toLocaleLowerCase("pt-BR");
+  if (
+    term &&
+    ![roteiro.destino, roteiro.titulo, roteiro.descricao].some((value) =>
+      value?.toLocaleLowerCase("pt-BR").includes(term),
+    )
+  )
+    return false;
+  if (
+    filters.orcamentoMin !== undefined &&
+    (roteiro.orcamento == null ||
+      Number(roteiro.orcamento) < filters.orcamentoMin)
+  )
+    return false;
+  if (
+    filters.orcamentoMax !== undefined &&
+    (roteiro.orcamento == null ||
+      Number(roteiro.orcamento) > filters.orcamentoMax)
+  )
+    return false;
+  if (
+    filters.dias !== undefined &&
+    (roteiro.dias?.length || 0) !== filters.dias
+  )
+    return false;
+  if (
+    filters.avaliacaoMin !== undefined &&
+    roteiro.reviews?.length > 0 &&
+    routeMetrics(roteiro).mediaAvaliacao < filters.avaliacaoMin
+  )
+    return false;
+  if (filters.categoriaIds?.length) {
+    const routeCategoryIds = new Set(
+      roteiro.categorias?.map(({ categoriaId }) => categoriaId),
+    );
+    if (!filters.categoriaIds.some((id) => routeCategoryIds.has(id)))
+      return false;
+  }
+  return true;
+}
+
+function publicRouteInclude() {
+  return {
+    usuario: { select: { id: true, nome: true, username: true } },
+    categorias: { include: { categoria: true } },
+    dias: { select: { id: true, numeroDia: true } },
+    favoritos: { select: { id: true } },
+    reviews: { select: { nota: true } },
+    _count: { select: { roteirosDuplicados: true } },
+  };
+}
+
+export async function obterRoteirosPublicos(filters = {}) {
+  const roteiros = await prisma.roteiro.findMany({
     where: { publico: true },
-    include: {
-      usuario: {
-        select: { id: true, nome: true },
-      },
-      categorias: {
-        include: { categoria: true },
-      },
-    },
-    orderBy: { criadoEm: "desc" },
+    include: publicRouteInclude(),
   });
+  return roteiros
+    .filter((roteiro) => matchesPublicRouteFilters(roteiro, filters))
+    .map(withRouteMetrics)
+    .sort((a, b) => {
+      const destination = filters.destino?.toLocaleLowerCase("pt-BR");
+      const rank = (route) => {
+        if (!destination) return 0;
+        const value = route.destino?.toLocaleLowerCase("pt-BR") || "";
+        return value === destination
+          ? 4
+          : value.startsWith(destination)
+            ? 3
+            : 2;
+      };
+      const termRank = (route) => {
+        const term = filters.termo?.toLocaleLowerCase("pt-BR");
+        if (!term) return 0;
+        if (route.titulo?.toLocaleLowerCase("pt-BR").includes(term)) return 1;
+        if (route.descricao?.toLocaleLowerCase("pt-BR").includes(term))
+          return 0.5;
+        return 0;
+      };
+      return (
+        rank(b) - rank(a) ||
+        termRank(b) - termRank(a) ||
+        b.popularidade - a.popularidade ||
+        new Date(b.criadoEm) - new Date(a.criadoEm)
+      );
+    });
 }
 
 export async function obterRoteirosPopulares(limit = 10) {
   const roteiros = await prisma.roteiro.findMany({
     where: { publico: true },
-    include: {
-      usuario: {
-        select: { id: true, nome: true, username: true },
-      },
-      categorias: {
-        include: { categoria: true },
-      },
-      favoritos: true,
-      reviews: {
-        select: { nota: true },
-      },
-    },
+    include: publicRouteInclude(),
     orderBy: { criadoEm: "desc" },
   });
 
   return roteiros
-    .map((roteiro) => {
-      const totalCurtidas = roteiro.favoritos.length;
-      const totalAvaliacoes = roteiro.reviews.length;
-      const mediaAvaliacao =
-        totalAvaliacoes > 0
-          ? roteiro.reviews.reduce((soma, review) => soma + review.nota, 0) /
-            totalAvaliacoes
-          : 0;
-
-      const popularidade =
-        totalCurtidas * 2 + totalAvaliacoes * 3 + mediaAvaliacao * 2;
-
-      return {
-        ...roteiro,
-        totalCurtidas,
-        totalAvaliacoes,
-        mediaAvaliacao: Number(mediaAvaliacao.toFixed(2)),
-        popularidade: Number(popularidade.toFixed(2)),
-      };
-    })
+    .map(withRouteMetrics)
+    .filter(
+      (roteiro) =>
+        roteiro.totalCurtidas > 0 ||
+        roteiro.totalAvaliacoes > 0 ||
+        roteiro.totalUsos > 0,
+    )
     .sort(
       (a, b) =>
         b.popularidade - a.popularidade ||
         new Date(b.criadoEm).getTime() - new Date(a.criadoEm).getTime(),
     )
     .slice(0, limit)
-    .map(({ favoritos, reviews, ...roteiro }) => roteiro);
+    .map(({ favoritos, reviews, _count, ...roteiro }) => roteiro);
 }
 
 // Busca um roteiro específico pelo seu identificador único.
@@ -281,6 +375,7 @@ export async function criarNovoRoteiro({
   destino,
   descricao = null,
   orcamento = null,
+  imagemUrl = null,
   publico = false,
   roteiroOriginalId = null,
 }) {
@@ -290,6 +385,7 @@ export async function criarNovoRoteiro({
       titulo,
       destino,
       descricao,
+      imagemUrl,
       orcamento,
       publico,
       roteiroOriginalId,
@@ -312,6 +408,7 @@ export async function atualizarRoteiro(id, dados) {
   if (dados.titulo !== undefined) updateData.titulo = dados.titulo;
   if (dados.destino !== undefined) updateData.destino = dados.destino;
   if (dados.descricao !== undefined) updateData.descricao = dados.descricao;
+  if (dados.imagemUrl !== undefined) updateData.imagemUrl = dados.imagemUrl;
   if (dados.orcamento !== undefined) updateData.orcamento = dados.orcamento;
   if (dados.publico !== undefined) updateData.publico = dados.publico;
 
@@ -358,6 +455,7 @@ export async function duplicarRoteiro(roteiroId, usuarioId) {
         titulo: `${roteiroOriginal.titulo} (Cópia)`,
         destino: roteiroOriginal.destino,
         descricao: roteiroOriginal.descricao,
+        imagemUrl: roteiroOriginal.imagemUrl,
         orcamento: roteiroOriginal.orcamento,
         publico: false,
       },

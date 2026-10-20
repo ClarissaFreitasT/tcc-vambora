@@ -27,6 +27,8 @@ model Usuario {
   seguidores       Seguidor[]          @relation("SeguidorSeguido")
   seguindo         Seguidor[]          @relation("SeguidorSeguidor")
   roteirosSalvos   SalvoRoteiro[]
+  publicacoesSalvas SalvoPublicacao[]
+  denunciasPublicacoes DenunciaPublicacao[]
 
   @@map("usuarios")
 }
@@ -38,6 +40,7 @@ model Roteiro {
   titulo             String             @db.VarChar(255)
   descricao          String?            @db.Text
   destino            String             @db.VarChar(255)
+  imagemUrl          String?            @map("imagem_url") @db.VarChar(500)
   orcamento          Decimal?           @db.Decimal(10, 2)
   publico            Boolean            @default(false)
   criadoEm           DateTime           @default(now()) @map("criado_em")
@@ -101,6 +104,7 @@ model Categoria {
   id       String             @id @default(uuid()) @db.Char(36)
   nome     String             @unique @db.VarChar(255)
   roteiros RoteiroCategoria[]
+  publicacoes PublicacaoCategoria[]
 
   @@map("categorias")
 }
@@ -155,10 +159,67 @@ model Publicacao {
   roteiro    Roteiro? @relation(fields: [roteiroId], references: [id], onDelete: SetNull)
   comentarios Comentario[]
   curtidas CurtidaPublicacao[]
+  fotos PublicacaoFoto[]
+  categorias PublicacaoCategoria[]
+  salvos SalvoPublicacao[]
+  denuncias DenunciaPublicacao[]
 
   @@index([usuarioId])
   @@index([roteiroId])
+  @@index([criadoEm, id])
   @@map("publicacoes")
+}
+
+model PublicacaoFoto {
+  id           String     @id @default(uuid()) @db.Char(36)
+  publicacaoId String     @map("publicacao_id") @db.Char(36)
+  url          String     @db.VarChar(500)
+  ordem        Int        @default(0)
+  publicacao   Publicacao @relation(fields: [publicacaoId], references: [id], onDelete: Cascade)
+
+  @@index([publicacaoId, ordem])
+  @@map("publicacoes_fotos")
+}
+
+model PublicacaoCategoria {
+  publicacaoId String     @map("publicacao_id") @db.Char(36)
+  categoriaId  String     @map("categoria_id") @db.Char(36)
+  publicacao   Publicacao @relation(fields: [publicacaoId], references: [id], onDelete: Cascade)
+  categoria    Categoria  @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
+
+  @@id([publicacaoId, categoriaId])
+  @@index([categoriaId, publicacaoId])
+  @@map("publicacoes_categorias")
+}
+
+model SalvoPublicacao {
+  id           String     @id @default(uuid()) @db.Char(36)
+  usuarioId    String     @map("usuario_id") @db.Char(36)
+  publicacaoId String     @map("publicacao_id") @db.Char(36)
+  criadoEm     DateTime   @default(now()) @map("criado_em")
+  usuario      Usuario    @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  publicacao   Publicacao @relation(fields: [publicacaoId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, publicacaoId])
+  @@index([usuarioId, criadoEm])
+  @@map("publicacoes_salvas")
+}
+
+model DenunciaPublicacao {
+  id           String      @id @default(uuid()) @db.Char(36)
+  usuarioId    String      @map("usuario_id") @db.Char(36)
+  publicacaoId String?     @map("publicacao_id") @db.Char(36)
+  motivo       String      @db.VarChar(80)
+  detalhe      String?     @db.Text
+  estado       String      @default("ABERTA") @db.VarChar(20)
+  criadoEm     DateTime    @default(now()) @map("criado_em")
+  usuario      Usuario     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  publicacao   Publicacao? @relation(fields: [publicacaoId], references: [id], onDelete: SetNull)
+
+  @@unique([usuarioId, publicacaoId])
+  @@index([estado, criadoEm])
+  @@index([publicacaoId])
+  @@map("denuncias_publicacoes")
 }
 
 model Comentario {

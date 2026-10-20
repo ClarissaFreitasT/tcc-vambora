@@ -1,3 +1,4 @@
+import { describe, expect, it } from "@jest/globals";
 import {
   buildRoteiroPayload,
   serializeDiaPayload,
@@ -18,8 +19,17 @@ describe("roteiroSave payloads", () => {
       titulo: "Lisboa em 3 dias",
       destino: "Lisboa, Portugal",
       descricao: "Passeios e gastronomia",
+      imagemUrl: null,
       orcamento: 2500,
       publico: true,
+    });
+  });
+
+  it("trims the optional route cover image URL", () => {
+    expect(
+      buildRoteiroPayload({ imagemUrl: " https://example.com/route.jpg " }),
+    ).toMatchObject({
+      imagemUrl: "https://example.com/route.jpg",
     });
   });
 

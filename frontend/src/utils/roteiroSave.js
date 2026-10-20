@@ -3,6 +3,7 @@ export function buildRoteiroPayload(form) {
     titulo: String(form.titulo || "").trim(),
     destino: String(form.destino || "").trim(),
     descricao: String(form.descricao || "").trim(),
+    imagemUrl: String(form.imagemUrl || "").trim() || null,
     orcamento:
       form.orcamento === "" ||
       form.orcamento === null ||

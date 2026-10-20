@@ -138,6 +138,7 @@ describe("Testes das rotas principais", () => {
         titulo: "Roteiro Gastronômico",
         destino: "São Paulo",
         descricao: "Melhores restaurantes da cidade",
+        imagemUrl: null,
         orcamento: 2000,
         publico: true,
       };

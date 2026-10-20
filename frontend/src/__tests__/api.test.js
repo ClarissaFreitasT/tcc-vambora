@@ -56,4 +56,23 @@ describe("apiFetch session handling", () => {
       token: "expired-token",
     });
   });
+
+  it("does not override the multipart content type for photo uploads", async () => {
+    installStorage({ vambora_token: "valid-token" });
+    const fetchSpy = jest.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ id: "post-1" }), {
+        status: 201,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    const body = new FormData();
+    body.append("texto", "Uma dica de viagem");
+
+    await apiFetch("/publicacoes", { method: "POST", body });
+
+    const [, options] = fetchSpy.mock.calls[0];
+    expect(options.headers.get("Content-Type")).toBeNull();
+    expect(options.headers.get("Authorization")).toBe("Bearer valid-token");
+    expect(options.body).toBe(body);
+  });
 });

@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import UserAvatar from "./UserAvatar";
 import { useAuth } from "../context/useAuth";
 
 export default function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, isAuthenticated, loading, logout } = useAuth();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef(null);
@@ -58,21 +59,25 @@ export default function Navbar() {
           />
         ) : isLoggedIn ? (
           <div className="flex flex-wrap items-center gap-4">
-            <Link
-              className="text-sm font-semibold text-slate-600 transition hover:text-[#2563EB]"
-              to="/explorar"
-            >
-              Explorar globo
-            </Link>
+            {location.pathname !== "/" ? (
+              <Link
+                className="text-sm font-semibold text-slate-600 transition hover:text-[#2563EB]"
+                to="/explorar"
+              >
+                Explorar globo
+              </Link>
+            ) : null}
             <Link
               className="text-sm font-semibold text-slate-600 transition hover:text-[#2563EB]"
               to="/roteiros"
+              hidden={location.pathname === "/"}
             >
               Meus roteiros
             </Link>
             <Link
               className="text-sm font-semibold text-slate-600 transition hover:text-[#2563EB]"
               to="/roteiros/salvos"
+              hidden={location.pathname === "/"}
             >
               Salvos
             </Link>
@@ -85,18 +90,22 @@ export default function Navbar() {
           </div>
         ) : (
           <div className="flex flex-wrap items-center gap-4">
-            <Link
-              className="text-sm font-semibold text-slate-600 transition hover:text-[#2563EB]"
-              to="/explorar"
-            >
-              Explorar globo
-            </Link>
-            <Link
-              className="text-sm font-semibold text-slate-600 transition hover:text-[#2563EB]"
-              to="/roteiros/publicos"
-            >
-              Explorar roteiros
-            </Link>
+            {location.pathname !== "/" ? (
+              <Link
+                className="text-sm font-semibold text-slate-600 transition hover:text-[#2563EB]"
+                to="/explorar"
+              >
+                Explorar globo
+              </Link>
+            ) : null}
+            {location.pathname !== "/" ? (
+              <Link
+                className="text-sm font-semibold text-slate-600 transition hover:text-[#2563EB]"
+                to="/roteiros/publicos"
+              >
+                Explorar roteiros
+              </Link>
+            ) : null}
             <Link
               className="text-sm font-semibold text-slate-600 transition hover:text-[#2563EB]"
               to="/comunidade"
@@ -111,13 +120,15 @@ export default function Navbar() {
             <span className="text-xs text-slate-500">Verificando sessão…</span>
           ) : isLoggedIn ? (
             <>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => navigate("/roteiros/novo")}
-              >
-                Criar roteiro
-              </button>
+              {location.pathname !== "/" ? (
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => navigate("/roteiros/novo")}
+                >
+                  Criar roteiro
+                </button>
+              ) : null}
               <div className="relative" ref={profileMenuRef}>
                 <button
                   ref={profileButtonRef}

@@ -172,6 +172,7 @@ export default function Perfil() {
   const [posts, setPosts] = useState([]);
   const [roteiros, setRoteiros] = useState([]);
   const [savedRoutes, setSavedRoutes] = useState([]);
+  const [savedPosts, setSavedPosts] = useState([]);
   const [likedPosts, setLikedPosts] = useState([]);
   const [likedRoutes, setLikedRoutes] = useState([]);
   const [savedLoading, setSavedLoading] = useState(false);
@@ -208,6 +209,7 @@ export default function Perfil() {
     setStatus(null);
     setActiveTab("posts");
     setSavedRoutes([]);
+    setSavedPosts([]);
     setSavedError(null);
     setSavedLoading(isOwnProfile);
     setLikedPosts([]);
@@ -251,15 +253,21 @@ export default function Perfil() {
           ? apiFetch(`/usuarios/${loadedProfile.id}/seguindo`)
           : Promise.resolve(null),
         isOwnProfile
-          ? apiFetch("/roteiros/salvos")
-              .then((entries) =>
-                entries.map((entry) => entry.roteiro).filter(Boolean),
-              )
+          ? Promise.all([
+              apiFetch("/roteiros/salvos"),
+              apiFetch("/publicacoes/salvas"),
+            ])
+              .then(([routeEntries, savedPublications]) => ({
+                routes: routeEntries
+                  .map((entry) => entry.roteiro)
+                  .filter(Boolean),
+                posts: savedPublications,
+              }))
               .catch((error) => {
                 setSavedError(error.message);
-                return [];
+                return { routes: [], posts: [] };
               })
-          : Promise.resolve([]),
+          : Promise.resolve({ routes: [], posts: [] }),
         isOwnProfile
           ? apiFetch("/usuarios/me/curtidas").catch((error) => {
               setLikesError(error.message);
@@ -281,7 +289,8 @@ export default function Perfil() {
       setProfile(profileWithStats);
       setPosts(loadedPosts);
       setRoteiros(loadedRoteiros.filter((roteiro) => roteiro.publico === true));
-      setSavedRoutes(saved);
+      setSavedRoutes(saved.routes);
+      setSavedPosts(saved.posts);
       setLikedPosts(likes.publicacoes || []);
       setLikedRoutes(likes.roteiros || []);
       setFollowing(Boolean(profileWithStats.seguindo));
@@ -317,14 +326,25 @@ export default function Perfil() {
       activeTab === "posts"
         ? posts.map((item) => ({ type: "post", item }))
         : activeTab === "saved"
-          ? savedRoutes.map((item) => ({ type: "route", item }))
+          ? [
+              ...savedPosts.map((item) => ({ type: "post", item })),
+              ...savedRoutes.map((item) => ({ type: "route", item })),
+            ]
           : activeTab === "likes"
             ? [
                 ...likedPosts.map((item) => ({ type: "post", item })),
                 ...likedRoutes.map((item) => ({ type: "route", item })),
               ]
             : roteiros.map((item) => ({ type: "route", item })),
-    [activeTab, posts, roteiros, savedRoutes, likedPosts, likedRoutes],
+    [
+      activeTab,
+      posts,
+      roteiros,
+      savedRoutes,
+      savedPosts,
+      likedPosts,
+      likedRoutes,
+    ],
   );
 
   async function openPublication(post) {
@@ -621,7 +641,14 @@ export default function Perfil() {
               className="m-4 rounded-2xl bg-red-50 p-4 text-sm text-red-700"
               role="alert"
             >
-              Não foi possível carregar seus roteiros salvos: {savedError}
+              Não foi possível carregar seus conteúdos salvos: {savedError}
+              <button
+                type="button"
+                onClick={loadProfile}
+                className="ml-2 font-bold underline decoration-current underline-offset-2"
+              >
+                Tentar novamente
+              </button>
             </div>
           ) : null}
           {activeTab === "saved" && savedLoading ? (
@@ -629,7 +656,7 @@ export default function Perfil() {
               className="px-6 py-12 text-center text-sm text-slate-500"
               role="status"
             >
-              Carregando seus roteiros salvos…
+              Carregando seus conteúdos salvos…
             </p>
           ) : null}
 
@@ -683,7 +710,7 @@ export default function Perfil() {
                   {activeTab === "posts"
                     ? "Ainda sem publicações"
                     : activeTab === "saved"
-                      ? "Nenhum roteiro salvo por enquanto"
+                      ? "Nenhum conteúdo salvo por enquanto"
                       : activeTab === "likes"
                         ? "Você ainda não curtiu nenhum conteúdo"
                         : "Ainda sem roteiros públicos"}
@@ -694,7 +721,7 @@ export default function Perfil() {
                       ? "Compartilhe uma dica de viagem para começar sua coleção de publicações."
                       : "Este viajante ainda não compartilhou publicações por aqui."
                     : activeTab === "saved"
-                      ? "Salve roteiros públicos interessantes para encontrá-los facilmente aqui."
+                      ? "Salve publicações e roteiros interessantes para encontrá-los facilmente aqui."
                       : activeTab === "likes"
                         ? "Publicações e roteiros que você curtir aparecerão nesta coleção privada."
                         : isOwnProfile

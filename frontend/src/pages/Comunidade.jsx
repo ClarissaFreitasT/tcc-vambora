@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import UserAvatar from "../components/UserAvatar";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import CommunityPost from "../components/CommunityPost";
 import Feedback from "../components/Feedback";
 import { apiFetch } from "../data/api";
@@ -8,41 +8,57 @@ import { useAuth } from "../context/useAuth";
 import { filterTravelers, updatePostLike } from "../utils/community";
 import { profilePath } from "../utils/profile";
 
-const navigationItems = [
-  { label: "Página inicial", href: "/", icon: "⌂" },
-  { label: "Comunidade", href: "/comunidade", icon: "◉" },
-  { label: "Explorar roteiros", href: "/roteiros/publicos", icon: "⌕" },
-];
-
 export default function Comunidade() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const requestedPublicationId = searchParams.get("publicacao");
   const { user, isAuthenticated } = useAuth();
   const [usuarios, setUsuarios] = useState([]);
   const [publicacoes, setPublicacoes] = useState([]);
   const [roteirosVinculaveis, setRoteirosVinculaveis] = useState([]);
   const [destinos, setDestinos] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
+  const [selectedPostCategoryIds, setSelectedPostCategoryIds] = useState([]);
   const [search, setSearch] = useState("");
   const [postText, setPostText] = useState("");
+  const [photoPreviews, setPhotoPreviews] = useState([]);
+  const selectedPhotos = photoPreviews.map(({ file }) => file);
   const [selectedRoteiroId, setSelectedRoteiroId] = useState("");
   const [feedMode, setFeedMode] = useState("for-you");
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [loadingFeed, setLoadingFeed] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState(null);
+  const [feedError, setFeedError] = useState(null);
   const [posting, setPosting] = useState(false);
   const [status, setStatus] = useState(null);
   const [followingBusy, setFollowingBusy] = useState([]);
   const [likesBusy, setLikesBusy] = useState([]);
+  const [savesBusy, setSavesBusy] = useState([]);
+  const [deletingPosts, setDeletingPosts] = useState([]);
   const [openComments, setOpenComments] = useState([]);
   const [commentsByPost, setCommentsByPost] = useState({});
   const [commentsLoading, setCommentsLoading] = useState([]);
   const [commentsErrors, setCommentsErrors] = useState({});
+  const [moderationReports, setModerationReports] = useState([]);
+  const [reportsLoading, setReportsLoading] = useState(false);
+  const [reportsError, setReportsError] = useState(null);
+  const feedRequest = useRef(false);
+  const feedRequestId = useRef(0);
+  const nextCursorRef = useRef(null);
+  const feedEndRef = useRef(null);
+  const photoPreviewsRef = useRef([]);
 
-  const visibleNavigationItems = isAuthenticated
-    ? [
-        ...navigationItems,
-        { label: "Meus roteiros", href: "/roteiros", icon: "⌖" },
-        { label: "Meu perfil", href: "/perfil", icon: "◉" },
-      ]
-    : [...navigationItems, { label: "Entrar", href: "/login", icon: "⇥" }];
+  useEffect(() => {
+    photoPreviewsRef.current = photoPreviews;
+  }, [photoPreviews]);
+
+  useEffect(
+    () => () =>
+      photoPreviewsRef.current.forEach(({ url }) => URL.revokeObjectURL(url)),
+    [],
+  );
 
   const loadUsers = useCallback(async () => {
     setLoadingUsers(true);
@@ -55,23 +71,55 @@ export default function Comunidade() {
     }
   }, []);
 
-  const loadFeed = useCallback(async () => {
-    setLoadingFeed(true);
-    try {
-      const path =
-        feedMode === "following"
-          ? "/publicacoes/feed"
-          : "/publicacoes/timeline";
-      setPublicacoes(await apiFetch(path));
-    } catch (error) {
-      setStatus({ type: "error", message: error.message });
-    } finally {
-      setLoadingFeed(false);
-    }
-  }, [feedMode]);
+  const loadFeed = useCallback(
+    async ({ append = false } = {}) => {
+      if ((append && feedRequest.current) || (append && !nextCursorRef.current))
+        return;
+      feedRequest.current = true;
+      const requestId = ++feedRequestId.current;
+      if (append) setLoadingMore(true);
+      else setLoadingFeed(true);
+      setFeedError(null);
+      try {
+        const path =
+          feedMode === "following"
+            ? "/publicacoes/feed"
+            : "/publicacoes/timeline";
+        const query = new URLSearchParams({ limit: "12" });
+        if (append && nextCursorRef.current)
+          query.set("cursor", nextCursorRef.current);
+        if (selectedCategoryIds.length)
+          query.set("categorias", selectedCategoryIds.join(","));
+        const page = await apiFetch(`${path}?${query.toString()}`);
+        if (requestId !== feedRequestId.current) return;
+        setPublicacoes((current) => {
+          const incoming = page.items;
+          if (!append) return incoming;
+          const ids = new Set(current.map((post) => post.id));
+          return [...current, ...incoming.filter((post) => !ids.has(post.id))];
+        });
+        nextCursorRef.current = page.nextCursor || null;
+        setNextCursor(page.nextCursor || null);
+      } catch (error) {
+        if (requestId !== feedRequestId.current) return;
+        setFeedError(error.message);
+        setStatus({ type: "error", message: error.message });
+      } finally {
+        if (requestId === feedRequestId.current) {
+          feedRequest.current = false;
+          setLoadingFeed(false);
+          setLoadingMore(false);
+        }
+      }
+    },
+    [feedMode, selectedCategoryIds],
+  );
 
   useEffect(() => {
     loadUsers();
+    apiFetch("/publicacoes/categorias")
+      .then(setCategories)
+      .catch(() => setCategories([]));
     apiFetch("/roteiros/publicos")
       .then((roteiros) => {
         const counts = roteiros.reduce((result, roteiro) => {
@@ -104,14 +152,101 @@ export default function Comunidade() {
     loadFeed();
   }, [loadFeed]);
 
+  useEffect(() => {
+    if (!requestedPublicationId) return undefined;
+    let active = true;
+    async function loadRequestedPublication() {
+      try {
+        await loadFeed();
+        const post = await apiFetch(`/publicacoes/${requestedPublicationId}`);
+        if (!active) return;
+        setPublicacoes((current) => [
+          post,
+          ...current.filter((item) => item.id !== post.id),
+        ]);
+        setOpenComments((current) =>
+          current.includes(post.id) ? current : [...current, post.id],
+        );
+        try {
+          const comments = await apiFetch(
+            `/publicacoes/${requestedPublicationId}/comentarios`,
+          );
+          if (!active) return;
+          setCommentsByPost((current) => ({ ...current, [post.id]: comments }));
+        } catch (error) {
+          if (active)
+            setCommentsErrors((current) => ({
+              ...current,
+              [post.id]: error.message,
+            }));
+        }
+        window.requestAnimationFrame(() =>
+          document.getElementById(`community-post-${post.id}`)?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          }),
+        );
+      } catch (error) {
+        if (active) setStatus({ type: "error", message: error.message });
+      }
+    }
+    loadRequestedPublication();
+    return () => {
+      active = false;
+    };
+  }, [loadFeed, requestedPublicationId]);
+
+  const loadModerationReports = useCallback(async () => {
+    if (user?.role !== "ADMIN") return;
+    setReportsLoading(true);
+    setReportsError(null);
+    try {
+      setModerationReports(await apiFetch("/publicacoes/admin/denuncias"));
+    } catch (error) {
+      setReportsError(error.message);
+    } finally {
+      setReportsLoading(false);
+    }
+  }, [user?.role]);
+
+  useEffect(() => {
+    if (user?.role === "ADMIN") loadModerationReports();
+  }, [loadModerationReports, user?.role]);
+
+  useEffect(() => {
+    const target = feedEndRef.current;
+    if (!target || typeof IntersectionObserver === "undefined")
+      return undefined;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0]?.isIntersecting &&
+          nextCursor &&
+          !loadingFeed &&
+          !loadingMore
+        )
+          loadFeed({ append: true });
+      },
+      { rootMargin: "500px" },
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [loadFeed, loadingFeed, loadingMore, nextCursor]);
+
+  function toggleCategory(categoryId) {
+    setSelectedCategoryIds((current) =>
+      current.includes(categoryId)
+        ? current.filter((id) => id !== categoryId)
+        : [...current, categoryId],
+    );
+  }
+
   const filteredUsers = useMemo(() => {
     return filterTravelers(
       usuarios.filter((traveler) => traveler.id !== user?.id),
       search,
     );
   }, [search, user?.id, usuarios]);
-
-  const followedCount = usuarios.filter((traveler) => traveler.seguindo).length;
 
   async function publishPost(event) {
     event.preventDefault();
@@ -125,12 +260,22 @@ export default function Comunidade() {
     setPosting(true);
     setStatus(null);
     try {
+      const body = new FormData();
+      body.append("texto", texto);
+      if (selectedRoteiroId) body.append("roteiroId", selectedRoteiroId);
+      body.append("categoriaIds", JSON.stringify(selectedPostCategoryIds));
+      selectedPhotos.forEach((photo) => body.append("fotos", photo));
       await apiFetch("/publicacoes", {
         method: "POST",
-        body: JSON.stringify({ texto, roteiroId: selectedRoteiroId || null }),
+        body,
       });
       setPostText("");
+      setPhotoPreviews((current) => {
+        current.forEach(({ url }) => URL.revokeObjectURL(url));
+        return [];
+      });
       setSelectedRoteiroId("");
+      setSelectedPostCategoryIds([]);
       setStatus({ type: "success", message: "Publicação enviada." });
       await loadFeed();
     } catch (error) {
@@ -138,6 +283,45 @@ export default function Comunidade() {
     } finally {
       setPosting(false);
     }
+  }
+
+  function addPhotos(event) {
+    const incoming = [...(event.target.files || [])];
+    event.target.value = "";
+    const valid = incoming.filter((file) =>
+      ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(
+        file.type,
+      ),
+    );
+    if (valid.length !== incoming.length) {
+      setStatus({ type: "error", message: "Use fotos JPG, PNG, WebP ou GIF." });
+    }
+    if (valid.some((file) => file.size > 8 * 1024 * 1024)) {
+      setStatus({ type: "error", message: "Cada foto deve ter até 8 MB." });
+    }
+    const withinLimit = valid.filter((file) => file.size <= 8 * 1024 * 1024);
+    if (selectedPhotos.length + withinLimit.length > 8) {
+      setStatus({ type: "error", message: "Você pode anexar até 8 fotos." });
+    }
+    setPhotoPreviews((current) => {
+      const combined = [
+        ...current,
+        ...withinLimit.map((file) => ({
+          file,
+          url: URL.createObjectURL(file),
+        })),
+      ];
+      combined.slice(8).forEach(({ url }) => URL.revokeObjectURL(url));
+      return combined.slice(0, 8);
+    });
+  }
+
+  function removeSelectedPhoto(index) {
+    setPhotoPreviews((current) => {
+      const removed = current[index];
+      if (removed) URL.revokeObjectURL(removed.url);
+      return current.filter((_, itemIndex) => itemIndex !== index);
+    });
   }
 
   async function toggleFollow(traveler) {
@@ -197,6 +381,68 @@ export default function Comunidade() {
     }
   }
 
+  async function toggleSave(post) {
+    if (!isAuthenticated) {
+      navigate("/login", { state: { from: "/comunidade" } });
+      return;
+    }
+    if (savesBusy.includes(post.id)) return;
+    setSavesBusy((current) => [...current, post.id]);
+    try {
+      const saved = !post.salvo;
+      await apiFetch(`/publicacoes/${post.id}/salvar`, {
+        method: saved ? "POST" : "DELETE",
+      });
+      setPublicacoes((current) =>
+        current.map((item) =>
+          item.id === post.id ? { ...item, salvo: saved } : item,
+        ),
+      );
+    } catch (error) {
+      setStatus({ type: "error", message: error.message });
+    } finally {
+      setSavesBusy((current) => current.filter((id) => id !== post.id));
+    }
+  }
+
+  async function loadLikes(postId) {
+    return apiFetch(`/publicacoes/${postId}/curtidas`);
+  }
+
+  async function deleteOwnPublication(postId) {
+    if (deletingPosts.includes(postId)) return false;
+    setDeletingPosts((current) => [...current, postId]);
+    try {
+      await apiFetch(`/publicacoes/${postId}`, { method: "DELETE" });
+      setPublicacoes((current) => current.filter((post) => post.id !== postId));
+      setStatus({ type: "success", message: "Publicação excluída." });
+      return true;
+    } catch (error) {
+      setStatus({ type: "error", message: error.message });
+      return false;
+    } finally {
+      setDeletingPosts((current) => current.filter((id) => id !== postId));
+    }
+  }
+
+  async function reportPublication(postId, motivo, detalhe) {
+    if (!isAuthenticated) {
+      navigate("/login", { state: { from: "/comunidade" } });
+      return false;
+    }
+    try {
+      await apiFetch(`/publicacoes/${postId}/denunciar`, {
+        method: "POST",
+        body: JSON.stringify({ motivo, detalhe }),
+      });
+      setStatus({ type: "success", message: "Denúncia enviada para análise." });
+      return true;
+    } catch (error) {
+      setStatus({ type: "error", message: error.message });
+      return false;
+    }
+  }
+
   async function toggleComments(postId) {
     if (openComments.includes(postId)) {
       setOpenComments((current) => current.filter((id) => id !== postId));
@@ -222,11 +468,59 @@ export default function Comunidade() {
       navigate("/login", { state: { from: "/comunidade" } });
       return false;
     }
+    let result;
     try {
-      await apiFetch(`/publicacoes/${postId}/comentarios`, {
+      result = await apiFetch(`/publicacoes/${postId}/comentarios`, {
         method: "POST",
         body: JSON.stringify({ texto, comentarioPaiId }),
       });
+    } catch (error) {
+      setCommentsErrors((current) => ({ ...current, [postId]: error.message }));
+      return false;
+    }
+
+    const createdComment = result.comentario
+      ? {
+          ...result.comentario,
+          usuario: user
+            ? {
+                id: user.id,
+                nome: user.nome,
+                username: user.username,
+                fotoUrl: user.fotoUrl,
+              }
+            : null,
+        }
+      : null;
+    setCommentsByPost((current) => {
+      const existing = current[postId] || [];
+      if (
+        !createdComment ||
+        existing.some((comment) => comment.id === createdComment.id)
+      )
+        return current;
+      return { ...current, [postId]: [...existing, createdComment] };
+    });
+    setPublicacoes((current) =>
+      current.map((post) => {
+        if (post.id !== postId) return post;
+        const count = post._count?.comentarios || 0;
+        const nextComments = createdComment
+          ? [...(commentsByPost[postId] || []), createdComment]
+          : commentsByPost[postId] || [];
+        return {
+          ...post,
+          comentarios: nextComments
+            .filter((comment) => !comment.comentarioPaiId)
+            .slice(-2)
+            .reverse(),
+          _count: { ...post._count, comentarios: count + 1 },
+        };
+      }),
+    );
+    setCommentsErrors((current) => ({ ...current, [postId]: null }));
+
+    try {
       const comments = await apiFetch(`/publicacoes/${postId}/comentarios`);
       setCommentsByPost((current) => ({ ...current, [postId]: comments }));
       setPublicacoes((current) =>
@@ -234,6 +528,10 @@ export default function Comunidade() {
           post.id === postId
             ? {
                 ...post,
+                comentarios: comments
+                  .filter((comment) => !comment.comentarioPaiId)
+                  .slice(-2)
+                  .reverse(),
                 _count: { ...post._count, comentarios: comments.length },
               }
             : post,
@@ -241,8 +539,11 @@ export default function Comunidade() {
       );
       return true;
     } catch (error) {
-      setCommentsErrors((current) => ({ ...current, [postId]: error.message }));
-      return false;
+      setCommentsErrors((current) => ({
+        ...current,
+        [postId]: `Comentário publicado, mas a conversa não pôde ser atualizada: ${error.message}`,
+      }));
+      return true;
     }
   }
 
@@ -256,6 +557,23 @@ export default function Comunidade() {
         type: "success",
         message: "Publicação removida pela moderação.",
       });
+      await loadModerationReports();
+    } catch (error) {
+      setStatus({ type: "error", message: error.message });
+    }
+  }
+
+  async function updateModerationReport(reportId, state) {
+    try {
+      await apiFetch(`/publicacoes/admin/denuncias/${reportId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ estado: state }),
+      });
+      setModerationReports((current) =>
+        current.map((report) =>
+          report.id === reportId ? { ...report, estado: state } : report,
+        ),
+      );
     } catch (error) {
       setStatus({ type: "error", message: error.message });
     }
@@ -274,6 +592,10 @@ export default function Comunidade() {
           post.id === postId
             ? {
                 ...post,
+                comentarios: comments
+                  .filter((comment) => !comment.comentarioPaiId)
+                  .slice(-2)
+                  .reverse(),
                 _count: { ...post._count, comentarios: comments.length },
               }
             : post,
@@ -290,14 +612,6 @@ export default function Comunidade() {
     }
   }
 
-  function focusComposer() {
-    if (!isAuthenticated) {
-      navigate("/login", { state: { from: "/comunidade" } });
-      return;
-    }
-    document.getElementById("community-post")?.focus();
-  }
-
   function selectFeedMode(mode) {
     if (mode === "following" && !user) {
       navigate("/login", { state: { from: "/comunidade" } });
@@ -308,53 +622,10 @@ export default function Comunidade() {
 
   return (
     <main className="min-h-screen bg-white text-slate-950">
-      <div className="mx-auto grid max-w-[1320px] grid-cols-1 items-start xl:grid-cols-[220px_minmax(0,640px)_320px]">
-        <aside className="hidden min-h-[calc(100vh-72px)] border-r border-slate-200 px-3 py-5 xl:sticky xl:top-[72px] xl:block">
-          <Link
-            to="/comunidade"
-            className="flex h-12 items-center gap-3 rounded-full px-4 text-xl font-black tracking-tight text-slate-950 hover:bg-slate-100"
-          >
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-blue-600 text-lg text-white">
-              ✈
-            </span>
-            Vambora
-          </Link>
-          <nav aria-label="Navegação da comunidade" className="mt-6 space-y-1">
-            {visibleNavigationItems.map((item) => (
-              <Link
-                key={item.label}
-                to={item.href}
-                className={`flex items-center gap-4 rounded-full px-4 py-3 text-[15px] transition hover:bg-slate-100 ${item.href === "/comunidade" ? "font-extrabold" : "font-medium"}`}
-              >
-                <span
-                  aria-hidden="true"
-                  className="w-7 text-center text-2xl leading-none"
-                >
-                  {item.icon}
-                </span>
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-          <button
-            type="button"
-            onClick={focusComposer}
-            className="mt-6 w-full rounded-full bg-blue-600 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700"
-          >
-            Publicar
-          </button>
-          <div className="mt-10 rounded-3xl bg-slate-50 p-4">
-            <p className="text-sm font-bold">Sua comunidade de viagem</p>
-            <p className="mt-2 text-xs leading-5 text-slate-500">
-              {followedCount} viajantes no seu círculo · {usuarios.length}{" "}
-              perfis para descobrir
-            </p>
-          </div>
-        </aside>
-
+      <div className="mx-auto grid w-full max-w-[1040px] grid-cols-1 items-start gap-0 px-0 lg:grid-cols-[minmax(0,680px)_280px] lg:gap-6 lg:px-4">
         <section
           aria-labelledby="community-heading"
-          className="min-w-0 border-x border-slate-200"
+          className="min-w-0 border-y border-slate-200 lg:border-x lg:border-y-0"
         >
           <header className="sticky top-[72px] z-20 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur-xl sm:px-6">
             <div className="flex items-center justify-between gap-3">
@@ -366,9 +637,7 @@ export default function Comunidade() {
                   Comunidade
                 </h1>
                 <p className="mt-0.5 text-xs text-slate-500">
-                  {user?.nome
-                    ? `Olá, ${user.nome.split(" ")[0]}`
-                    : "Conversas de viajantes"}
+                  Compartilhe experiências, dicas e roteiros de viagem.
                 </p>
               </div>
               <button
@@ -393,7 +662,7 @@ export default function Comunidade() {
                 onClick={() => selectFeedMode("for-you")}
                 className={`relative px-3 py-4 text-sm transition hover:bg-slate-50 ${feedMode === "for-you" ? "font-extrabold text-slate-950" : "font-medium text-slate-500"}`}
               >
-                Para você
+                Explorar
                 {feedMode === "for-you" ? (
                   <span className="absolute inset-x-10 bottom-0 h-1 rounded-full bg-blue-600" />
                 ) : null}
@@ -436,6 +705,65 @@ export default function Comunidade() {
                   placeholder="O que está acontecendo na sua viagem?"
                   className="w-full resize-none border-0 bg-transparent py-1 text-lg leading-7 text-slate-900 outline-none placeholder:text-slate-400 focus:ring-0"
                 />
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-blue-300 hover:text-blue-700">
+                    <span aria-hidden="true">▧</span>
+                    Adicionar fotos
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      multiple
+                      onChange={addPhotos}
+                      className="sr-only"
+                    />
+                  </label>
+                  {categories.map((category) => (
+                    <button
+                      key={category.id}
+                      type="button"
+                      aria-pressed={selectedPostCategoryIds.includes(
+                        category.id,
+                      )}
+                      onClick={() =>
+                        setSelectedPostCategoryIds((current) =>
+                          current.includes(category.id)
+                            ? current.filter((id) => id !== category.id)
+                            : [...current, category.id],
+                        )
+                      }
+                      className={`rounded-full px-3 py-2 text-xs font-semibold transition ${selectedPostCategoryIds.includes(category.id) ? "bg-blue-100 text-blue-800" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+                    >
+                      {category.nome}
+                    </button>
+                  ))}
+                </div>
+                {photoPreviews.length ? (
+                  <div
+                    className="mb-3 flex gap-2 overflow-x-auto pb-1"
+                    aria-label="Fotos selecionadas"
+                  >
+                    {photoPreviews.map(({ file, url }, index) => (
+                      <div
+                        key={`${file.name}-${file.lastModified}-${index}`}
+                        className="relative h-20 w-20 shrink-0"
+                      >
+                        <img
+                          src={url}
+                          alt={file.name}
+                          className="h-full w-full rounded-xl object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeSelectedPhoto(index)}
+                          aria-label={`Remover foto ${file.name}`}
+                          className="absolute -right-1 -top-1 grid h-6 w-6 place-items-center rounded-full bg-slate-950 text-sm text-white shadow"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
                 {roteirosVinculaveis.length ? (
                   <label className="mb-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
                     <span aria-hidden="true">🧭</span>
@@ -488,6 +816,34 @@ export default function Comunidade() {
             </div>
           )}
 
+          <div
+            className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-4 py-3 sm:px-6"
+            aria-label="Filtrar publicações por categoria"
+          >
+            <span className="mr-1 text-xs font-bold text-slate-500">
+              Categorias
+            </span>
+            <button
+              type="button"
+              aria-pressed={selectedCategoryIds.length === 0}
+              onClick={() => setSelectedCategoryIds([])}
+              className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${selectedCategoryIds.length === 0 ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+            >
+              Todas
+            </button>
+            {categories.map((category) => (
+              <button
+                key={category.id}
+                type="button"
+                aria-pressed={selectedCategoryIds.includes(category.id)}
+                onClick={() => toggleCategory(category.id)}
+                className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${selectedCategoryIds.includes(category.id) ? "bg-blue-100 text-blue-800 ring-1 ring-blue-200" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+              >
+                {category.nome}
+              </button>
+            ))}
+          </div>
+
           {status ? (
             <div className="border-b border-slate-200 px-4 py-3 sm:px-6">
               <Feedback status={status} onDismiss={() => setStatus(null)} />
@@ -499,7 +855,21 @@ export default function Comunidade() {
               Carregando publicações…
             </div>
           ) : null}
-          {!loadingFeed && publicacoes.length === 0 ? (
+          {!loadingFeed && feedError ? (
+            <div className="border-b border-slate-200 px-6 py-12 text-center">
+              <p className="text-sm text-red-700" role="alert">
+                Não foi possível carregar as publicações: {feedError}
+              </p>
+              <button
+                type="button"
+                onClick={loadFeed}
+                className="mt-3 rounded-full border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 transition hover:border-blue-400 hover:text-blue-700"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          ) : null}
+          {!loadingFeed && !feedError && publicacoes.length === 0 ? (
             <div className="border-b border-slate-200 px-6 py-14 text-center">
               <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-blue-50 text-2xl">
                 ✈️
@@ -531,12 +901,33 @@ export default function Comunidade() {
               post={post}
               isAuthenticated={isAuthenticated}
               isAdmin={user?.role === "ADMIN"}
+              isOwnPost={post.usuarioId === user?.id}
+              isFollowing={Boolean(
+                usuarios.find((traveler) => traveler.id === post.usuarioId)
+                  ?.seguindo,
+              )}
+              followBusy={followingBusy.includes(post.usuarioId)}
+              canFollow={post.usuarioId !== user?.id}
+              onToggleFollow={() => {
+                const author = usuarios.find(
+                  (traveler) => traveler.id === post.usuarioId,
+                );
+                if (author) toggleFollow(author);
+              }}
               comments={commentsByPost[post.id] || []}
               commentsOpen={openComments.includes(post.id)}
               commentsLoading={commentsLoading.includes(post.id)}
               commentsError={commentsErrors[post.id]}
               likeBusy={likesBusy.includes(post.id)}
               onToggleLike={() => toggleLike(post)}
+              onToggleSave={() => toggleSave(post)}
+              saveBusy={savesBusy.includes(post.id)}
+              onLoadLikes={() => loadLikes(post.id)}
+              onDeletePost={() => deleteOwnPublication(post.id)}
+              deleteBusy={deletingPosts.includes(post.id)}
+              onReport={(reason, detail) =>
+                reportPublication(post.id, reason, detail)
+              }
               onToggleComments={() => toggleComments(post.id)}
               onAddComment={(text, parentId) =>
                 addComment(post.id, text, parentId)
@@ -547,9 +938,23 @@ export default function Comunidade() {
               }
             />
           ))}
+          {loadingMore ? (
+            <p
+              className="border-b border-slate-200 px-6 py-5 text-center text-sm text-slate-500"
+              role="status"
+            >
+              Buscando mais publicações…
+            </p>
+          ) : null}
+          <div ref={feedEndRef} aria-hidden="true" className="h-1" />
+          {!loadingFeed && publicacoes.length > 0 && !nextCursor ? (
+            <p className="px-6 py-6 text-center text-xs text-slate-400">
+              Você chegou ao fim das publicações.
+            </p>
+          ) : null}
         </section>
 
-        <aside className="space-y-4 px-4 py-5 sm:px-6 xl:sticky xl:top-[72px] xl:max-h-[calc(100vh-72px)] xl:overflow-y-auto xl:px-5">
+        <aside className="space-y-4 px-4 py-5 sm:px-6 lg:sticky lg:top-[72px] lg:max-h-[calc(100vh-72px)] lg:overflow-y-auto lg:px-0">
           <label className="flex items-center gap-3 rounded-full bg-slate-100 px-5 py-3 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-500">
             <span aria-hidden="true" className="text-lg text-slate-500">
               ⌕
@@ -681,6 +1086,126 @@ export default function Comunidade() {
               Explorar roteiros
             </Link>
           </section>
+
+          {user?.role === "ADMIN" ? (
+            <section className="overflow-hidden rounded-3xl border border-amber-200 bg-amber-50/70">
+              <div className="flex items-center justify-between gap-2 px-5 py-4">
+                <h2 className="text-base font-extrabold text-slate-900">
+                  Denúncias da comunidade
+                </h2>
+                <button
+                  type="button"
+                  onClick={loadModerationReports}
+                  disabled={reportsLoading}
+                  aria-label="Atualizar denúncias"
+                  className="rounded-full px-2 py-1 text-sm font-bold text-amber-800 hover:bg-amber-100 disabled:opacity-50"
+                >
+                  ⟳
+                </button>
+              </div>
+              {reportsLoading ? (
+                <p className="px-5 pb-4 text-sm text-slate-500">
+                  Carregando denúncias…
+                </p>
+              ) : null}
+              {reportsError ? (
+                <div className="px-5 pb-4 text-sm text-red-700">
+                  <p role="alert">{reportsError}</p>
+                  <button
+                    type="button"
+                    onClick={loadModerationReports}
+                    className="mt-2 font-bold underline"
+                  >
+                    Tentar novamente
+                  </button>
+                </div>
+              ) : null}
+              {!reportsLoading &&
+              !reportsError &&
+              moderationReports.length === 0 ? (
+                <p className="px-5 pb-5 text-sm text-slate-500">
+                  Nenhuma denúncia registrada.
+                </p>
+              ) : null}
+              <div className="divide-y divide-amber-200">
+                {moderationReports.slice(0, 8).map((report) => (
+                  <article key={report.id} className="px-4 py-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-xs font-extrabold text-slate-800">
+                        {report.motivo}
+                      </p>
+                      <span className="rounded-full bg-white px-2 py-1 text-[10px] font-bold text-slate-600">
+                        {report.estado === "EM_ANALISE"
+                          ? "Em análise"
+                          : report.estado === "TRATADA"
+                            ? "Tratada"
+                            : "Aberta"}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-[11px] text-slate-500">
+                      Denunciada por{" "}
+                      {report.usuario?.nome || "usuário indisponível"}
+                    </p>
+                    {report.detalhe ? (
+                      <p className="mt-2 text-xs leading-5 text-slate-600">
+                        {report.detalhe}
+                      </p>
+                    ) : null}
+                    {report.publicacao ? (
+                      <p className="mt-2 line-clamp-3 rounded-xl bg-white/80 p-2.5 text-xs leading-5 text-slate-700">
+                        {report.publicacao.texto}
+                      </p>
+                    ) : (
+                      <p className="mt-2 text-xs italic text-slate-500">
+                        A publicação já foi removida; o registro da denúncia foi
+                        preservado.
+                      </p>
+                    )}
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {report.publicacao ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            removePublicationAsAdmin(report.publicacao.id)
+                          }
+                          className="rounded-full border border-red-200 bg-white px-3 py-1.5 text-[11px] font-bold text-red-700 hover:bg-red-50"
+                        >
+                          Remover publicação
+                        </button>
+                      ) : null}
+                      {report.estado === "ABERTA" ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateModerationReport(report.id, "EM_ANALISE")
+                          }
+                          className="rounded-full border border-amber-300 bg-white px-3 py-1.5 text-[11px] font-bold text-amber-900 hover:bg-amber-100"
+                        >
+                          Em análise
+                        </button>
+                      ) : null}
+                      {report.estado !== "TRATADA" ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateModerationReport(report.id, "TRATADA")
+                          }
+                          className="rounded-full bg-slate-900 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-slate-700"
+                        >
+                          Concluir
+                        </button>
+                      ) : null}
+                    </div>
+                  </article>
+                ))}
+              </div>
+              {moderationReports.length > 8 ? (
+                <p className="px-5 py-3 text-xs text-slate-500">
+                  Mostrando 8 de {moderationReports.length} denúncias.
+                </p>
+              ) : null}
+            </section>
+          ) : null}
 
           <footer className="px-2 text-xs leading-5 text-slate-400">
             VAMBORA · Compartilhe viagens, respeite a comunidade e descubra

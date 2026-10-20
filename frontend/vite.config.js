@@ -13,6 +13,7 @@ export default defineConfig({
       "/itens": "http://localhost:3000",
       "/publicacoes": "http://localhost:3000",
       "/categorias": "http://localhost:3000",
+      "/uploads": "http://localhost:3000",
     },
   },
 });

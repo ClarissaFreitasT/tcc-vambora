@@ -7,8 +7,12 @@ export async function listarRoteiros(req, res) {
 
 export async function listarRoteirosPublicos(req, res) {
   try {
-    const roteiros = await RoteiroModel.obterRoteirosPublicos();
-    res.json(roteiros);
+    const filters = parsePublicRouteFilters(req.query || {});
+    if (filters.error) {
+      return res.status(400).json({ erro: filters.error });
+    }
+    const roteiros = await RoteiroModel.obterRoteirosPublicos(filters.value);
+    return res.json(roteiros);
   } catch (error) {
     console.error("Erro ao listar roteiros públicos:", error);
 
@@ -20,7 +24,11 @@ export async function listarRoteirosPublicos(req, res) {
 
 export async function listarRoteirosPopulares(req, res) {
   try {
-    const roteiros = await RoteiroModel.obterRoteirosPopulares(10);
+    const limit = Math.min(
+      20,
+      Math.max(1, Number.parseInt(req.query?.limit, 10) || 10),
+    );
+    const roteiros = await RoteiroModel.obterRoteirosPopulares(limit);
     return res.status(200).json(roteiros);
   } catch (error) {
     console.error("Erro ao listar roteiros populares:", error);
@@ -29,6 +37,55 @@ export async function listarRoteirosPopulares(req, res) {
       erro: "Não foi possível listar os roteiros populares.",
     });
   }
+}
+
+function parsePublicRouteFilters(query) {
+  const numeric = (key) => {
+    if (query[key] === undefined || query[key] === "") return undefined;
+    const value = Number(query[key]);
+    return Number.isFinite(value) ? value : null;
+  };
+  const minBudget = numeric("orcamentoMin");
+  const maxBudget = numeric("orcamentoMax");
+  const days = numeric("dias");
+  const minRating = numeric("avaliacaoMin");
+  if ([minBudget, maxBudget, days, minRating].includes(null)) {
+    return { error: "Um ou mais filtros numéricos são inválidos" };
+  }
+  if (minBudget !== undefined && minBudget < 0) {
+    return { error: "O orçamento mínimo não pode ser negativo" };
+  }
+  if (maxBudget !== undefined && maxBudget < 0) {
+    return { error: "O orçamento máximo não pode ser negativo" };
+  }
+  if (
+    minBudget !== undefined &&
+    maxBudget !== undefined &&
+    minBudget > maxBudget
+  ) {
+    return { error: "O orçamento mínimo não pode ser maior que o máximo" };
+  }
+  if (days !== undefined && (!Number.isInteger(days) || days < 1)) {
+    return { error: "A quantidade de dias deve ser um inteiro positivo" };
+  }
+  if (minRating !== undefined && (minRating < 1 || minRating > 5)) {
+    return { error: "A avaliação mínima deve estar entre 1 e 5" };
+  }
+  const categoryIds =
+    typeof query.categorias === "string"
+      ? [...new Set(query.categorias.split(",").filter(Boolean))].slice(0, 10)
+      : [];
+  return {
+    value: {
+      destino: typeof query.destino === "string" ? query.destino.trim() : "",
+      termo: typeof query.termo === "string" ? query.termo.trim() : "",
+      orcamentoMin: minBudget,
+      orcamentoMax: maxBudget,
+      dias: days,
+      avaliacaoMin: minRating,
+      categoriaIds: categoryIds,
+    },
+  };
 }
 
 export async function obterRoteiro(req, res) {
@@ -52,8 +109,15 @@ export async function obterRoteiro(req, res) {
 }
 
 export async function criarRoteiro(req, res) {
-  const { usuarioId, titulo, destino, descricao, orcamento, publico } =
-    req.body;
+  const {
+    usuarioId,
+    titulo,
+    destino,
+    descricao,
+    imagemUrl,
+    orcamento,
+    publico,
+  } = req.body;
 
   if (!usuarioId || typeof usuarioId !== "string" || usuarioId.trim() === "") {
     return res.status(400).json({ erro: "UsuarioId é obrigatório" });
@@ -66,6 +130,15 @@ export async function criarRoteiro(req, res) {
   if (typeof destino !== "string" || destino.trim() === "") {
     return res.status(400).json({ erro: "Destino é obrigatório" });
   }
+  if (
+    imagemUrl != null &&
+    imagemUrl !== "" &&
+    !isValidRouteImageUrl(imagemUrl)
+  ) {
+    return res.status(400).json({
+      erro: "A imagem deve ser uma URL HTTP ou HTTPS válida",
+    });
+  }
 
   try {
     const roteiroCriado = await RoteiroModel.criarNovoRoteiro({
@@ -73,6 +146,7 @@ export async function criarRoteiro(req, res) {
       titulo,
       destino,
       descricao,
+      imagemUrl: imagemUrl || null,
       orcamento,
       publico,
     });
@@ -93,7 +167,8 @@ export async function criarRoteiro(req, res) {
 
 export async function atualizarRoteiro(req, res) {
   const id = req.params.id;
-  const { titulo, destino, descricao, orcamento, publico } = req.body;
+  const { titulo, destino, descricao, imagemUrl, orcamento, publico } =
+    req.body;
 
   if (!id || typeof id !== "string") {
     return res.status(400).json({ erro: "ID inválido" });
@@ -112,6 +187,16 @@ export async function atualizarRoteiro(req, res) {
   ) {
     return res.status(400).json({ erro: "Destino inválido" });
   }
+  if (
+    imagemUrl !== undefined &&
+    imagemUrl !== null &&
+    imagemUrl !== "" &&
+    !isValidRouteImageUrl(imagemUrl)
+  ) {
+    return res.status(400).json({
+      erro: "A imagem deve ser uma URL HTTP ou HTTPS válida",
+    });
+  }
 
   const roteiroAtual = await RoteiroModel.obterRoteiroPorId(id);
 
@@ -129,6 +214,7 @@ export async function atualizarRoteiro(req, res) {
     titulo,
     destino,
     descricao,
+    imagemUrl: imagemUrl === "" ? null : imagemUrl,
     orcamento,
     publico,
   });
@@ -137,6 +223,16 @@ export async function atualizarRoteiro(req, res) {
     mensagem: "Roteiro atualizado com sucesso!",
     roteiro: roteiroAtualizado,
   });
+}
+
+function isValidRouteImageUrl(value) {
+  if (typeof value !== "string" || value.trim().length > 500) return false;
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
 export async function excluirRoteiro(req, res) {

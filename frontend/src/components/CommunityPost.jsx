@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import UserAvatar from "./UserAvatar";
 import { Link } from "react-router-dom";
 import { formatCommunityDate } from "../utils/community";
@@ -8,12 +8,23 @@ export default function CommunityPost({
   post,
   isAuthenticated,
   isAdmin = false,
+  isOwnPost = false,
+  isFollowing = false,
+  followBusy = false,
+  canFollow = false,
+  onToggleFollow,
   comments,
   commentsOpen,
   commentsLoading,
   commentsError,
   likeBusy,
   onToggleLike,
+  onToggleSave,
+  saveBusy = false,
+  onLoadLikes,
+  onDeletePost,
+  deleteBusy = false,
+  onReport,
   onToggleComments,
   onAddComment,
   onAdminDeletePost,
@@ -22,10 +33,44 @@ export default function CommunityPost({
   const [commentText, setCommentText] = useState("");
   const [replyTo, setReplyTo] = useState(null);
   const [sendingComment, setSendingComment] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const deleteCancelRef = useRef(null);
+  const deleteMenuButtonRef = useRef(null);
+  const [likesOpen, setLikesOpen] = useState(false);
+  const [likedBy, setLikedBy] = useState([]);
+  const [likesLoading, setLikesLoading] = useState(false);
+  const [likesError, setLikesError] = useState(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportDetail, setReportDetail] = useState("");
+  const [sendingReport, setSendingReport] = useState(false);
   const author = post.usuario || {};
   const authorProfilePath = profilePath(author);
   const likeCount = post._count?.curtidas || 0;
   const commentCount = post._count?.comentarios || 0;
+
+  useEffect(() => {
+    if (!deleteConfirmOpen) return undefined;
+    deleteCancelRef.current?.focus();
+    function closeOnEscape(event) {
+      if (event.key === "Escape" && !confirmingDelete) {
+        setDeleteConfirmOpen(false);
+        deleteMenuButtonRef.current?.focus();
+      }
+    }
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [confirmingDelete, deleteConfirmOpen]);
+
+  async function confirmDelete() {
+    if (confirmingDelete || deleteBusy) return;
+    setConfirmingDelete(true);
+    await onDeletePost?.();
+    setConfirmingDelete(false);
+    setDeleteConfirmOpen(false);
+  }
 
   async function submitComment(event) {
     event.preventDefault();
@@ -40,8 +85,38 @@ export default function CommunityPost({
     setSendingComment(false);
   }
 
+  async function showLikes() {
+    setLikesOpen(true);
+    setLikesLoading(true);
+    setLikesError(null);
+    try {
+      setLikedBy(await onLoadLikes());
+    } catch (error) {
+      setLikesError(error.message);
+    } finally {
+      setLikesLoading(false);
+    }
+  }
+
+  async function submitReport(event) {
+    event.preventDefault();
+    if (!reportReason || sendingReport) return;
+    setSendingReport(true);
+    const sent = await onReport(reportReason, reportDetail.trim());
+    setSendingReport(false);
+    if (sent) {
+      setReportOpen(false);
+      setReportReason("");
+      setReportDetail("");
+      setMenuOpen(false);
+    }
+  }
+
   return (
-    <article className="border-b border-slate-200 px-4 py-5 transition hover:bg-slate-50/60 sm:px-6">
+    <article
+      id={`community-post-${post.id}`}
+      className="border-b border-slate-200 px-4 py-5 transition hover:bg-slate-50/60 sm:px-6"
+    >
       <div className="flex items-start gap-3">
         <Link
           to={authorProfilePath || "/comunidade"}
@@ -88,22 +163,101 @@ export default function CommunityPost({
               <time className="text-sm text-slate-500" dateTime={post.criadoEm}>
                 {formatCommunityDate(post.criadoEm)}
               </time>
+              {canFollow ? (
+                <button
+                  type="button"
+                  onClick={onToggleFollow}
+                  disabled={followBusy}
+                  aria-label={`${isFollowing ? "Deixar de seguir" : "Seguir"} ${author.nome || "viajante"}`}
+                  className={`ml-1 rounded-full px-2.5 py-1 text-xs font-bold transition disabled:opacity-50 ${isFollowing ? "text-slate-500 hover:bg-red-50 hover:text-red-600" : "text-blue-700 hover:bg-blue-50"}`}
+                >
+                  {followBusy ? "…" : isFollowing ? "Seguindo" : "Seguir"}
+                </button>
+              ) : null}
             </header>
-            {isAdmin ? (
+            <div className="relative shrink-0">
               <button
+                ref={deleteMenuButtonRef}
                 type="button"
-                onClick={() => onAdminDeletePost?.()}
-                className="shrink-0 rounded-full px-3 py-1 text-xs font-semibold text-slate-400 hover:bg-red-50 hover:text-red-700"
-                aria-label="Remover publicação pela moderação"
+                aria-label="Opções da publicação"
+                aria-expanded={menuOpen}
+                onClick={() => setMenuOpen((open) => !open)}
+                className="grid h-9 w-9 place-items-center rounded-full text-lg text-slate-500 hover:bg-slate-100"
               >
-                Moderar · excluir
+                ⋯
               </button>
-            ) : null}
+              {menuOpen ? (
+                <div className="absolute right-0 top-10 z-30 min-w-48 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
+                  {isOwnPost ? (
+                    <button
+                      type="button"
+                      disabled={deleteBusy}
+                      onClick={() => {
+                        setMenuOpen(false);
+                        setDeleteConfirmOpen(true);
+                      }}
+                      className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                    >
+                      {deleteBusy ? "Excluindo…" : "Excluir publicação"}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setReportOpen(true)}
+                      className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                    >
+                      Denunciar publicação
+                    </button>
+                  )}
+                  {isAdmin && !isOwnPost ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onAdminDeletePost?.();
+                      }}
+                      className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-700 hover:bg-red-50"
+                    >
+                      Remover pela moderação
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
           </div>
 
           <p className="mt-1 whitespace-pre-wrap break-words text-[15px] leading-6 text-slate-800">
             {post.texto}
           </p>
+
+          {post.categorias?.length ? (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {post.categorias.map(({ categoria }) => (
+                <span
+                  key={categoria.id}
+                  className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700"
+                >
+                  {categoria.nome}
+                </span>
+              ))}
+            </div>
+          ) : null}
+
+          {post.fotos?.length ? (
+            <div
+              className={`mt-3 grid gap-1.5 overflow-hidden rounded-2xl ${post.fotos.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}
+            >
+              {post.fotos.map((photo) => (
+                <img
+                  key={photo.id}
+                  src={photo.url}
+                  alt="Foto da publicação"
+                  loading="lazy"
+                  className={`w-full bg-slate-100 object-cover ${post.fotos.length === 1 ? "max-h-[480px] rounded-2xl" : "h-48 sm:h-60"}`}
+                />
+              ))}
+            </div>
+          ) : null}
 
           {post.roteiro?.publico ? (
             <Link
@@ -127,7 +281,7 @@ export default function CommunityPost({
             </Link>
           ) : null}
 
-          <div className="mt-3 flex max-w-[460px] items-center justify-between">
+          <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2">
             <button
               type="button"
               onClick={onToggleComments}
@@ -143,34 +297,72 @@ export default function CommunityPost({
               </span>
               <span className="text-xs">{commentCount}</span>
             </button>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={onToggleLike}
+                disabled={likeBusy}
+                aria-pressed={Boolean(post.curtiu)}
+                aria-label={
+                  post.curtiu ? "Remover curtida" : "Curtir publicação"
+                }
+                className={`group grid h-9 w-9 place-items-center rounded-full text-xl transition ${post.curtiu ? "font-bold text-rose-600" : "text-slate-500 hover:bg-rose-50 hover:text-rose-600"}`}
+              >
+                <span aria-hidden="true">{post.curtiu ? "♥" : "♡"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={showLikes}
+                aria-label={`Ver ${likeCount} pessoas que curtiram`}
+                className="rounded-full px-2 py-2 text-xs text-slate-500 hover:text-rose-600 hover:underline"
+              >
+                {likeBusy ? "…" : likeCount}
+              </button>
+            </div>
             <button
               type="button"
-              onClick={onToggleLike}
-              disabled={likeBusy}
-              aria-pressed={Boolean(post.curtiu)}
-              aria-label={`${post.curtiu ? "Remover curtida" : "Curtir"} · ${likeCount} curtidas`}
-              className={`group flex items-center gap-2 rounded-full py-2 pr-3 transition ${post.curtiu ? "text-rose-600" : "text-slate-500 hover:text-rose-600"}`}
+              onClick={onToggleSave}
+              disabled={saveBusy}
+              aria-pressed={Boolean(post.salvo)}
+              aria-label={
+                post.salvo ? "Remover dos salvos" : "Salvar publicação"
+              }
+              className={`group flex items-center gap-2 rounded-full py-2 pr-3 transition ${post.salvo ? "text-blue-700" : "text-slate-500 hover:text-blue-600"}`}
             >
               <span
-                className={`grid h-8 w-8 place-items-center rounded-full text-xl group-hover:bg-rose-50 ${post.curtiu ? "font-bold" : ""}`}
+                className="grid h-8 w-8 place-items-center rounded-full text-lg group-hover:bg-blue-50"
                 aria-hidden="true"
               >
-                {post.curtiu ? "♥" : "♡"}
+                {post.salvo ? "▣" : "▱"}
               </span>
-              <span className="text-xs">{likeBusy ? "…" : likeCount}</span>
+              <span className="text-xs">{saveBusy ? "…" : "Salvar"}</span>
             </button>
-            <span
-              className="flex items-center gap-2 py-2 pr-3 text-slate-400"
-              aria-label="Compartilhamento em breve"
-            >
-              <span
-                className="grid h-8 w-8 place-items-center rounded-full text-lg"
-                aria-hidden="true"
-              >
-                ↗
-              </span>
-            </span>
           </div>
+
+          {!commentsOpen && post.comentarios?.length ? (
+            <div className="mt-1 space-y-2">
+              {post.comentarios.slice(0, 2).map((comment) => (
+                <p
+                  key={comment.id}
+                  className="line-clamp-2 text-sm text-slate-600"
+                >
+                  <span className="mr-1 font-bold text-slate-800">
+                    {comment.usuario?.nome || "Viajante"}
+                  </span>
+                  {comment.texto}
+                </p>
+              ))}
+              {commentCount > 0 ? (
+                <button
+                  type="button"
+                  onClick={onToggleComments}
+                  className="text-xs font-semibold text-slate-500 hover:text-blue-700"
+                >
+                  Ver todos os {commentCount} comentários
+                </button>
+              ) : null}
+            </div>
+          ) : null}
 
           {commentsOpen ? (
             <section
@@ -332,6 +524,211 @@ export default function CommunityPost({
           ) : null}
         </div>
       </div>
+      {likesOpen ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/50 p-0 sm:items-center sm:p-4">
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={`likes-title-${post.id}`}
+            className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl sm:rounded-3xl"
+          >
+            <div className="flex items-center justify-between">
+              <h2
+                id={`likes-title-${post.id}`}
+                className="text-lg font-extrabold"
+              >
+                Curtiram esta publicação
+              </h2>
+              <button
+                type="button"
+                onClick={() => setLikesOpen(false)}
+                aria-label="Fechar"
+                className="grid h-9 w-9 place-items-center rounded-full text-xl text-slate-500 hover:bg-slate-100"
+              >
+                ×
+              </button>
+            </div>
+            {likesLoading ? (
+              <p className="py-8 text-center text-sm text-slate-500">
+                Carregando viajantes…
+              </p>
+            ) : null}
+            {likesError ? (
+              <div className="py-6 text-center">
+                <p role="alert" className="text-sm text-red-700">
+                  {likesError}
+                </p>
+                <button
+                  type="button"
+                  onClick={showLikes}
+                  className="mt-3 text-sm font-bold text-blue-700"
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            ) : null}
+            {!likesLoading && !likesError && !likedBy.length ? (
+              <p className="py-8 text-center text-sm text-slate-500">
+                Ainda não há curtidas.
+              </p>
+            ) : null}
+            <div className="mt-3 divide-y divide-slate-100">
+              {likedBy.map(({ usuario }) => (
+                <Link
+                  key={usuario.id}
+                  to={profilePath(usuario) || "/comunidade"}
+                  onClick={(event) => {
+                    if (!profilePath(usuario)) event.preventDefault();
+                    setLikesOpen(false);
+                  }}
+                  className="flex items-center gap-3 py-3"
+                >
+                  <UserAvatar
+                    user={usuario}
+                    alt=""
+                    className="h-10 w-10 rounded-full object-cover"
+                  />
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-bold text-slate-900">
+                      {usuario.nome}
+                    </span>
+                    {usuario.username ? (
+                      <span className="block truncate text-xs text-slate-500">
+                        @{usuario.username}
+                      </span>
+                    ) : null}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        </div>
+      ) : null}
+      {reportOpen ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/50 p-0 sm:items-center sm:p-4">
+          <form
+            onSubmit={submitReport}
+            className="w-full max-w-md rounded-t-3xl bg-white p-5 shadow-2xl sm:rounded-3xl"
+          >
+            <h2 className="text-lg font-extrabold">Denunciar publicação</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Sua denúncia será analisada pela equipe. A publicação não será
+              removida automaticamente.
+            </p>
+            <label
+              className="mt-4 block text-sm font-semibold text-slate-700"
+              htmlFor={`report-reason-${post.id}`}
+            >
+              Motivo <span className="text-red-600">*</span>
+            </label>
+            <select
+              id={`report-reason-${post.id}`}
+              required
+              value={reportReason}
+              onChange={(event) => setReportReason(event.target.value)}
+              className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+            >
+              <option value="">Selecione um motivo</option>
+              {[
+                "Spam",
+                "Assédio ou discurso de ódio",
+                "Conteúdo impróprio",
+                "Informação enganosa",
+                "Outro",
+              ].map((reason) => (
+                <option key={reason} value={reason}>
+                  {reason}
+                </option>
+              ))}
+            </select>
+            <label
+              className="mt-4 block text-sm font-semibold text-slate-700"
+              htmlFor={`report-detail-${post.id}`}
+            >
+              Detalhes (opcional)
+            </label>
+            <textarea
+              id={`report-detail-${post.id}`}
+              maxLength={2000}
+              rows={3}
+              value={reportDetail}
+              onChange={(event) => setReportDetail(event.target.value)}
+              className="mt-1 w-full resize-y rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+              placeholder="Conte um pouco mais para ajudar na análise"
+            />
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setReportOpen(false)}
+                disabled={sendingReport}
+                className="rounded-full border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={sendingReport || !reportReason}
+                className="rounded-full bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {sendingReport ? "Enviando…" : "Enviar denúncia"}
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
+      {deleteConfirmOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/50 p-0 sm:items-center sm:p-4"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !confirmingDelete)
+              setDeleteConfirmOpen(false);
+          }}
+        >
+          <section
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby={`delete-title-${post.id}`}
+            aria-describedby={`delete-description-${post.id}`}
+            className="w-full max-w-md rounded-t-3xl bg-white p-5 shadow-2xl sm:rounded-3xl"
+          >
+            <h2
+              id={`delete-title-${post.id}`}
+              className="text-lg font-extrabold"
+            >
+              Excluir publicação?
+            </h2>
+            <p
+              id={`delete-description-${post.id}`}
+              className="mt-2 text-sm leading-6 text-slate-600"
+            >
+              Esta ação é permanente. A publicação e seus comentários serão
+              removidos; o roteiro associado não será excluído.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                ref={deleteCancelRef}
+                type="button"
+                disabled={confirmingDelete || deleteBusy}
+                onClick={() => {
+                  setDeleteConfirmOpen(false);
+                  deleteMenuButtonRef.current?.focus();
+                }}
+                className="rounded-full border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={confirmingDelete || deleteBusy}
+                onClick={confirmDelete}
+                className="rounded-full bg-red-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {confirmingDelete || deleteBusy ? "Excluindo…" : "Excluir"}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </article>
   );
 }

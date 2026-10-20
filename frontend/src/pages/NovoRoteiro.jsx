@@ -34,6 +34,7 @@ export default function NovoRoteiro() {
     titulo: "",
     destino: "",
     descricao: "",
+    imagemUrl: "",
     orcamento: "",
     publico: false,
   });
@@ -347,6 +348,23 @@ export default function NovoRoteiro() {
                 onChange={updateField}
                 placeholder="Descreva a experiência que você quer viver"
               />
+            </label>
+
+            <label className="grid gap-2 text-sm font-medium text-slate-700">
+              Fotografia do roteiro (opcional)
+              <input
+                className="input-field"
+                name="imagemUrl"
+                type="url"
+                maxLength={500}
+                value={form.imagemUrl}
+                onChange={updateField}
+                placeholder="https://…"
+              />
+              <span className="text-xs font-normal text-slate-500">
+                Use um endereço público de uma imagem de viagem. Se deixar
+                vazio, o Vambora exibirá sua imagem padrão.
+              </span>
             </label>
 
             <div className="grid gap-5 lg:grid-cols-2">

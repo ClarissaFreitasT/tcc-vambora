@@ -92,6 +92,7 @@ export default function Login() {
             <Link
               className="font-semibold text-[#2563EB] hover:underline"
               to="/cadastro"
+              state={{ from: location.state?.from }}
             >
               Criar perfil
             </Link>
