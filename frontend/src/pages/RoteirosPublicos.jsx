@@ -89,6 +89,20 @@ function makeQuery(filters) {
   return params;
 }
 
+function filtersFromSearchParams(searchParams) {
+  return {
+    ...emptyRouteFilters,
+    destino: searchParams.get("destino") || searchParams.get("busca") || "",
+    orcamentoMin: searchParams.get("orcamentoMin") || "",
+    orcamentoMax: searchParams.get("orcamentoMax") || "",
+    dias: searchParams.get("dias") || "",
+    avaliacaoMin: searchParams.get("avaliacaoMin") || "",
+    categoriaIds: (searchParams.get("categorias") || "")
+      .split(",")
+      .filter(Boolean),
+  };
+}
+
 function chipsFor(filters, categories) {
   const chips = [];
   if (filters.destino)
@@ -122,17 +136,19 @@ function chipsFor(filters, categories) {
 
 export default function RoteirosPublicos() {
   const [searchParams] = useSearchParams();
-  const initialDestination = searchParams.get("busca") || "";
+  const searchParamsKey = searchParams.toString();
+  const initialFilters = useMemo(
+    () => filtersFromSearchParams(searchParams),
+    [searchParams],
+  );
+  const hasInitialSearch = Boolean(searchParamsKey);
   const [allRoutes, setAllRoutes] = useState([]);
   const [routes, setRoutes] = useState([]);
   const [filters, setFilters] = useState(() => ({
-    ...emptyRouteFilters,
-    destino: initialDestination,
+    ...initialFilters,
   }));
   const [appliedFilters, setAppliedFilters] = useState(
-    initialDestination
-      ? { ...emptyRouteFilters, destino: initialDestination }
-      : null,
+    hasInitialSearch ? { ...initialFilters } : null,
   );
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [loadingResults, setLoadingResults] = useState(true);
@@ -177,23 +193,19 @@ export default function RoteirosPublicos() {
     let active = true;
     async function loadInitialRoutes() {
       try {
-        const params = new URLSearchParams();
-        if (initialDestination) params.set("destino", initialDestination);
+        const query = makeQuery(initialFilters);
         const [all, matching] = await Promise.all([
           apiFetch("/roteiros/publicos"),
-          initialDestination
-            ? apiFetch(`/roteiros/publicos?${params.toString()}`)
+          hasInitialSearch
+            ? apiFetch(`/roteiros/publicos?${query.toString()}`)
             : Promise.resolve(null),
         ]);
         if (!active) return;
         setAllRoutes(all);
         setRoutes(matching || all);
-        if (initialDestination) {
-          setAppliedFilters({
-            ...emptyRouteFilters,
-            destino: initialDestination,
-          });
-          setFilters({ ...emptyRouteFilters, destino: initialDestination });
+        if (hasInitialSearch) {
+          setAppliedFilters({ ...initialFilters });
+          setFilters({ ...initialFilters });
         }
       } catch (requestError) {
         if (active) setError(requestError.message);
@@ -208,7 +220,7 @@ export default function RoteirosPublicos() {
     return () => {
       active = false;
     };
-  }, [initialDestination]);
+  }, [hasInitialSearch, initialFilters, searchParamsKey]);
 
   function removeFilter(id) {
     const next = { ...appliedFilters };
@@ -232,15 +244,11 @@ export default function RoteirosPublicos() {
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.08),_transparent_45%)] px-4 py-10 sm:py-14 lg:px-8">
       <div className="container mx-auto max-w-[1280px]">
         <header className="rounded-[32px] bg-slate-950 p-6 text-white shadow-xl sm:p-9">
-          <p className="text-xs font-bold uppercase tracking-[.22em] text-cyan-300">
-            Vambora · roteiros públicos
-          </p>
           <h1 className="mt-3 text-3xl font-black sm:text-4xl">
             Encontre um roteiro para começar a planejar
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
             Combine destino, duração, orçamento, avaliação e tipos de viagem.
-            Seus filtros só são aplicados quando você busca.
           </p>
           <div className="mt-6 text-slate-900">
             <RoteiroSearchPanel

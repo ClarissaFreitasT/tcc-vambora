@@ -11,6 +11,7 @@ export default function RoteiroSearchPanel({
   submitLabel = "Buscar roteiros",
 }) {
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [validationError, setValidationError] = useState(null);
   const normalized = normalizeHomeSearch(value.destino);
   const suggestions = useMemo(() => {
@@ -173,24 +174,24 @@ export default function RoteiroSearchPanel({
       }}
       className="grid gap-3"
     >
-      <div className="relative rounded-[28px] border border-slate-200/90 bg-white p-2 text-slate-900 shadow-[0_14px_42px_rgba(15,23,42,.13)] sm:rounded-full sm:p-2 lg:rounded-full lg:px-2 lg:py-2">
-        <div className="grid items-center gap-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.8fr)_minmax(76px,.7fr)_minmax(115px,1fr)_52px]">
-          <div className="relative min-w-0 px-2 py-1.5 sm:px-4 lg:py-2">
+      <div className="relative rounded-[24px] border border-white/30 bg-white/95 p-3 text-slate-900 shadow-[0_18px_52px_rgba(1,12,31,.28)] backdrop-blur-xl sm:p-4">
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-end">
+          <div className="relative min-w-0">
             <label
-              className="block text-[11px] font-bold text-slate-700"
+              className="block text-xs font-extrabold uppercase tracking-[.12em] text-slate-500"
               htmlFor="route-destination-search"
             >
-              Onde
+              Destino, país ou roteiro
             </label>
             <input
               id="route-destination-search"
-              className="w-full border-0 bg-transparent p-0 pr-12 pt-1 text-sm text-slate-600 outline-none placeholder:text-slate-400 focus:ring-0 lg:pr-0"
+              className="mt-1 w-full border-0 bg-transparent px-0 py-2 text-base font-semibold text-slate-900 outline-none placeholder:text-slate-400 focus:ring-0"
               autoComplete="off"
               role="combobox"
               aria-autocomplete="list"
               aria-expanded={suggestionsOpen && suggestions.length > 0}
               aria-controls="route-destination-suggestions"
-              placeholder="Buscar destinos"
+              placeholder="Para onde você quer ir?"
               value={value.destino}
               onFocus={() => setSuggestionsOpen(true)}
               onBlur={() =>
@@ -212,63 +213,40 @@ export default function RoteiroSearchPanel({
               }}
             />
           </div>
-          <div className="hidden min-w-0 border-l border-slate-200 px-2 py-1 lg:grid lg:grid-cols-2 lg:gap-2 xl:px-3">
-            {renderFilters("desktop").props.children.slice(0, 2)}
-          </div>
-          <div className="hidden min-w-0 border-l border-slate-200 px-2 py-1 lg:block xl:px-3">
-            {renderFilters("desktop").props.children[2]}
-          </div>
-          <div className="hidden min-w-0 border-l border-slate-200 px-2 py-1 lg:block xl:px-3">
-            {renderFilters("desktop").props.children[3]}
-          </div>
           <button
-            type="submit"
-            disabled={busy}
-            aria-label={submitLabel}
-            className="absolute right-3 top-1/2 grid h-12 w-12 -translate-y-1/2 place-items-center rounded-full bg-rose-600 text-white shadow-lg shadow-rose-900/20 transition hover:bg-rose-700 disabled:opacity-60 lg:static lg:h-12 lg:w-12 lg:translate-y-0"
+            type="button"
+            aria-expanded={filtersOpen}
+            onClick={() => setFiltersOpen((open) => !open)}
+            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition hover:border-blue-300 hover:text-blue-700"
           >
-            {busy ? (
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-            ) : (
-              <svg
-                aria-hidden="true"
-                width="19"
-                height="19"
-                viewBox="0 0 24 24"
-                fill="none"
-              >
-                <circle
-                  cx="10.8"
-                  cy="10.8"
-                  r="6.8"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                />
-                <path
-                  d="m16 16 4.3 4.3"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            )}
-          </button>
-        </div>
-        <details className="border-t border-slate-100 px-3 pt-2 lg:hidden">
-          <summary className="cursor-pointer list-none text-xs font-semibold text-slate-500 hover:text-blue-700">
+            Filtros
             {value.categoriaIds.length ||
             value.orcamentoMin ||
             value.orcamentoMax ||
             value.dias ||
             value.avaliacaoMin
-              ? "Filtros selecionados · editar"
-              : "Adicionar filtros"}
-          </summary>
-          <div className="mt-3 grid gap-3 rounded-2xl bg-slate-50 p-3 sm:grid-cols-2">
-            {renderFilters("mobile", true)}
-            {renderCategories()}
+              ? " · ativos"
+              : ""}
+          </button>
+          <button
+            type="submit"
+            disabled={busy}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-blue-700 px-5 text-sm font-extrabold text-white shadow-lg shadow-blue-900/20 transition hover:bg-blue-800 disabled:opacity-60"
+          >
+            {busy ? (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+            ) : null}
+            {busy ? "Buscando" : submitLabel}
+          </button>
+        </div>
+        {filtersOpen ? (
+          <div className="mt-4 grid gap-4 border-t border-slate-200 pt-4 sm:grid-cols-2 lg:grid-cols-4">
+            {renderFilters("panel", true)}
+            <div className="sm:col-span-2 lg:col-span-4">
+              {renderCategories()}
+            </div>
           </div>
-        </details>
+        ) : null}
         {suggestionsOpen && suggestions.length ? (
           <div
             id="route-destination-suggestions"
@@ -295,7 +273,6 @@ export default function RoteiroSearchPanel({
           </div>
         ) : null}
       </div>
-      <div className="hidden lg:block">{renderCategories()}</div>
       {validationError ? (
         <p className="text-sm font-medium text-red-700" role="alert">
           {validationError}

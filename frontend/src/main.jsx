@@ -1,4 +1,4 @@
-import { StrictMode, Suspense, lazy } from "react";
+import { StrictMode } from "react";
 /* The entrypoint owns the router shell and is not a refresh boundary. */
 /* eslint-disable react-refresh/only-export-components */
 import { createRoot } from "react-dom/client";
@@ -18,15 +18,12 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import Navbar from "./components/Navbar.jsx";
 
-const Explorar = lazy(() => import("./pages/Explorar.jsx"));
-
 function AppLayout() {
   return (
     <>
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/explorar" element={<Suspense fallback={<main className="container mx-auto py-16 text-slate-600">Preparando o globo 3D…</main>}><Explorar /></Suspense>} />
         <Route path="/roteiros/publicos" element={<RoteirosPublicos />} />
         <Route path="/cadastro" element={<Cadastro />} />
         <Route path="/comunidade" element={<Comunidade />} />

@@ -11,6 +11,7 @@ export default function Navbar() {
   const profileMenuRef = useRef(null);
   const profileButtonRef = useRef(null);
   const isLoggedIn = isAuthenticated;
+  const isProfilePage = location.pathname.startsWith("/perfil");
 
   function handleLogout() {
     setProfileMenuOpen(false);
@@ -47,9 +48,18 @@ export default function Navbar() {
       <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-4 px-6 py-4 lg:px-8">
         <Link
           to="/"
-          className="text-xl font-black tracking-tight text-slate-900"
+          className="vambora-brand shrink-0"
+          aria-label="Vambora - página inicial"
         >
-          ✈️ VAMBORA
+          <span className="vambora-brand-mark" aria-hidden="true">
+            <span className="vambora-brand-wing vambora-brand-wing-left" />
+            <span className="vambora-brand-wing vambora-brand-wing-right" />
+            <span className="vambora-brand-route" />
+            <span className="vambora-brand-plane">✦</span>
+          </span>
+          <span className="vambora-brand-name" aria-hidden="true">
+            VAMBORA!
+          </span>
         </Link>
 
         {loading ? (
@@ -59,25 +69,17 @@ export default function Navbar() {
           />
         ) : isLoggedIn ? (
           <div className="flex flex-wrap items-center gap-4">
-            {location.pathname !== "/" ? (
-              <Link
-                className="text-sm font-semibold text-slate-600 transition hover:text-[#2563EB]"
-                to="/explorar"
-              >
-                Explorar globo
-              </Link>
-            ) : null}
             <Link
               className="text-sm font-semibold text-slate-600 transition hover:text-[#2563EB]"
               to="/roteiros"
-              hidden={location.pathname === "/"}
+              hidden={location.pathname === "/" || isProfilePage}
             >
               Meus roteiros
             </Link>
             <Link
               className="text-sm font-semibold text-slate-600 transition hover:text-[#2563EB]"
               to="/roteiros/salvos"
-              hidden={location.pathname === "/"}
+              hidden={location.pathname === "/" || isProfilePage}
             >
               Salvos
             </Link>
@@ -90,15 +92,7 @@ export default function Navbar() {
           </div>
         ) : (
           <div className="flex flex-wrap items-center gap-4">
-            {location.pathname !== "/" ? (
-              <Link
-                className="text-sm font-semibold text-slate-600 transition hover:text-[#2563EB]"
-                to="/explorar"
-              >
-                Explorar globo
-              </Link>
-            ) : null}
-            {location.pathname !== "/" ? (
+            {location.pathname !== "/" && !isProfilePage ? (
               <Link
                 className="text-sm font-semibold text-slate-600 transition hover:text-[#2563EB]"
                 to="/roteiros/publicos"
@@ -120,7 +114,7 @@ export default function Navbar() {
             <span className="text-xs text-slate-500">Verificando sessão…</span>
           ) : isLoggedIn ? (
             <>
-              {location.pathname !== "/" ? (
+              {location.pathname !== "/" && !isProfilePage ? (
                 <button
                   type="button"
                   className="btn-secondary"
