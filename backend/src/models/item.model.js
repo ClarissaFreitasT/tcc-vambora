@@ -1,4 +1,5 @@
 import { prisma } from "../config/prisma.js";
+import { comRevisao, camposPermitidos } from "./roteiro-revisao.js";
 
 export async function obterItemPorId(id) {
   return prisma.itemDoRoteiro.findUnique({
@@ -16,7 +17,9 @@ export async function criarItem(
   horarioInicio = null,
   ordem = 0,
 ) {
-  return prisma.itemDoRoteiro.create({
+  const dia = await prisma.diaDoRoteiro.findUnique({ where: { id: diaId } });
+  if (!dia) return null;
+  return comRevisao(dia.roteiroId, (tx) => tx.itemDoRoteiro.create({
     data: {
       diaId,
       titulo,
@@ -26,7 +29,7 @@ export async function criarItem(
       horarioInicio,
       ordem,
     },
-  });
+  }));
 }
 
 // Lista todos os itens de um dia específico.
@@ -58,10 +61,10 @@ export async function atualizarItem(id, dadosAtualizados, usuarioId) {
     return null;
   }
 
-  return prisma.itemDoRoteiro.update({
+  return comRevisao(itemExistente.dia.roteiroId, (tx) => tx.itemDoRoteiro.update({
     where: { id },
-    data: dadosAtualizados,
-  });
+    data: camposPermitidos(dadosAtualizados, ["titulo", "descricao", "localNome", "custoEstimado", "horarioInicio", "ordem"]),
+  }));
 }
 
 // Remove um item do banco de dados pelo seu identificador.
@@ -81,7 +84,7 @@ export async function deletarItem(id, usuarioId) {
     return null;
   }
 
-  return prisma.itemDoRoteiro.delete({
+  return comRevisao(itemExistente.dia.roteiroId, (tx) => tx.itemDoRoteiro.delete({
     where: { id },
-  });
+  }));
 }

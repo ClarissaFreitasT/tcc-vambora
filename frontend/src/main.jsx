@@ -9,6 +9,7 @@ import Roteiros from "./pages/Roteiros.jsx";
 import RoteirosPublicos from "./pages/RoteirosPublicos.jsx";
 import RoteirosSalvos from "./pages/RoteirosSalvos.jsx";
 import NovoRoteiro from "./pages/NovoRoteiro.jsx";
+import PlanejamentoIa from "./pages/PlanejamentoIa.jsx";
 import Comunidade from "./pages/Comunidade.jsx";
 import Perfil from "./pages/Perfil.jsx";
 import RoteiroDetalhes from "./pages/RoteiroDetalhes.jsx";
@@ -33,6 +34,8 @@ function AppLayout() {
           <Route path="/roteiros" element={<Roteiros />} />
           <Route path="/roteiros/salvos" element={<RoteirosSalvos />} />
           <Route path="/roteiros/novo" element={<NovoRoteiro />} />
+          <Route path="/roteiros/ia/novo" element={<PlanejamentoIa key="novo" />} />
+          <Route path="/planejamentos-ia/:id" element={<PlanejamentoIa />} />
           <Route path="/perfil" element={<Perfil />} />
         </Route>
         <Route path="/roteiros/:id" element={<RoteiroDetalhes />} />

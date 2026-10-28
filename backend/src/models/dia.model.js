@@ -1,14 +1,15 @@
 import { prisma } from "../config/prisma.js";
+import { comRevisao, camposPermitidos } from "./roteiro-revisao.js";
 
 // Cria um novo dia dentro de um roteiro com número e título específicos.
 export async function criarDia(roteiroId, numeroDia, titulo) {
-  return prisma.diaDoRoteiro.create({
+  return comRevisao(roteiroId, (tx) => tx.diaDoRoteiro.create({
     data: {
       roteiroId,
       numeroDia,
       titulo,
     },
-  });
+  }));
 }
 
 // Lista todos os dias de um roteiro específico.
@@ -48,10 +49,10 @@ export async function atualizarDia(id, dadosAtualizados, usuarioId) {
     return null;
   }
 
-  return prisma.diaDoRoteiro.update({
+  return comRevisao(diaExistente.roteiroId, (tx) => tx.diaDoRoteiro.update({
     where: { id },
-    data: dadosAtualizados,
-  });
+    data: camposPermitidos(dadosAtualizados, ["titulo", "numeroDia"]),
+  }));
 }
 
 // Remove um dia do banco de dados pelo seu identificador.
@@ -65,7 +66,7 @@ export async function deletarDia(id, usuarioId) {
     return null;
   }
 
-  return prisma.diaDoRoteiro.delete({
+  return comRevisao(diaExistente.roteiroId, (tx) => tx.diaDoRoteiro.delete({
     where: { id },
-  });
+  }));
 }

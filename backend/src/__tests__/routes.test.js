@@ -291,7 +291,7 @@ describe("Testes das rotas principais", () => {
       expect(response.status).toBe(200);
       expect(mockAtualizarDia).toHaveBeenCalledWith("10", {
         titulo: "Dia de museus",
-      });
+      }, "u1");
     });
 
     it("deve retornar 400 quando roteiroId não for informado", async () => {

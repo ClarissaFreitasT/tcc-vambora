@@ -30,6 +30,8 @@ model Usuario {
   roteirosSalvos   SalvoRoteiro[]
   publicacoesSalvas SalvoPublicacao[]
   denunciasPublicacoes DenunciaPublicacao[]
+  planejamentosIa PlanejamentoIa[]
+  operacoesIa OperacaoIa[]
 
   @@map("usuarios")
 }
@@ -44,6 +46,12 @@ model Roteiro {
   imagemUrl          String?            @map("imagem_url") @db.VarChar(500)
   orcamento          Decimal?           @db.Decimal(10, 2)
   publico            Boolean            @default(false)
+  dataIda            DateTime?          @map("data_ida") @db.Date
+  dataVolta          DateTime?          @map("data_volta") @db.Date
+  pessoas            Int?
+  cidades            Json?
+  revisao            Int                @default(0)
+  planejamentoIa     PlanejamentoIa?
   criadoEm           DateTime           @default(now()) @map("criado_em")
   dias               DiaDoRoteiro[]
   favoritos          Favorito[]
@@ -64,6 +72,7 @@ model DiaDoRoteiro {
   id        String          @id @default(uuid()) @db.Char(36)
   roteiroId String          @map("roteiro_id") @db.Char(36)
   numeroDia Int             @map("numero_dia")
+  cidadePrincipal String?    @map("cidade_principal") @db.VarChar(255)
   titulo    String?         @db.VarChar(255)
   roteiro   Roteiro         @relation(fields: [roteiroId], references: [id], onDelete: Cascade)
   itens     ItemDoRoteiro[]
@@ -86,6 +95,64 @@ model ItemDoRoteiro {
 
   @@index([diaId])
   @@map("itens_do_roteiro")
+}
+
+model PlanejamentoIa {
+  id String @id @default(uuid()) @db.Char(36)
+  usuarioId String @map("usuario_id") @db.Char(36)
+  roteiroId String? @unique @map("roteiro_id") @db.Char(36)
+  dadosIniciais Json @map("dados_iniciais")
+  gerandoAte DateTime? @map("gerando_ate")
+  operacaoAtual String? @map("operacao_atual") @db.Char(36)
+  criadoEm DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  roteiro Roteiro? @relation(fields: [roteiroId], references: [id], onDelete: Cascade)
+  mensagens MensagemIa[]
+  propostas PropostaIa[]
+  operacoes OperacaoIa[]
+  @@index([usuarioId, atualizadoEm])
+  @@map("planejamentos_ia")
+}
+
+model MensagemIa {
+  id String @id @default(uuid()) @db.Char(36)
+  planejamentoId String @map("planejamento_id") @db.Char(36)
+  papel String @db.VarChar(20)
+  texto String @db.Text
+  criadoEm DateTime @default(now()) @map("criado_em")
+  planejamento PlanejamentoIa @relation(fields: [planejamentoId], references: [id], onDelete: Cascade)
+  @@index([planejamentoId, criadoEm])
+  @@map("mensagens_ia")
+}
+
+model PropostaIa {
+  id String @id @default(uuid()) @db.Char(36)
+  planejamentoId String @map("planejamento_id") @db.Char(36)
+  conteudo Json
+  resumo String @db.Text
+  revisaoBase Int? @map("revisao_base")
+  estado String @default("pendente") @db.VarChar(20)
+  criadoEm DateTime @default(now()) @map("criado_em")
+  planejamento PlanejamentoIa @relation(fields: [planejamentoId], references: [id], onDelete: Cascade)
+  @@index([planejamentoId, estado])
+  @@map("propostas_ia")
+}
+
+model OperacaoIa {
+  id String @id @default(uuid()) @db.Char(36)
+  usuarioId String @map("usuario_id") @db.Char(36)
+  planejamentoId String? @map("planejamento_id") @db.Char(36)
+  chave String @db.VarChar(80)
+  hash String @db.Char(64)
+  estado String @default("processando") @db.VarChar(20)
+  erro String? @db.VarChar(255)
+  criadoEm DateTime @default(now()) @map("criado_em")
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  planejamento PlanejamentoIa? @relation(fields: [planejamentoId], references: [id], onDelete: SetNull)
+  @@unique([usuarioId, chave])
+  @@index([usuarioId, criadoEm])
+  @@map("operacoes_ia")
 }
 
 model Favorito {

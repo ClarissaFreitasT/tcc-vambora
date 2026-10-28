@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { apiFetch } from "../data/api";
 import { useAuth } from "../context/useAuth";
 import { profilePath } from "../utils/profile";
+import PlanejamentosIaLista from "../components/PlanejamentosIaLista";
+import { dataViagem } from "../utils/planejamentoIa";
 
 const emptyItem = {
   titulo: "",
@@ -599,6 +601,7 @@ export default function RoteiroDetalhes() {
                 {roteiro.titulo}
               </h1>
               <p className="mt-2 text-slate-600">{roteiro.destino}</p>
+              {roteiro.dataIda && <p className="mt-2 text-sm text-slate-600">{dataViagem(roteiro.dataIda)} a {dataViagem(roteiro.dataVolta)} · {roteiro.pessoas} pessoa(s)</p>}
               <p className="mt-3 text-sm text-slate-500">
                 Criado por{" "}
                 {roteiro.usuario?.id ? (
@@ -626,6 +629,7 @@ export default function RoteiroDetalhes() {
             <div className="flex flex-wrap gap-3">
               {isOwner ? (
                 <>
+                  {roteiro.cidades && <PlanejamentosIaLista roteiroId={id} />}
                   <button
                     className="btn-primary"
                     onClick={() => setEditingRoteiro((value) => !value)}

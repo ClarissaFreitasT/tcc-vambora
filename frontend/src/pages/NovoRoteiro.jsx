@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { apiFetch, requireAuth } from "../data/api";
 import {
   buildRoteiroPayload,
@@ -304,6 +304,7 @@ export default function NovoRoteiro() {
             Preencha as informações principais, adicione dias e atividades e só
             então salve.
           </p>
+          <Link className="btn-secondary mt-4 inline-block" to="/roteiros/ia/novo">Criar com IA</Link>
         </div>
 
         {status ? (

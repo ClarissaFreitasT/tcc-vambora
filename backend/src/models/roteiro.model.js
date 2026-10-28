@@ -414,7 +414,7 @@ export async function atualizarRoteiro(id, dados) {
 
   return prisma.roteiro.update({
     where: { id },
-    data: updateData,
+    data: { ...updateData, revisao: { increment: 1 } },
   });
 }
 
@@ -458,6 +458,10 @@ export async function duplicarRoteiro(roteiroId, usuarioId) {
         imagemUrl: roteiroOriginal.imagemUrl,
         orcamento: roteiroOriginal.orcamento,
         publico: false,
+        dataIda: roteiroOriginal.dataIda,
+        dataVolta: roteiroOriginal.dataVolta,
+        pessoas: roteiroOriginal.pessoas,
+        ...(roteiroOriginal.cidades ? { cidades: roteiroOriginal.cidades } : {}),
       },
     });
 
@@ -467,6 +471,7 @@ export async function duplicarRoteiro(roteiroId, usuarioId) {
           roteiroId: roteiroDuplicado.id,
           numeroDia: dia.numeroDia,
           titulo: dia.titulo,
+          cidadePrincipal: dia.cidadePrincipal,
         },
       });
 

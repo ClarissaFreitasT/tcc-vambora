@@ -1,5 +1,7 @@
 # Backend no XAMPP
 
+Para geração de roteiros com Gemini, veja [configuração e validação da integração](ROTEIROS_GEMINI.md).
+
 ## Configuracao do MySQL
 
 1. Abra o XAMPP e inicie o modulo **MySQL**. O Apache nao e necessario para este backend Node.js.

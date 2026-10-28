@@ -67,7 +67,7 @@ export async function atualizarDia(req, res) {
     });
   }
 
-  const diaAtualizado = await DiaModel.atualizarDia(id, dadosAtualizados);
+  const diaAtualizado = await DiaModel.atualizarDia(id, dadosAtualizados, req.user.id);
 
   return res.json(diaAtualizado);
 }
@@ -89,7 +89,7 @@ export async function deletarDia(req, res) {
     });
   }
 
-  const diaDeletado = await DiaModel.deletarDia(id);
+  const diaDeletado = await DiaModel.deletarDia(id, req.user.id);
 
   return res.json(diaDeletado);
 }

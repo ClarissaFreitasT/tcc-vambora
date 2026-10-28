@@ -1,5 +1,9 @@
 # Vambora
 
+## Criação de roteiros com Gemini
+
+O fluxo de IA oferece prévia, divisão de dias entre cidades e chat com confirmação dos ajustes. Consulte [configuração, migration, API e testes](backend/ROTEIROS_GEMINI.md). A migration `20261028120000_add_planejamento_ia` deve ser aplicada antes de iniciar esta versão da API. O planejamento original está em [PLANEJAMENTO_ROTEIROS_GEMINI.md](PLANEJAMENTO_ROTEIROS_GEMINI.md).
+
 Monorepositório com dois projetos npm independentes (não há workspace npm na raiz):
 
 - `frontend/`: React 18, Vite 8, React Router 6 com `BrowserRouter`, Tailwind e Three.js. Entrada: `src/main.jsx`. Scripts: `dev`, `build`, `preview`, `lint`, `test`.

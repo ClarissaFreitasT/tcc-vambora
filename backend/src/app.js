@@ -9,6 +9,7 @@ import usuarioRoutes from "./routes/users.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import publicacaoRoutes from "./routes/publicacao.routes.js";
 import categoriaRoutes from "./routes/categoria.routes.js";
+import planejamentoIaRoutes from "./routes/planejamento-ia.routes.js";
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use("/usuarios", usuarioRoutes);
 app.use("/publicacoes", publicacaoRoutes);
 app.use("/categorias", categoriaRoutes);
 app.use("/auth", authRoutes);
+app.use("/planejamentos-ia", planejamentoIaRoutes);
 
 app.use((error, _req, res, next) => {
   if (res.headersSent) return next(error);

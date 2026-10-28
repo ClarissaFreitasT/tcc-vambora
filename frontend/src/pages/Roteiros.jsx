@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { apiFetch, requireAuth } from '../data/api'
+import PlanejamentosIaLista from '../components/PlanejamentosIaLista'
 
 function formatMoney(value) {
   if (value === null || value === undefined || value === '') return 'Não informado'
@@ -66,11 +67,12 @@ export default function Roteiros() {
       <div className="container mx-auto">
         <div className="flex flex-col gap-6 rounded-[36px] border border-slate-200 bg-white/90 p-8 shadow-[0_20px_70px_rgba(15,23,42,0.08)] lg:flex-row lg:items-end lg:justify-between lg:p-10">
           <div><p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#2563EB]">Seus roteiros</p><h1 className="mt-4 text-4xl font-black text-slate-900">Todas as suas viagens em um só lugar</h1><p className="mt-3 text-slate-600">Crie, edite e organize cada dia diretamente no banco de dados.</p></div>
-          <Link to="/roteiros/novo" className="btn-primary">Criar novo roteiro</Link>
+          <div className="flex flex-wrap gap-3"><Link to="/roteiros/ia/novo" className="btn-primary">Criar com IA</Link><Link to="/roteiros/novo" className="btn-secondary">Criar manualmente</Link></div>
         </div>
         {status ? <div className="mt-6 rounded-3xl bg-red-50 p-4 text-sm text-red-800">{status}</div> : null}
         {loading ? <div className="mt-8 rounded-3xl bg-white p-8 text-slate-500">Carregando roteiros...</div> : null}
         {!loading && roteiros.length === 0 ? <div className="mt-8 rounded-3xl border border-dashed border-slate-300 bg-white p-14 text-center text-slate-600">Nenhum roteiro criado ainda.</div> : null}
+        <PlanejamentosIaLista />
         <div className="mt-8 grid gap-6">
           {roteiros.map((roteiro) => (
             <article key={roteiro.id} className="rounded-[32px] border border-slate-200 bg-white p-8 shadow-[0_20px_70px_rgba(15,23,42,0.07)]">

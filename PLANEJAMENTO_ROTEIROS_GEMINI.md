@@ -1,5 +1,15 @@
 # Criação e ajuste de roteiros com Gemini
 
+## Registro de execução — 28/10/2026
+
+- Implementação criada na branch `feature/roteiros-gemini`: formulário, geração, prévia, chat, confirmação/descarte, persistência e controle de revisão.
+- Migration aditiva `20261028120000_add_planejamento_ia` criada; schema validado e cliente Prisma gerado.
+- Validação automatizada: 112 testes de backend e 39 de frontend aprovados; lint, build e verificação de whitespace aprovados.
+- Pendente de ambiente: aplicar a migration em um banco de desenvolvimento identificado, configurar `GEMINI_API_KEY` e `GEMINI_MODEL` e testar a integração real. O banco configurado era remoto e não foi alterado.
+- Instruções de configuração e operação: [backend/ROTEIROS_GEMINI.md](backend/ROTEIROS_GEMINI.md).
+
+O plano original aprovado está preservado abaixo.
+
 ## Resumo
 
 Adicionar um fluxo de criação com IA, mantendo a criação manual existente. O usuário informa cidades em ordem, quantidade de pessoas e datas de ida e volta. O Gemini distribui os dias entre as cidades e sugere atividades e deslocamentos.

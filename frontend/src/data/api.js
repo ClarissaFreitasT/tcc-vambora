@@ -33,6 +33,8 @@ export async function apiFetch(path, options = {}) {
       data?.erro || data?.message || data?.mensagem || API_ERROR_FALLBACK,
     );
     error.status = response.status;
+    error.planejamentoId = data?.planejamentoId;
+    error.novaTentativa = data?.novaTentativa;
     throw error;
   }
 
