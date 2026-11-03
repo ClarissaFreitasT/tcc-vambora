@@ -1,6 +1,6 @@
 # Roteiros com Gemini
 
-O fluxo está em `/roteiros/ia/novo` no frontend. Usuários autenticados informam cidades em ordem, pessoas e datas; recebem uma prévia privada e continuam em `/planejamentos-ia/:id`. O chat só aparece após a primeira versão válida. A primeira confirmação cria o roteiro; confirmações posteriores atualizam o mesmo roteiro. Uma proposta nunca publica o roteiro automaticamente.
+O fluxo está em `/roteiros/ia/novo` no frontend. Usuários autenticados informam de 1 a 10 cidades em ordem e as datas; nome e país são obrigatórios, e estado/região é opcional. Recebem uma prévia privada e continuam em `/planejamentos-ia/:id`. O chat só aparece após a primeira versão válida. A primeira confirmação cria o roteiro; confirmações posteriores atualizam o mesmo roteiro. Uma proposta nunca publica o roteiro automaticamente.
 
 ## Configuração
 
@@ -36,26 +36,22 @@ Em produção, revise as migrations pendentes e aplique-as pelo processo de depl
 
 Todos os endpoints usam `Authorization: Bearer <token>` e validam o proprietário. Leituras públicas de roteiros não incluem conversas nem propostas.
 
-| Método e caminho | Comportamento |
-| --- | --- |
-| `POST /planejamentos-ia` | Gera e persiste uma prévia, sem criar roteiro |
-| `GET /planejamentos-ia` | Lista os planejamentos do usuário |
-| `GET /planejamentos-ia/:id` | Retorna mensagens, proposta pendente e roteiro confirmado |
-| `POST /planejamentos-ia/:id/mensagens` | Refina proposta pendente ou roteiro salvo |
-| `POST /planejamentos-ia/:id/propostas/:propostaId/aplicar` | Confirma a proposta em uma transação |
-| `POST /planejamentos-ia/:id/propostas/:propostaId/descartar` | Descarta sem alterar o roteiro |
-| `DELETE /planejamentos-ia/:id` | Exclui a conversa, preservando o roteiro confirmado |
+| Método e caminho                                             | Comportamento                                             |
+| ------------------------------------------------------------ | --------------------------------------------------------- |
+| `POST /planejamentos-ia`                                     | Gera e persiste uma prévia, sem criar roteiro             |
+| `GET /planejamentos-ia`                                      | Lista os planejamentos do usuário                         |
+| `GET /planejamentos-ia/:id`                                  | Retorna mensagens, proposta pendente e roteiro confirmado |
+| `POST /planejamentos-ia/:id/mensagens`                       | Refina proposta pendente ou roteiro salvo                 |
+| `POST /planejamentos-ia/:id/propostas/:propostaId/aplicar`   | Confirma a proposta em uma transação                      |
+| `POST /planejamentos-ia/:id/propostas/:propostaId/descartar` | Descarta sem alterar o roteiro                            |
+| `DELETE /planejamentos-ia/:id`                               | Exclui a conversa, preservando o roteiro confirmado       |
 
 Exemplo do corpo de criação:
 
 ```json
 {
   "operacaoId": "b3295a46-aebe-4828-b277-201b9b3216e6",
-  "cidades": [
-    { "nome": "Lisboa", "regiao": "Lisboa", "pais": "Portugal" },
-    { "nome": "Porto", "regiao": "Porto", "pais": "Portugal" }
-  ],
-  "pessoas": 2,
+  "cidades": [{ "nome": "Lisboa", "pais": "Portugal" }],
   "dataIda": "2027-01-01",
   "dataVolta": "2027-01-05"
 }
@@ -67,10 +63,10 @@ Confirmação usa o ID da proposta persistida, nunca aceita um roteiro arbitrár
 
 ## Validação, conflitos e contexto
 
-- Datas civis `YYYY-MM-DD`, sem conversão de fuso, com ida e volta inclusivas. De 1 a 30 dias, 1 a 10 cidades distintas, pelo menos um dia por cidade e de 1 a 50 pessoas.
-- Cidades têm nome, região e país. Cada dia aponta para uma cidade principal; a sequência deve ser não decrescente. Dias de deslocamento são atribuídos à chegada.
+- Datas civis `YYYY-MM-DD`, sem conversão de fuso, com ida e volta inclusivas. De 1 a 30 dias e 1 a 10 cidades distintas; a viagem deve ter pelo menos um dia por cidade. Uma única cidade pode ter qualquer duração válida.
+- Cidades têm nome e país obrigatórios; região é opcional. Cada dia aponta para uma cidade principal; a sequência deve ser não decrescente. Dias de deslocamento são atribuídos à chegada.
 - A proposta contém roteiro completo e de 1 a 12 atividades por dia, com horário local `HH:mm` ou `null`. O servidor valida limites, contagem, ordem, campos e horários antes de salvar.
-- O Gemini recebe dados da viagem, roteiro atual, proposta pendente válida e últimas 20 mensagens. Dados de cadastro, tokens e credenciais não são enviados. O histórico completo permanece privado no banco.
+- O Gemini recebe dados da viagem, roteiro atual, proposta pendente válida e últimas 20 mensagens; quantidade de pessoas não é solicitada nem enviada. As sugestões são gerais e não calculam nem dividem custos por viajante. Dados de cadastro, tokens e credenciais não são enviados. O histórico completo permanece privado no banco.
 - Mudanças manuais incrementam a revisão do roteiro, inclusive em dias e atividades. A aplicação da proposta faz comparação de revisão e retorna 409 se houver edição posterior. Um novo pedido usa o roteiro atual e ignora a proposta obsoleta como base.
 - Perguntas sem proposta preservam a prévia atual. Falhas do provedor ou da validação não substituem a prévia nem o roteiro. A gravação do roteiro completo é atômica; falha na criação de um dia/atividade reverte a confirmação inteira.
 - Logs do provedor contêm somente modelo, duração, total de tokens informado e categoria de resultado. Não contêm prompts, respostas completas ou chave.

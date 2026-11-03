@@ -198,13 +198,12 @@ Se criou um banco vazio, contas existentes no banco remoto não estarão dispon�
 
 Clique em **Criar com IA** e preencha:
 
-| Campo | Valor de teste |
-| --- | --- |
-| Cidade 1 | Lisboa / Lisboa / Portugal |
-| Cidade 2 | Porto / Porto / Portugal |
-| Pessoas | 2 |
-| Ida | 10/01/2027 |
-| Volta | 15/01/2027 |
+| Campo    | Valor de teste                      |
+| -------- | ----------------------------------- |
+| Cidade 1 | Lisboa / Portugal (região opcional) |
+| Cidade 2 | Porto / Portugal (região opcional)  |
+| Ida      | 10/01/2027                          |
+| Volta    | 15/01/2027                          |
 
 Clique em **Gerar roteiro com IA** e aguarde. Se essas datas já tiverem passado quando você executar o guia, use outras com o mesmo intervalo.
 
@@ -223,25 +222,25 @@ Envie no chat:
 
 > Quero mais atividades ao ar livre e um ritmo mais tranquilo no primeiro dia.
 
-Confira que a nova proposta mantém cidades, pessoas e datas e apresenta um resumo das mudanças. O roteiro ainda não deve ter sido criado na lista de roteiros confirmados.
+Confira que a nova proposta mantém cidades e datas e apresenta um resumo das mudanças. O roteiro ainda não deve ter sido criado na lista de roteiros confirmados.
 
 ### C. Salvar a primeira versão
 
 Clique em **Salvar roteiro** e depois em **Abrir roteiro salvo**.
 
-Confira título, datas, pessoas, dias e atividades. O roteiro deve começar privado. Volte pela opção **Ajustar com IA**, ou pela seção de planejamentos em **Meus roteiros**.
+Confira título, datas, dias e atividades. O roteiro deve começar privado. Volte pela opção **Ajustar com IA**, ou pela seção de planejamentos em **Meus roteiros**.
 
 ### D. Pedir mudança e descartar
 
 Envie:
 
-> Mude a quantidade de pessoas para 4.
+> Inclua mais passeios ao ar livre sem mudar as cidades nem as datas.
 
-A proposta deve destacar a mudança. Antes de confirmar, abra o roteiro salvo em outra aba: ele deve continuar com duas pessoas. Clique em **Descartar proposta** e confira que o roteiro continua igual.
+A proposta deve apresentar a alteração. Antes de confirmar, abra o roteiro salvo em outra aba: ele deve continuar igual. Clique em **Descartar proposta** e confira que o roteiro continua inalterado.
 
 ### E. Aplicar uma alteração
 
-Envie novamente o pedido de quatro pessoas e clique em **Aplicar alterações**. Atualize a aba do roteiro salvo: agora deve mostrar quatro pessoas, mantendo o mesmo ID/URL do roteiro.
+Envie novamente o pedido de passeios ao ar livre e clique em **Aplicar alterações**. Atualize a aba do roteiro salvo: a alteração deve aparecer no mesmo roteiro, mantendo o mesmo ID/URL.
 
 ### F. Retomar depois de sair
 
@@ -260,16 +259,19 @@ Se tentar aplicar sem atualizar a página, o servidor também deve recusar com H
 
 ## 11. Testar validações e falhas
 
-| Cenário | Resultado esperado |
-| --- | --- |
-| Uma cidade, ida e volta na mesma data | Um dia de programação |
-| Mais cidades que dias | Validação antes da geração |
-| Volta anterior à ida, mais de 30 dias ou mais de 50 pessoas | Pedido recusado |
-| Cidade sem nome, região ou país | Formulário solicita preenchimento |
+| Cenário                                                    | Resultado esperado                            |
+| ---------------------------------------------------------- | --------------------------------------------- |
+| Uma cidade, ida e volta na mesma data                      | Um dia de programação                         |
+| Uma cidade e vários dias                                   | Viagem aceita e todos os dias programados     |
+| Região vazia ou omitida                                    | Cidade aceita                                 |
+| Mais cidades que dias                                      | Validação antes da geração                    |
+| Volta anterior à ida ou mais de 30 dias                    | Pedido recusado                               |
+| Mais de 10 cidades                                         | Pedido recusado                               |
+| Cidade sem nome ou país                                    | Formulário solicita preenchimento             |
 | Fechar a página durante a geração e reabrir o planejamento | Usar **Atualizar** para recuperar o resultado |
-| Descartar proposta | Roteiro confirmado preservado |
-| Excluir planejamento depois de salvar | Conversa excluída, roteiro preservado |
-| Acessar a URL do planejamento com outra conta | Acesso recusado sem exibir a conversa |
+| Descartar proposta                                         | Roteiro confirmado preservado                 |
+| Excluir planejamento depois de salvar                      | Conversa excluída, roteiro preservado         |
+| Acessar a URL do planejamento com outra conta              | Acesso recusado sem exibir a conversa         |
 
 Para testar ausência de configuração, deixe `GEMINI_API_KEY` vazia temporariamente, reinicie a API e tente gerar. Deve aparecer indisponibilidade; a criação manual deve continuar funcionando. Depois restaure a chave e reinicie novamente.
 
@@ -277,20 +279,20 @@ Para testar o limite local de chamadas, configure temporariamente `GEMINI_LIMITE
 
 ## 12. Resolver problemas comuns
 
-| Sintoma | O que conferir |
-| --- | --- |
-| Backend não conecta ao MySQL | Serviço ativo, porta, usuário, senha e banco em `DATABASE_URL` |
-| Tabela ou coluna não existe | `prisma migrate status`, migrations aplicadas no mesmo banco da API e `prisma generate` |
-| `JWT_SECRET` ausente | Preencher `backend/.env` e iniciar a API dentro da pasta `backend` |
-| Erro de CORS | Frontend em `http://localhost:5173` e esse mesmo valor em `FRONTEND_URL`, sem subpasta |
-| Frontend chama API remota | Conferir `.env.development`, `.env.development.local`, `.env.local` e variáveis do terminal; reiniciar o Vite |
-| Porta ocupada | Encerrar a instância anterior com `Ctrl+C`; manter as portas alinhadas nos arquivos de ambiente |
-| IA indisponível, HTTP 503 | Chave e modelo preenchidos, API reiniciada, modelo disponível, projeto/cotas e acesso de rede ao Google |
-| HTTP 502 ao gerar | A resposta não passou na validação ou a tentativa falhou; tentar novamente e consultar o log do backend |
-| HTTP 504 | A geração excedeu o prazo de 60 segundos; tentar novamente |
-| HTTP 429 | Limite de chamadas do usuário atingido; aguardar a janela ou ajustar o limite local para os testes |
-| HTTP 409 | Pedido em andamento ou proposta baseada em revisão antiga; atualizar o planejamento e seguir a mensagem exibida |
-| Login deixou de funcionar após trocar o banco | Cadastrar usuário no banco local e fazer login novamente |
+| Sintoma                                       | O que conferir                                                                                                  |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Backend não conecta ao MySQL                  | Serviço ativo, porta, usuário, senha e banco em `DATABASE_URL`                                                  |
+| Tabela ou coluna não existe                   | `prisma migrate status`, migrations aplicadas no mesmo banco da API e `prisma generate`                         |
+| `JWT_SECRET` ausente                          | Preencher `backend/.env` e iniciar a API dentro da pasta `backend`                                              |
+| Erro de CORS                                  | Frontend em `http://localhost:5173` e esse mesmo valor em `FRONTEND_URL`, sem subpasta                          |
+| Frontend chama API remota                     | Conferir `.env.development`, `.env.development.local`, `.env.local` e variáveis do terminal; reiniciar o Vite   |
+| Porta ocupada                                 | Encerrar a instância anterior com `Ctrl+C`; manter as portas alinhadas nos arquivos de ambiente                 |
+| IA indisponível, HTTP 503                     | Chave e modelo preenchidos, API reiniciada, modelo disponível, projeto/cotas e acesso de rede ao Google         |
+| HTTP 502 ao gerar                             | A resposta não passou na validação ou a tentativa falhou; tentar novamente e consultar o log do backend         |
+| HTTP 504                                      | A geração excedeu o prazo de 60 segundos; tentar novamente                                                      |
+| HTTP 429                                      | Limite de chamadas do usuário atingido; aguardar a janela ou ajustar o limite local para os testes              |
+| HTTP 409                                      | Pedido em andamento ou proposta baseada em revisão antiga; atualizar o planejamento e seguir a mensagem exibida |
+| Login deixou de funcionar após trocar o banco | Cadastrar usuário no banco local e fazer login novamente                                                        |
 
 O log do Gemini informa modelo, duração, consumo de tokens quando disponível e categoria de resultado. Ele não registra a chave nem o conteúdo integral da conversa. No navegador, a aba **Network/Rede** mostra o código HTTP das chamadas; não compartilhe o cabeçalho `Authorization`.
 
