@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import UserAvatar from "../components/UserAvatar";
+import ObjectUrlImage from "../components/ObjectUrlImage";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import CommunityPost from "../components/CommunityPost";
 import Feedback from "../components/Feedback";
@@ -22,6 +23,7 @@ export default function Comunidade() {
   const [selectedPostCategoryIds, setSelectedPostCategoryIds] = useState([]);
   const [search, setSearch] = useState("");
   const [postText, setPostText] = useState("");
+  const [selectedPhotos, setSelectedPhotos] = useState([]);
   const [selectedRoteiroId, setSelectedRoteiroId] = useState("");
   const [feedMode, setFeedMode] = useState("for-you");
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -246,15 +248,17 @@ export default function Comunidade() {
     setPosting(true);
     setStatus(null);
     try {
+      const body = new FormData();
+      body.append("texto", texto);
+      body.append("roteiroId", selectedRoteiroId || "");
+      body.append("categoriaIds", JSON.stringify(selectedPostCategoryIds));
+      selectedPhotos.forEach((photo) => body.append("fotos", photo));
       await apiFetch("/publicacoes", {
         method: "POST",
-        body: JSON.stringify({
-          texto,
-          roteiroId: selectedRoteiroId || null,
-          categoriaIds: selectedPostCategoryIds,
-        }),
+        body,
       });
       setPostText("");
+      setSelectedPhotos([]);
       setSelectedRoteiroId("");
       setSelectedPostCategoryIds([]);
       setStatus({ type: "success", message: "Publicação enviada." });
@@ -264,6 +268,28 @@ export default function Comunidade() {
     } finally {
       setPosting(false);
     }
+  }
+
+  function choosePhotos(event) {
+    const files = [...event.target.files];
+    if (files.length > 8) {
+      setStatus({ type: "error", message: "Selecione no máximo 8 fotos." });
+      event.target.value = "";
+      return;
+    }
+    const valid = files.filter(
+      (file) =>
+        ["image/jpeg", "image/png", "image/webp"].includes(file.type) &&
+        file.size <= 8 * 1024 * 1024,
+    );
+    if (valid.length !== files.length) {
+      setStatus({
+        type: "error",
+        message: "Use fotos JPG, PNG ou WebP de até 8 MB.",
+      });
+    }
+    setSelectedPhotos(valid);
+    event.target.value = "";
   }
 
   async function toggleFollow(traveler) {
@@ -688,10 +714,47 @@ export default function Comunidade() {
                     </select>
                   </label>
                 ) : null}
+                {selectedPhotos.length ? (
+                  <div className="mb-3 grid grid-cols-4 gap-2">
+                    {selectedPhotos.map((photo, index) => (
+                      <div
+                        key={`${photo.name}-${photo.lastModified}`}
+                        className="relative aspect-square overflow-hidden rounded-xl bg-slate-100"
+                      >
+                        <ObjectUrlImage
+                          file={photo}
+                          alt={`Prévia ${index + 1}`}
+                          className="h-full w-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSelectedPhotos((current) =>
+                              current.filter(
+                                (_, photoIndex) => photoIndex !== index,
+                              ),
+                            )
+                          }
+                          className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-slate-950/75 text-sm text-white"
+                          aria-label={`Remover foto ${index + 1}`}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
                 <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
-                  <span className="text-xs text-slate-400">
-                    Compartilhe uma dica, história ou descoberta.
-                  </span>
+                  <label className="cursor-pointer text-xs font-semibold text-blue-700 hover:text-blue-800">
+                    Adicionar fotos
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      multiple
+                      className="sr-only"
+                      onChange={choosePhotos}
+                    />
+                  </label>
                   <button
                     type="submit"
                     disabled={posting || !postText.trim()}

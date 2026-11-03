@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch, requireAuth } from "../data/api";
+import ObjectUrlImage from "../components/ObjectUrlImage";
+import { useAuth } from "../context/useAuth";
 import {
   buildRoteiroPayload,
   serializeDiaPayload,
@@ -30,6 +32,7 @@ function createDay(numeroDia) {
 
 export default function NovoRoteiro() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [form, setForm] = useState({
     titulo: "",
     destino: "",
@@ -41,6 +44,7 @@ export default function NovoRoteiro() {
   const [dias, setDias] = useState([createDay(1)]);
   const [status, setStatus] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [coverFile, setCoverFile] = useState(null);
   const [dayEditor, setDayEditor] = useState(null);
   const [itemEditor, setItemEditor] = useState(null);
 
@@ -50,6 +54,21 @@ export default function NovoRoteiro() {
       ...current,
       [name]: type === "checkbox" ? checked : value,
     }));
+  }
+
+  function chooseCover(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (
+      !["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
+      file.size > 8 * 1024 * 1024
+    ) {
+      setStatus("Use uma imagem JPG, PNG ou WebP de até 8 MB.");
+      return;
+    }
+    setCoverFile(file);
+    setStatus(null);
   }
 
   function addDay() {
@@ -231,10 +250,26 @@ export default function NovoRoteiro() {
     setStatus(null);
 
     try {
-      const roteiroPayload = buildRoteiroPayload(form);
+      if (!user?.id)
+        throw new Error(
+          "Não foi possível identificar sua conta. Entre novamente.",
+        );
+      const roteiroPayload = {
+        ...buildRoteiroPayload(form),
+        usuarioId: user.id,
+      };
+      let requestBody = JSON.stringify(roteiroPayload);
+      if (coverFile) {
+        requestBody = new FormData();
+        Object.entries(roteiroPayload).forEach(([key, value]) => {
+          if (key !== "imagemUrl" && value != null)
+            requestBody.append(key, String(value));
+        });
+        requestBody.append("imagem", coverFile);
+      }
       const roteiroResponse = await apiFetch("/roteiros", {
         method: "POST",
-        body: JSON.stringify(roteiroPayload),
+        body: requestBody,
       });
 
       const roteiroId = roteiroResponse?.roteiro?.id ?? roteiroResponse?.id;
@@ -350,22 +385,42 @@ export default function NovoRoteiro() {
               />
             </label>
 
-            <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Fotografia do roteiro (opcional)
-              <input
-                className="input-field"
-                name="imagemUrl"
-                type="url"
-                maxLength={500}
-                value={form.imagemUrl}
-                onChange={updateField}
-                placeholder="https://…"
-              />
-              <span className="text-xs font-normal text-slate-500">
-                Use um endereço público de uma imagem de viagem. Se deixar
-                vazio, o Vambora exibirá sua imagem padrão.
-              </span>
-            </label>
+            <div className="grid gap-2 text-sm font-medium text-slate-700">
+              <label htmlFor="route-cover-file">
+                Fotografia do roteiro (opcional)
+              </label>
+              {coverFile ? (
+                <ObjectUrlImage
+                  file={coverFile}
+                  alt="Prévia da capa do roteiro"
+                  className="aspect-[16/7] w-full rounded-2xl bg-slate-100 object-cover"
+                />
+              ) : null}
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="btn-secondary cursor-pointer">
+                  {coverFile ? "Trocar imagem" : "Escolher imagem"}
+                  <input
+                    id="route-cover-file"
+                    className="sr-only"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={chooseCover}
+                  />
+                </label>
+                {coverFile ? (
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => setCoverFile(null)}
+                  >
+                    Remover imagem
+                  </button>
+                ) : null}
+                <span className="text-xs font-normal text-slate-500">
+                  JPG, PNG ou WebP, até 8 MB. A imagem será salva no Cloudinary.
+                </span>
+              </div>
+            </div>
 
             <div className="grid gap-5 lg:grid-cols-2">
               <label className="grid gap-2 text-sm font-medium text-slate-700">

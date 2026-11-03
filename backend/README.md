@@ -28,7 +28,33 @@ A migration `20261016120000_expand_community` adiciona categorias/fotos às
 publicações, salvamentos e denúncias. Aplique-a com `npx prisma migrate deploy`
 e regenere o cliente com `npx prisma generate` dentro da pasta `backend`.
 
-O upload foi separado na branch `feature/upload-fotos`. Na `main`, publicações usam JSON com texto, categorias e roteiro opcional. Não há gravação de arquivos nem exigência de disco persistente. O schema e as migrations anteriores foram mantidos para preservar os dados existentes.
+O upload histórico em disco foi separado na branch `feature/upload-fotos`. A implementação atual usa storage de objetos opcional, sem gravação persistente no filesystem do Render. O schema e as migrations existentes foram mantidos para preservar os dados existentes.
+
+### Capas de roteiros, fotos de publicações e perfis
+
+O código aceita capas de roteiros, fotos de publicações e fotos de perfil usando
+o SDK oficial do Cloudinary. O modelo Prisma existente é reutilizado: capas ficam
+em `Roteiro.imagemUrl`, fotos de publicação em `PublicacaoFoto` e a foto de perfil
+em `Usuario.fotoUrl`; não há migration para esse fluxo. Os endpoints atuais de
+criação e edição de roteiro continuam aceitando JSON/URLs legadas e também aceitam
+multipart quando uma nova capa é selecionada.
+
+Configure no ambiente do backend, nunca no frontend:
+
+```dotenv
+CLOUDINARY_CLOUD_NAME=<cloud-name>
+CLOUDINARY_API_KEY=<api-key>
+CLOUDINARY_API_SECRET=<api-secret>
+```
+
+Cadastre essas variáveis somente no ambiente do backend (Render ou `backend/.env`)
+e nunca no frontend. Sem elas, o backend continua permitindo fluxos sem arquivo
+e retorna uma mensagem controlada quando um upload é solicitado. O limite é de
+8 fotos por publicação, 8 MB por imagem e formatos JPG, PNG ou WebP. URLs
+gerenciadas usam os prefixos `profiles/`, `community/` e `routes/`; uma capa
+antiga só é removida quando nenhuma publicação, perfil ou roteiro ainda a
+referencia. Capas antigas com URLs externas continuam compatíveis e nunca são
+excluídas pelo Cloudinary.
 
 ## Home e busca de roteiros
 

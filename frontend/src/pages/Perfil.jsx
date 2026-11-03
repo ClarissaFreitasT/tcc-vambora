@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import Feedback from "../components/Feedback";
 import UserAvatar from "../components/UserAvatar";
+import ObjectUrlImage from "../components/ObjectUrlImage";
 import { apiFetch } from "../data/api";
 import { useAuth } from "../context/useAuth";
 import {
@@ -167,7 +168,7 @@ export default function Perfil() {
   const { username: routeUsername, userId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, updateUser, isAuthenticated, logout } = useAuth();
+  const { user, updateUser, syncUser, isAuthenticated, logout } = useAuth();
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
   const [roteiros, setRoteiros] = useState([]);
@@ -192,13 +193,14 @@ export default function Perfil() {
   const [relationshipList, setRelationshipList] = useState(null);
   const [status, setStatus] = useState(null);
   const [photoPreviewFailed, setPhotoPreviewFailed] = useState(false);
+  const [profilePhotoFile, setProfilePhotoFile] = useState(null);
+  const [profilePhotoBusy, setProfilePhotoBusy] = useState(false);
   const [form, setForm] = useState({
     nome: "",
     username: "",
     bio: "",
     fotoUrl: "",
   });
-
   const isOwnProfile =
     (!routeUsername && !userId) ||
     routeUsername === user?.username ||
@@ -386,6 +388,62 @@ export default function Perfil() {
       setStatus({ type: "error", message: error.message });
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function uploadProfilePhoto(file) {
+    if (!file) return;
+    if (
+      !["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
+      file.size > 8 * 1024 * 1024
+    ) {
+      setStatus({
+        type: "error",
+        message: "Use uma foto JPG, PNG ou WebP de até 8 MB.",
+      });
+      return;
+    }
+    setProfilePhotoFile(file);
+    setProfilePhotoBusy(true);
+    setStatus(null);
+    try {
+      const body = new FormData();
+      body.append("foto", file);
+      const response = await apiFetch("/usuarios/me/foto", {
+        method: "POST",
+        body,
+      });
+      syncUser(response.usuario);
+      setProfile((current) => ({ ...current, ...response.usuario }));
+      setForm((current) => ({
+        ...current,
+        fotoUrl: response.usuario.fotoUrl || "",
+      }));
+      setProfilePhotoFile(null);
+      setStatus({ type: "success", message: "Foto do perfil atualizada." });
+    } catch (error) {
+      setStatus({ type: "error", message: error.message });
+    } finally {
+      setProfilePhotoBusy(false);
+    }
+  }
+
+  async function removeProfilePhoto() {
+    setProfilePhotoBusy(true);
+    setStatus(null);
+    try {
+      const response = await apiFetch("/usuarios/me/foto", {
+        method: "DELETE",
+      });
+      syncUser(response.usuario);
+      setProfile((current) => ({ ...current, ...response.usuario }));
+      setForm((current) => ({ ...current, fotoUrl: "" }));
+      setProfilePhotoFile(null);
+      setStatus({ type: "success", message: "Foto do perfil removida." });
+    } catch (error) {
+      setStatus({ type: "error", message: error.message });
+    } finally {
+      setProfilePhotoBusy(false);
     }
   }
 
@@ -823,6 +881,24 @@ export default function Perfil() {
                   <p className="mt-5 whitespace-pre-wrap text-sm leading-7 text-slate-700">
                     {publicationModal.data.texto}
                   </p>
+                  {publicationModal.data.fotos?.length ? (
+                    <div
+                      className={`mt-5 grid gap-1.5 overflow-hidden rounded-2xl ${publicationModal.data.fotos.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}
+                    >
+                      {publicationModal.data.fotos.map((foto, index) => (
+                        <img
+                          key={foto.id || foto.url}
+                          src={foto.url}
+                          alt={`Foto ${index + 1} da publicação`}
+                          className="aspect-[4/3] w-full bg-slate-100 object-cover"
+                          loading="lazy"
+                          onError={(event) => {
+                            event.currentTarget.hidden = true;
+                          }}
+                        />
+                      ))}
+                    </div>
+                  ) : null}
                   <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4 text-xs text-slate-500">
                     <span>
                       ♥ {publicationModal.data._count?.curtidas || 0} curtidas
@@ -1045,9 +1121,15 @@ export default function Perfil() {
                 </span>
               </label>
               <div className="grid gap-2 text-sm font-semibold text-slate-700">
-                <label htmlFor="profile-photo-url">Foto do perfil</label>
+                <label htmlFor="profile-photo-file">Foto do perfil</label>
                 <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  {form.fotoUrl && !photoPreviewFailed ? (
+                  {profilePhotoFile ? (
+                    <ObjectUrlImage
+                      file={profilePhotoFile}
+                      alt="Prévia da nova foto de perfil"
+                      className="h-16 w-16 shrink-0 rounded-full object-cover"
+                    />
+                  ) : form.fotoUrl && !photoPreviewFailed ? (
                     <img
                       key={form.fotoUrl}
                       src={form.fotoUrl}
@@ -1066,22 +1148,33 @@ export default function Perfil() {
                     A prévia mostra a imagem que será salva.
                   </p>
                 </div>
-                <input
-                  id="profile-photo-url"
-                  className="input-field rounded-2xl"
-                  type="url"
-                  value={form.fotoUrl}
-                  maxLength={255}
-                  placeholder="Link direto da imagem · https://…"
-                  onChange={(event) => {
-                    setForm({ ...form, fotoUrl: event.target.value });
-                    setPhotoPreviewFailed(false);
-                  }}
-                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="btn-secondary cursor-pointer">
+                    Escolher foto
+                    <input
+                      id="profile-photo-file"
+                      className="sr-only"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={(event) =>
+                        uploadProfilePhoto(event.target.files?.[0])
+                      }
+                    />
+                  </label>
+                  {form.fotoUrl ? (
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={removeProfilePhoto}
+                      disabled={profilePhotoBusy}
+                    >
+                      Remover foto
+                    </button>
+                  ) : null}
+                </div>
                 <span className="text-xs font-normal leading-5 text-slate-500">
-                  Use o endereço direto de uma imagem pública (.jpg, .png ou
-                  .webp), com até 255 caracteres. O campo não envia arquivos do
-                  computador.
+                  JPG, PNG ou WebP de até 8 MB. A foto será armazenada com
+                  segurança no Vambora.
                 </span>
                 {photoPreviewFailed ? (
                   <span

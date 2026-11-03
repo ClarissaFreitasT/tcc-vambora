@@ -1,4 +1,52 @@
 import * as PublicacaoModel from "../models/publicacao.model.js";
+import {
+  deleteManagedImage,
+  managedObjectKey,
+  uploadImage,
+} from "../config/storage.js";
+
+const extensionByMime = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
+async function uploadPublicationFiles(files) {
+  const uploaded = [];
+  try {
+    for (const file of files) {
+      const extension = extensionByMime[file.detectedType];
+      const key = managedObjectKey("community/", extension);
+      const url = await uploadImage({
+        key,
+        body: file.buffer,
+        contentType: file.detectedType,
+      });
+      uploaded.push(url);
+    }
+    return uploaded;
+  } catch (error) {
+    await Promise.all(
+      uploaded.map((url) => deleteManagedImage(url).catch(() => {})),
+    );
+    throw error;
+  }
+}
+
+async function cleanupPublicationImages(fotos = []) {
+  await Promise.all(
+    fotos.map(async ({ url }) => {
+      if (!(await PublicacaoModel.imagemAindaReferenciada(url))) {
+        await deleteManagedImage(url).catch((error) => {
+          console.error(
+            "Não foi possível remover a imagem da publicação:",
+            error.message,
+          );
+        });
+      }
+    }),
+  );
+}
 
 export async function criarPublicacao(req, res) {
   const { texto, roteiroId } = req.body || {};
@@ -46,20 +94,32 @@ export async function criarPublicacao(req, res) {
       }
     }
 
-    const publicacao = await PublicacaoModel.criarPublicacao(
-      req.user.id,
-      texto.trim(),
-      roteiroId || null,
-      [],
-      categoriaIds,
-    );
+    const fotoUrls = req.files?.length
+      ? await uploadPublicationFiles(req.files)
+      : [];
+    let publicacao;
+    try {
+      publicacao = await PublicacaoModel.criarPublicacao(
+        req.user.id,
+        texto.trim(),
+        roteiroId || null,
+        fotoUrls,
+        categoriaIds,
+      );
+    } catch (error) {
+      await Promise.all(
+        fotoUrls.map((url) => deleteManagedImage(url).catch(() => {})),
+      );
+      throw error;
+    }
 
     return res.status(201).json(publicacao);
   } catch (error) {
     console.error("Erro ao criar publicação:", error);
-    return res.status(500).json({
+    return res.status(error.status || 500).json({
       erro: "Não foi possível criar a publicação",
-      detalhe: process.env.NODE_ENV === "production" ? undefined : error.message,
+      detalhe:
+        process.env.NODE_ENV === "production" ? undefined : error.message,
     });
   }
 }
@@ -234,6 +294,7 @@ export async function excluirPublicacaoPropria(req, res) {
       .status(403)
       .json({ erro: "Você só pode excluir suas próprias publicações" });
   await PublicacaoModel.excluirPublicacao(req.params.id);
+  await cleanupPublicationImages(publication.fotos);
   return res.status(204).send();
 }
 
@@ -383,6 +444,7 @@ export async function excluirPublicacaoAdmin(req, res) {
   }
 
   const publicacaoRemovida = await PublicacaoModel.excluirPublicacao(id);
+  await cleanupPublicationImages(publicacaoExistente.fotos);
 
   return res.status(200).json({
     mensagem: "Publicação removida pelo administrador",

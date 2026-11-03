@@ -1,4 +1,5 @@
 import { prisma } from "../config/prisma.js";
+import { isManagedImageUrl } from "../config/storage.js";
 
 const camposUsuarioAdmin = {
   id: true,
@@ -213,6 +214,14 @@ export async function atualizarUsuario(id, dadosAtualizados) {
     return null;
   }
 
+  if (
+    Object.hasOwn(dadosAtualizados, "fotoUrl") &&
+    dadosAtualizados.fotoUrl !== usuarioExistente.fotoUrl &&
+    isManagedImageUrl(dadosAtualizados.fotoUrl)
+  ) {
+    return null;
+  }
+
   const camposProtegidos = new Set(["email", "role", "senhaHash"]);
   const dadosPermitidos = Object.fromEntries(
     Object.entries(dadosAtualizados).filter(
@@ -253,6 +262,25 @@ export async function atualizarUsuario(id, dadosAtualizados) {
   return prisma.usuario.update({
     where: { id },
     data: dadosPermitidos,
+    select: camposUsuarioPublicos,
+  });
+}
+
+export async function obterUsuarioComFoto(id) {
+  return prisma.usuario.findUnique({
+    where: { id },
+    select: { id: true, fotoUrl: true },
+  });
+}
+
+export async function atualizarFotoPerfil(id, fotoUrlAtual, novaFotoUrl) {
+  const result = await prisma.usuario.updateMany({
+    where: { id, fotoUrl: fotoUrlAtual },
+    data: { fotoUrl: novaFotoUrl },
+  });
+  if (!result.count) return null;
+  return prisma.usuario.findUnique({
+    where: { id },
     select: camposUsuarioPublicos,
   });
 }

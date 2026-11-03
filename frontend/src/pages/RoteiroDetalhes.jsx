@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { apiFetch } from "../data/api";
+import ObjectUrlImage from "../components/ObjectUrlImage";
 import { useAuth } from "../context/useAuth";
 import { profilePath } from "../utils/profile";
 
@@ -46,6 +47,7 @@ export default function RoteiroDetalhes() {
   const [status, setStatus] = useState(null);
   const [editingRoteiro, setEditingRoteiro] = useState(false);
   const [roteiroForm, setRoteiroForm] = useState({});
+  const [routeCoverFile, setRouteCoverFile] = useState(null);
   const [newDayTitle, setNewDayTitle] = useState("");
   const [editingDay, setEditingDay] = useState(null);
   const [itemDay, setItemDay] = useState(null);
@@ -78,6 +80,7 @@ export default function RoteiroDetalhes() {
         orcamento: data.orcamento ?? "",
         publico: data.publico,
       });
+      setRouteCoverFile(null);
     } catch (error) {
       setStatus(error.message);
     } finally {
@@ -145,19 +148,45 @@ export default function RoteiroDetalhes() {
     loadInitialRoteiro();
   }, [id, navigate, isAuthenticated, user?.id]);
 
+  function chooseRouteCover(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (
+      !["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
+      file.size > 8 * 1024 * 1024
+    ) {
+      setStatus("Use uma imagem JPG, PNG ou WebP de até 8 MB.");
+      return;
+    }
+    setRouteCoverFile(file);
+    setStatus(null);
+  }
+
   async function saveRoteiro(event) {
     event.preventDefault();
     setSaving(true);
     setStatus(null);
     try {
+      const payload = {
+        ...roteiroForm,
+        orcamento:
+          roteiroForm.orcamento === "" ? null : Number(roteiroForm.orcamento),
+      };
+      let body = JSON.stringify(payload);
+      if (routeCoverFile) {
+        body = new FormData();
+        Object.entries(payload).forEach(([key, value]) => {
+          if (key !== "imagemUrl" && value != null)
+            body.append(key, String(value));
+        });
+        body.append("imagem", routeCoverFile);
+      }
       await apiFetch(`/roteiros/${id}`, {
         method: "PATCH",
-        body: JSON.stringify({
-          ...roteiroForm,
-          orcamento:
-            roteiroForm.orcamento === "" ? null : Number(roteiroForm.orcamento),
-        }),
+        body,
       });
+      setRouteCoverFile(null);
       await loadRoteiro();
       setEditingRoteiro(false);
       setStatus("Roteiro atualizado.");
@@ -694,21 +723,61 @@ export default function RoteiroDetalhes() {
                   }
                 />
               </Field>
-              <Field label="Fotografia do roteiro (opcional)">
-                <input
-                  className="input-field"
-                  type="url"
-                  maxLength={500}
-                  placeholder="https://…"
-                  value={roteiroForm.imagemUrl || ""}
-                  onChange={(event) =>
-                    setRoteiroForm({
-                      ...roteiroForm,
-                      imagemUrl: event.target.value,
-                    })
-                  }
-                />
-              </Field>
+              <div className="grid gap-2 text-sm font-medium text-slate-700">
+                <label htmlFor="route-cover-file">
+                  Fotografia do roteiro (opcional)
+                </label>
+                {routeCoverFile ? (
+                  <ObjectUrlImage
+                    file={routeCoverFile}
+                    alt="Prévia da nova capa do roteiro"
+                    className="aspect-[16/7] w-full rounded-2xl bg-slate-100 object-cover"
+                  />
+                ) : roteiroForm.imagemUrl ? (
+                  <img
+                    src={roteiroForm.imagemUrl}
+                    alt="Capa atual do roteiro"
+                    className="aspect-[16/7] w-full rounded-2xl bg-slate-100 object-cover"
+                    onError={(event) => {
+                      event.currentTarget.hidden = true;
+                    }}
+                  />
+                ) : null}
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className="btn-secondary cursor-pointer">
+                    {routeCoverFile || roteiroForm.imagemUrl
+                      ? "Trocar imagem"
+                      : "Escolher imagem"}
+                    <input
+                      id="route-cover-file"
+                      className="sr-only"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={chooseRouteCover}
+                    />
+                  </label>
+                  {routeCoverFile || roteiroForm.imagemUrl ? (
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => {
+                        setRouteCoverFile(null);
+                        setRoteiroForm((current) => ({
+                          ...current,
+                          imagemUrl: null,
+                        }));
+                      }}
+                      disabled={saving}
+                    >
+                      Remover capa
+                    </button>
+                  ) : null}
+                  <span className="text-xs font-normal text-slate-500">
+                    JPG, PNG ou WebP de até 8 MB. A nova capa será armazenada no
+                    Cloudinary.
+                  </span>
+                </div>
+              </div>
               <Field label="Orçamento (R$)">
                 <input
                   className="input-field"

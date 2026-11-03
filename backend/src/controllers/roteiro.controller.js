@@ -1,4 +1,41 @@
 import * as RoteiroModel from "../models/roteiro.model.js";
+import * as PublicacaoModel from "../models/publicacao.model.js";
+import {
+  deleteManagedImage,
+  managedObjectKey,
+  uploadImage,
+} from "../config/storage.js";
+
+const extensionByMime = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
+function parseBooleanField(value) {
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return value;
+}
+
+async function uploadRouteCover(file) {
+  const key = managedObjectKey("routes/", extensionByMime[file.detectedType]);
+  return uploadImage({
+    key,
+    body: file.buffer,
+    contentType: file.detectedType,
+  });
+}
+
+async function cleanupRouteCover(url) {
+  if (!url || (await PublicacaoModel.imagemAindaReferenciada(url))) return;
+  await deleteManagedImage(url).catch((error) => {
+    console.error(
+      "Não foi possível remover a capa antiga do roteiro:",
+      error.message,
+    );
+  });
+}
 
 export async function listarRoteiros(req, res) {
   const roteiros = await RoteiroModel.obterTodasRoteiros(req.user?.id);
@@ -131,6 +168,7 @@ export async function criarRoteiro(req, res) {
     return res.status(400).json({ erro: "Destino é obrigatório" });
   }
   if (
+    !req.file &&
     imagemUrl != null &&
     imagemUrl !== "" &&
     !isValidRouteImageUrl(imagemUrl)
@@ -140,15 +178,17 @@ export async function criarRoteiro(req, res) {
     });
   }
 
+  let uploadedImageUrl;
   try {
+    uploadedImageUrl = req.file ? await uploadRouteCover(req.file) : null;
     const roteiroCriado = await RoteiroModel.criarNovoRoteiro({
       usuarioId,
       titulo,
       destino,
       descricao,
-      imagemUrl: imagemUrl || null,
+      imagemUrl: uploadedImageUrl || imagemUrl || null,
       orcamento,
-      publico,
+      publico: parseBooleanField(publico),
     });
 
     return res.status(201).json({
@@ -156,11 +196,14 @@ export async function criarRoteiro(req, res) {
       roteiro: roteiroCriado,
     });
   } catch (error) {
+    if (uploadedImageUrl)
+      await deleteManagedImage(uploadedImageUrl).catch(() => {});
     console.error("Erro ao criar roteiro:", error);
 
-    return res.status(500).json({
+    return res.status(error.status || 500).json({
       erro: "Não foi possível salvar o roteiro.",
-      detalhe: process.env.NODE_ENV === "production" ? undefined : error.message,
+      detalhe:
+        process.env.NODE_ENV === "production" ? undefined : error.message,
     });
   }
 }
@@ -188,6 +231,7 @@ export async function atualizarRoteiro(req, res) {
     return res.status(400).json({ erro: "Destino inválido" });
   }
   if (
+    !req.file &&
     imagemUrl !== undefined &&
     imagemUrl !== null &&
     imagemUrl !== "" &&
@@ -210,14 +254,41 @@ export async function atualizarRoteiro(req, res) {
     });
   }
 
-  const roteiroAtualizado = await RoteiroModel.atualizarRoteiro(id, {
-    titulo,
-    destino,
-    descricao,
-    imagemUrl: imagemUrl === "" ? null : imagemUrl,
-    orcamento,
-    publico,
-  });
+  let uploadedImageUrl;
+  let roteiroAtualizado;
+  const nextImageUrl = req.file
+    ? undefined
+    : imagemUrl === ""
+      ? null
+      : imagemUrl;
+  try {
+    uploadedImageUrl = req.file ? await uploadRouteCover(req.file) : null;
+    roteiroAtualizado = await RoteiroModel.atualizarRoteiro(id, {
+      titulo,
+      destino,
+      descricao,
+      imagemUrl: uploadedImageUrl || nextImageUrl,
+      orcamento,
+      publico: parseBooleanField(publico),
+    });
+  } catch (error) {
+    if (uploadedImageUrl)
+      await deleteManagedImage(uploadedImageUrl).catch(() => {});
+    throw error;
+  }
+
+  if (!roteiroAtualizado) {
+    if (uploadedImageUrl)
+      await deleteManagedImage(uploadedImageUrl).catch(() => {});
+    return res.status(404).json({ erro: "Roteiro não encontrado" });
+  }
+
+  if (
+    roteiroAtual.imagemUrl &&
+    roteiroAtual.imagemUrl !== roteiroAtualizado.imagemUrl
+  ) {
+    await cleanupRouteCover(roteiroAtual.imagemUrl);
+  }
 
   res.json({
     mensagem: "Roteiro atualizado com sucesso!",
@@ -255,6 +326,8 @@ export async function excluirRoteiro(req, res) {
   }
 
   const roteiroRemovido = await RoteiroModel.excluirRoteiro(id);
+
+  if (roteiroAtual.imagemUrl) await cleanupRouteCover(roteiroAtual.imagemUrl);
 
   res.json({
     mensagem: "Roteiro excluído com sucesso!",

@@ -14,9 +14,12 @@ import {
   deixarDeSeguirUsuario,
   listarSeguidores,
   listarSeguindo,
+  enviarFotoPerfil,
+  removerFotoPerfil,
 } from "../controllers/users.controller.js";
 
 import authMiddleware, { optionalAuth } from "../middlewares/authMiddleware.js";
+import { uploadProfileImage } from "../middlewares/imageUpload.js";
 
 const router = Router();
 
@@ -25,6 +28,8 @@ router.get("/comunidade", authMiddleware, listarComunidade);
 router.get("/me", authMiddleware, obterMeuPerfil);
 router.get("/me/curtidas", authMiddleware, listarCurtidasDoUsuario);
 router.patch("/me", authMiddleware, atualizarMeuPerfil);
+router.post("/me/foto", authMiddleware, uploadProfileImage, enviarFotoPerfil);
+router.delete("/me/foto", authMiddleware, removerFotoPerfil);
 router.get("/perfil/:username", optionalAuth, obterUsuarioPorUsername);
 router.get("/username/:username", optionalAuth, obterUsuarioPorUsername);
 router.get("/:id/seguidores", authMiddleware, listarSeguidores);

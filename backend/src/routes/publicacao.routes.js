@@ -3,6 +3,7 @@ import { Router } from "express";
 import * as publicacaoController from "../controllers/publicacao.controller.js";
 import authMiddleware, { optionalAuth } from "../middlewares/authMiddleware.js";
 import adminMiddleware from "../middlewares/adminMiddleware.js";
+import { uploadPublicationImages } from "../middlewares/imageUpload.js";
 
 const router = Router();
 
@@ -87,12 +88,10 @@ router.get(
 router.post(
   "/",
   authMiddleware,
-  (req, res, next) => {
-    if (!req.is("application/json")) {
-      return res.status(415).json({ erro: "Envie a publicação em JSON. Upload de fotos indisponível." });
-    }
-    return next();
-  },
+  (req, res, next) =>
+    req.is("multipart/form-data")
+      ? uploadPublicationImages(req, res, next)
+      : next(),
   publicacaoController.criarPublicacao,
 );
 router.post(

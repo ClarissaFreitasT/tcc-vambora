@@ -230,6 +230,25 @@ export default function CommunityPost({
             {post.texto}
           </p>
 
+          {post.fotos?.length ? (
+            <div
+              className={`mt-3 grid gap-1.5 overflow-hidden rounded-2xl ${post.fotos.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}
+            >
+              {post.fotos.map((foto, index) => (
+                <img
+                  key={foto.id || foto.url}
+                  src={foto.url}
+                  alt={`Foto ${index + 1} da publicação`}
+                  loading="lazy"
+                  className="aspect-[4/3] w-full bg-slate-100 object-cover"
+                  onError={(event) => {
+                    event.currentTarget.hidden = true;
+                  }}
+                />
+              ))}
+            </div>
+          ) : null}
+
           {post.categorias?.length ? (
             <div className="mt-2 flex flex-wrap gap-1.5">
               {post.categorias.map(({ categoria }) => (

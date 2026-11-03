@@ -137,6 +137,7 @@ export async function login(req, res) {
         id: usuario.id,
         nome: usuario.nome,
         email: usuario.email,
+        fotoUrl: usuario.fotoUrl,
       },
     });
   } catch (error) {

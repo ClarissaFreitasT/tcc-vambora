@@ -446,6 +446,15 @@ export async function excluirPublicacao(id) {
   });
 }
 
+export async function imagemAindaReferenciada(url) {
+  const [publicacaoFotos, perfilFotos, capasRoteiros] = await Promise.all([
+    prisma.publicacaoFoto.count({ where: { url } }),
+    prisma.usuario.count({ where: { fotoUrl: url } }),
+    prisma.roteiro.count({ where: { imagemUrl: url } }),
+  ]);
+  return publicacaoFotos > 0 || perfilFotos > 0 || capasRoteiros > 0;
+}
+
 export async function excluirComentario(id) {
   return prisma.comentario.delete({
     where: { id },

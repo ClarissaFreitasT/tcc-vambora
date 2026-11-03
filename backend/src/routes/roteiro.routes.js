@@ -5,6 +5,7 @@ import * as roteiroController from "../controllers/roteiro.controller.js";
 const router = express.Router();
 
 import authMiddleware, { optionalAuth } from "../middlewares/authMiddleware.js";
+import { uploadRouteCoverImage } from "../middlewares/imageUpload.js";
 // ========================================
 // DEFINIÇÃO DAS ROTAS DE ROTEIROS
 // ========================================
@@ -74,12 +75,28 @@ router.get("/:id", optionalAuth, roteiroController.obterRoteiro);
 /**
  * POST /roteiros - Cria um novo roteiro
  */
-router.post("/", authMiddleware, roteiroController.criarRoteiro);
+router.post(
+  "/",
+  authMiddleware,
+  (req, res, next) =>
+    req.is("multipart/form-data")
+      ? uploadRouteCoverImage(req, res, next)
+      : next(),
+  roteiroController.criarRoteiro,
+);
 
 /**
  * PATCH /roteiros/:id - Atualiza um roteiro parcialmente
  */
-router.patch("/:id", authMiddleware, roteiroController.atualizarRoteiro);
+router.patch(
+  "/:id",
+  authMiddleware,
+  (req, res, next) =>
+    req.is("multipart/form-data")
+      ? uploadRouteCoverImage(req, res, next)
+      : next(),
+  roteiroController.atualizarRoteiro,
+);
 
 /**
  * DELETE /roteiros/:id - Remove um roteiro

@@ -1,6 +1,17 @@
 import * as UsuarioModel from "../models/users.model.js";
 import * as PublicacaoModel from "../models/publicacao.model.js";
 import * as RoteiroModel from "../models/roteiro.model.js";
+import {
+  deleteManagedImage,
+  managedObjectKey,
+  uploadImage,
+} from "../config/storage.js";
+
+const extensionByMime = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
 
 const PERSONALIDADES_VALIDAS = new Set([
   "AVENTUREIRA",
@@ -73,6 +84,68 @@ export async function listarCurtidasDoUsuario(req, res) {
 export async function atualizarMeuPerfil(req, res) {
   req.params.id = req.user.id;
   return atualizarUsuario(req, res);
+}
+
+export async function enviarFotoPerfil(req, res) {
+  if (!req.file)
+    return res.status(400).json({ erro: "Selecione uma imagem de perfil" });
+  const usuarioAtual = await UsuarioModel.obterUsuarioComFoto(req.user.id);
+  const key = managedObjectKey(
+    "profiles/",
+    extensionByMime[req.file.detectedType],
+  );
+  let novaUrl;
+  try {
+    novaUrl = await uploadImage({
+      key,
+      body: req.file.buffer,
+      contentType: req.file.detectedType,
+    });
+    const atualizado = await UsuarioModel.atualizarFotoPerfil(
+      req.user.id,
+      usuarioAtual?.fotoUrl || null,
+      novaUrl,
+    );
+    if (!atualizado) {
+      await deleteManagedImage(novaUrl).catch(() => {});
+      return res
+        .status(409)
+        .json({ erro: "A foto do perfil foi alterada. Tente novamente." });
+    }
+    if (
+      usuarioAtual?.fotoUrl &&
+      usuarioAtual.fotoUrl !== novaUrl &&
+      !(await PublicacaoModel.imagemAindaReferenciada(usuarioAtual.fotoUrl))
+    ) {
+      await deleteManagedImage(usuarioAtual.fotoUrl).catch(() => {});
+    }
+    return res.status(200).json({ usuario: atualizado });
+  } catch (error) {
+    if (novaUrl) await deleteManagedImage(novaUrl).catch(() => {});
+    throw error;
+  }
+}
+
+export async function removerFotoPerfil(req, res) {
+  const usuarioAtual = await UsuarioModel.obterUsuarioComFoto(req.user.id);
+  if (!usuarioAtual)
+    return res.status(404).json({ erro: "Usuário não encontrado" });
+  const atualizado = await UsuarioModel.atualizarFotoPerfil(
+    req.user.id,
+    usuarioAtual.fotoUrl || null,
+    null,
+  );
+  if (!atualizado)
+    return res
+      .status(409)
+      .json({ erro: "A foto do perfil foi alterada. Tente novamente." });
+  if (
+    usuarioAtual.fotoUrl &&
+    !(await PublicacaoModel.imagemAindaReferenciada(usuarioAtual.fotoUrl))
+  ) {
+    await deleteManagedImage(usuarioAtual.fotoUrl).catch(() => {});
+  }
+  return res.status(200).json({ usuario: atualizado });
 }
 
 export async function obterUsuario(req, res) {
