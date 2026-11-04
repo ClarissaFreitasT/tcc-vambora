@@ -45,6 +45,15 @@
     text-decoration: none;
   }
 
+  .vambora-logo-image {
+    display: block;
+    width: clamp(150px, 12vw, 196px);
+    height: 52px;
+    flex: 0 0 auto;
+    object-fit: cover;
+    object-position: center;
+  }
+
   .vambora-brand-mark {
     position: relative;
     display: block;

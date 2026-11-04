@@ -51,15 +51,11 @@ export default function Navbar() {
           className="vambora-brand shrink-0"
           aria-label="Vambora - página inicial"
         >
-          <span className="vambora-brand-mark" aria-hidden="true">
-            <span className="vambora-brand-wing vambora-brand-wing-left" />
-            <span className="vambora-brand-wing vambora-brand-wing-right" />
-            <span className="vambora-brand-route" />
-            <span className="vambora-brand-plane">✦</span>
-          </span>
-          <span className="vambora-brand-name" aria-hidden="true">
-            VAMBORA!
-          </span>
+          <img
+            src={`${import.meta.env.BASE_URL}logo-vambora.png`}
+            alt=""
+            className="vambora-logo-image"
+          />
         </Link>
 
         {loading ? (

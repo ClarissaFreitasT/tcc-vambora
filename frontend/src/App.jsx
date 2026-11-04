@@ -706,7 +706,11 @@ export default function App() {
         <div className="mx-auto max-w-[1280px] px-6 lg:px-8">
           <div className="grid gap-12 lg:grid-cols-4">
             <div>
-              <p className="text-xl font-black text-slate-900">✈️ VAMBORA</p>
+              <img
+                src={`${import.meta.env.BASE_URL}logo-vambora.png`}
+                alt="Vambora!"
+                className="vambora-logo-image"
+              />
               <p className="mt-4 text-slate-600">
                 Planeje suas viagens dos sonhos com roteiros curados pela
                 comunidade.

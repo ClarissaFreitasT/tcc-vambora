@@ -274,8 +274,12 @@ export default function Home() {
   }
 
   function scrollRoutes(direction) {
-    routeRailRef.current?.scrollBy({
-      left: direction * Math.min(routeRailRef.current.clientWidth * 0.8, 520),
+    const rail = routeRailRef.current;
+    const card = rail?.firstElementChild;
+    if (!rail || !card) return;
+    const gap = Number.parseFloat(getComputedStyle(rail).columnGap) || 0;
+    rail.scrollBy({
+      left: direction * (card.getBoundingClientRect().width + gap),
       behavior: "smooth",
     });
   }
@@ -316,7 +320,8 @@ export default function Home() {
                 onChange={setFilters}
                 onSubmit={submitSearch}
                 busy={loadingRoutes}
-                submitLabel="Buscar"
+                submitLabel="Vambora!"
+                homeLayout
               />
             </div>
           </div>
@@ -387,68 +392,67 @@ export default function Home() {
         className="home-popular-section container py-14 sm:py-20"
         aria-labelledby="popular-routes-title"
       >
-        <div className="mx-auto max-w-[1280px]">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
+        <div className="home-popular-layout mx-auto max-w-[1280px]">
+          <div className="home-popular-aside">
+            <div className="home-popular-heading">
               <h2
                 id="popular-routes-title"
                 className="home-display mt-2 text-3xl font-black text-slate-950 sm:text-4xl"
               >
                 Roteiros populares
               </h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
                 Experiências que viajantes curtiram, avaliaram ou escolheram
                 como ponto de partida.
               </p>
             </div>
           </div>
-          {loadingRoutes ? (
-            <div
-              className="mt-7 grid gap-5 lg:grid-cols-2"
-              role="status"
-              aria-label="Carregando roteiros populares"
-            >
-              <div className="h-80 animate-pulse rounded-[28px] bg-slate-100" />
-              <div className="grid gap-5 sm:grid-cols-2">
-                <div className="h-60 animate-pulse rounded-[28px] bg-slate-100" />
-                <div className="h-60 animate-pulse rounded-[28px] bg-slate-100" />
+          <div className="home-popular-content">
+            {loadingRoutes ? (
+              <div
+                className="home-route-loading mt-9"
+                role="status"
+                aria-label="Carregando roteiros populares"
+              >
+                <div className="home-route-skeleton" />
+                <div className="home-route-skeleton" />
+                <div className="home-route-skeleton" />
+                <div className="home-route-skeleton" />
               </div>
-            </div>
-          ) : null}
-          {routesError ? (
-            <div className="mt-7 rounded-2xl bg-red-50 p-5 text-sm text-red-800">
-              <p role="alert">
-                Não foi possível carregar os roteiros: {routesError}
-              </p>
-              <button
-                type="button"
-                onClick={loadRoutes}
-                className="mt-2 font-bold underline"
-              >
-                Tentar novamente
-              </button>
-            </div>
-          ) : null}
-          {!loadingRoutes && !routesError && roteiros.length === 0 ? (
-            <div className="mt-7 rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
-              <p className="font-bold text-slate-800">
-                Ainda não há roteiros públicos.
-              </p>
-              <p className="mt-2 text-sm text-slate-600">
-                Seja a primeira pessoa a criar e compartilhar um roteiro.
-              </p>
-              <button
-                type="button"
-                onClick={createRoute}
-                className="btn-primary mt-5"
-              >
-                Criar o primeiro roteiro
-              </button>
-            </div>
-          ) : null}
-          {!loadingRoutes && !routesError && featuredRoutes.length ? (
-            <>
-              <div className="home-route-rail-wrap mt-7">
+            ) : null}
+            {routesError ? (
+              <div className="mt-7 rounded-2xl bg-red-50 p-5 text-sm text-red-800">
+                <p role="alert">
+                  Não foi possível carregar os roteiros: {routesError}
+                </p>
+                <button
+                  type="button"
+                  onClick={loadRoutes}
+                  className="mt-2 font-bold underline"
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            ) : null}
+            {!loadingRoutes && !routesError && roteiros.length === 0 ? (
+              <div className="mt-7 rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+                <p className="font-bold text-slate-800">
+                  Ainda não há roteiros públicos.
+                </p>
+                <p className="mt-2 text-sm text-slate-600">
+                  Seja a primeira pessoa a criar e compartilhar um roteiro.
+                </p>
+                <button
+                  type="button"
+                  onClick={createRoute}
+                  className="btn-primary mt-5"
+                >
+                  Criar o primeiro roteiro
+                </button>
+              </div>
+            ) : null}
+            {!loadingRoutes && !routesError && featuredRoutes.length ? (
+              <div className="home-route-rail-wrap">
                 <button
                   type="button"
                   className="home-route-arrow home-route-arrow-left"
@@ -479,19 +483,8 @@ export default function Home() {
                   <span aria-hidden="true">→</span>
                 </button>
               </div>
-              <div className="mt-8 text-center">
-                <Link
-                  to="/roteiros/publicos"
-                  className="inline-flex rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-bold text-slate-800 transition hover:border-blue-400 hover:text-blue-700"
-                >
-                  Ver todos os roteiros{" "}
-                  <span className="ml-2" aria-hidden="true">
-                    →
-                  </span>
-                </Link>
-              </div>
-            </>
-          ) : null}
+            ) : null}
+          </div>
         </div>
       </section>
 
@@ -502,12 +495,18 @@ export default function Home() {
         <div className="container mx-auto max-w-[1280px]">
           <div className="home-process-heading">
             <div>
+              <p className="home-section-kicker">
+                Do primeiro clique ao embarque
+              </p>
               <h2
                 id="how-it-works-title"
                 className="home-display mt-2 text-2xl font-black text-slate-950 sm:text-3xl"
               >
                 Como funciona
               </h2>
+              <p className="home-process-intro">
+                Um bom plano deixa espaço para o melhor da viagem: descobrir.
+              </p>
             </div>
           </div>
           <div className="home-process-list mt-7">
@@ -530,9 +529,9 @@ export default function Home() {
             ].map(([number, title, description]) => (
               <article
                 key={number}
-                className="flex gap-4 border-l-2 border-cyan-300 pl-4"
+                className={`home-process-step home-process-step--${number} flex gap-4 border-l-2 border-cyan-300 pl-4`}
               >
-                <span className="text-sm font-black text-blue-700">
+                <span className="home-process-number" aria-hidden="true">
                   {number}
                 </span>
                 <div>
@@ -551,9 +550,9 @@ export default function Home() {
         className="home-community-section container py-16 sm:py-24"
         aria-labelledby="community-preview-title"
       >
-        <div className="mx-auto max-w-[1080px]">
-          <div className="home-community-intro flex flex-wrap items-end justify-between gap-6">
-            <div>
+        <div className="home-community-layout mx-auto max-w-[1180px]">
+          <div className="home-community-intro">
+            <div className="home-community-copy">
               <p className="home-section-kicker home-community-kicker">
                 Comunidade
               </p>
@@ -567,21 +566,71 @@ export default function Home() {
                 Descubra dicas, relatos e descobertas de quem também ama
                 explorar novos lugares.
               </p>
+              <Link to="/comunidade" className="home-community-link">
+                Bora conhecer a Comunidade <span aria-hidden="true">↗</span>
+              </Link>
             </div>
-            <Link to="/comunidade" className="btn-primary">
-              Bora conhecer a Comunidade{" "}
-              <span className="ml-2" aria-hidden="true">
-                →
-              </span>
-            </Link>
+            <div
+              className="home-community-mosaic"
+              aria-label="Fotografias de destinos compartilhados pela comunidade"
+            >
+              <figure className="home-mosaic-photo home-mosaic-photo--one">
+                <ImageFallback
+                  src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=85"
+                  alt="Mar azul e areia clara em um destino tropical"
+                  className="home-mosaic-image"
+                />
+                <figcaption>Um lugar para desacelerar</figcaption>
+              </figure>
+              <figure className="home-mosaic-photo home-mosaic-photo--two">
+                <ImageFallback
+                  src="https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=900&q=85"
+                  alt="Rua tradicional entre casas e vegetação"
+                  className="home-mosaic-image"
+                />
+                <figcaption>Ruas que contam histórias</figcaption>
+              </figure>
+              <figure className="home-mosaic-photo home-mosaic-photo--three">
+                <ImageFallback
+                  src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=900&q=85"
+                  alt="Montanhas altas em uma paisagem natural"
+                  className="home-mosaic-image"
+                />
+                <figcaption>O caminho também é destino</figcaption>
+              </figure>
+              <figure className="home-mosaic-photo home-mosaic-photo--four">
+                <ImageFallback
+                  src="https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=900&q=85"
+                  alt="Paisagem urbana europeia ao fim da tarde"
+                  className="home-mosaic-image"
+                />
+                <figcaption>Novas perspectivas</figcaption>
+              </figure>
+            </div>
           </div>
         </div>
       </section>
 
-      <footer className="border-t border-slate-200 bg-white px-5 py-7 sm:px-8">
-        <div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-3 text-sm">
-          <Link to="/" className="font-black tracking-tight text-slate-900">
-            ✈ VAMBORA
+      <footer className="home-footer">
+        <svg
+          className="home-footer-wave"
+          viewBox="0 0 1440 80"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          <path d="M0 80V43Q180 2 360 43T720 43T1080 43T1440 43V80Z" />
+        </svg>
+        <div className="home-footer-content mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-3 text-sm">
+          <Link
+            to="/"
+            className="home-footer-brand"
+            aria-label="Vambora! Página inicial"
+          >
+            <img
+              src={`${import.meta.env.BASE_URL}logo-vambora.png`}
+              alt=""
+              className="home-footer-logo"
+            />
           </Link>
           <p className="text-slate-500">Planeje junto. Viaje melhor.</p>
           <Link

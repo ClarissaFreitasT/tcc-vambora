@@ -8,6 +8,7 @@ import {
   serializeDiaPayload,
   serializeItemPayload,
 } from "../utils/roteiroSave";
+import "./NovoRoteiro.css";
 
 const emptyItem = {
   titulo: "",
@@ -325,431 +326,520 @@ export default function NovoRoteiro() {
     }
   }
 
+  const totalAtividades = dias.reduce(
+    (total, day) => total + day.itens.length,
+    0,
+  );
+
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.12),_transparent_42%)] px-4 py-16 lg:px-8">
-      <div className="container mx-auto max-w-6xl">
-        <div className="mb-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#2563EB]">
-            Novo roteiro
-          </p>
-          <h1 className="mt-4 text-4xl font-black text-slate-900">
-            Monte o roteiro completo
-          </h1>
-          <p className="mt-3 text-slate-600">
+    <main className="new-route-page min-h-screen">
+      <header className="new-route-header">
+        <div className="new-route-header-inner">
+          <p className="new-route-kicker">Novo roteiro</p>
+          <h1>Monte o roteiro completo</h1>
+          <p>
             Preencha as informações principais, adicione dias e atividades e só
             então salve.
           </p>
         </div>
+        <svg
+          className="new-route-wave"
+          viewBox="0 0 1440 90"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M0 50Q180 0 360 50T720 50T1080 50T1440 50V90H0Z"
+            fill="#9CCBF5"
+            opacity=".55"
+          />
+          <path
+            d="M0 68Q180 28 360 68T720 68T1080 68T1440 68V90H0Z"
+            fill="var(--new-route-bg)"
+          />
+        </svg>
+      </header>
 
-        {status ? (
-          <div className="mb-6 rounded-3xl bg-blue-50 p-4 text-sm text-blue-800">
-            {status}
-          </div>
-        ) : null}
-
-        <div className="card p-8">
-          <div className="grid gap-6">
-            <div className="grid gap-5 lg:grid-cols-2">
-              <label className="grid gap-2 text-sm font-medium text-slate-700">
-                Título do roteiro
-                <input
-                  className="input-field"
-                  name="titulo"
-                  value={form.titulo}
-                  onChange={updateField}
-                  placeholder="Ex.: Fim de semana em Lisboa"
-                />
-              </label>
-
-              <label className="grid gap-2 text-sm font-medium text-slate-700">
-                Destino
-                <input
-                  className="input-field"
-                  name="destino"
-                  value={form.destino}
-                  onChange={updateField}
-                  placeholder="Ex.: Lisboa, Portugal"
-                />
-              </label>
+      <div className="new-route-layout">
+        <div className="new-route-main">
+          {status ? (
+            <div
+              className="new-route-status mb-6 rounded-3xl p-4 text-sm"
+              role="status"
+            >
+              {status}
             </div>
+          ) : null}
 
-            <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Descrição
-              <textarea
-                className="input-field"
-                name="descricao"
-                rows={3}
-                value={form.descricao}
-                onChange={updateField}
-                placeholder="Descreva a experiência que você quer viver"
-              />
-            </label>
-
-            <div className="grid gap-2 text-sm font-medium text-slate-700">
-              <label htmlFor="route-cover-file">
-                Fotografia do roteiro (opcional)
-              </label>
-              {coverFile ? (
-                <ObjectUrlImage
-                  file={coverFile}
-                  alt="Prévia da capa do roteiro"
-                  className="aspect-[16/7] w-full rounded-2xl bg-slate-100 object-cover"
-                />
-              ) : null}
-              <div className="flex flex-wrap items-center gap-3">
-                <label className="btn-secondary cursor-pointer">
-                  {coverFile ? "Trocar imagem" : "Escolher imagem"}
+          <section className="new-route-card">
+            <h2>Sobre a viagem</h2>
+            <p className="new-route-hint">
+              O básico para o roteiro ganhar forma.
+            </p>
+            <div className="grid gap-6">
+              <div className="grid gap-5 lg:grid-cols-2">
+                <label className="grid gap-2 text-sm font-medium text-slate-700">
+                  Título do roteiro
                   <input
-                    id="route-cover-file"
-                    className="sr-only"
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={chooseCover}
+                    className="new-route-input"
+                    name="titulo"
+                    value={form.titulo}
+                    onChange={updateField}
+                    placeholder="Ex.: Fim de semana em Lisboa"
                   />
                 </label>
+
+                <label className="grid gap-2 text-sm font-medium text-slate-700">
+                  Destino
+                  <input
+                    className="new-route-input"
+                    name="destino"
+                    value={form.destino}
+                    onChange={updateField}
+                    placeholder="Ex.: Lisboa, Portugal"
+                  />
+                </label>
+              </div>
+
+              <label className="grid gap-2 text-sm font-medium text-slate-700">
+                Descrição
+                <textarea
+                  className="new-route-input"
+                  name="descricao"
+                  rows={3}
+                  value={form.descricao}
+                  onChange={updateField}
+                  placeholder="Descreva a experiência que você quer viver"
+                />
+              </label>
+
+              <div className="grid gap-2 text-sm font-medium text-slate-700">
+                <label htmlFor="route-cover-file">
+                  Fotografia do roteiro (opcional)
+                </label>
                 {coverFile ? (
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={() => setCoverFile(null)}
-                  >
-                    Remover imagem
-                  </button>
+                  <ObjectUrlImage
+                    file={coverFile}
+                    alt="Prévia da capa do roteiro"
+                    className="new-route-cover-preview aspect-[16/7] w-full rounded-2xl object-cover"
+                  />
                 ) : null}
-                <span className="text-xs font-normal text-slate-500">
-                  JPG, PNG ou WebP, até 8 MB. A imagem será salva no Cloudinary.
-                </span>
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className="new-route-button new-route-button--soft cursor-pointer">
+                    {coverFile ? "Trocar imagem" : "Escolher imagem"}
+                    <input
+                      id="route-cover-file"
+                      className="sr-only"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={chooseCover}
+                    />
+                  </label>
+                  {coverFile ? (
+                    <button
+                      type="button"
+                      className="new-route-button new-route-button--outline"
+                      onClick={() => setCoverFile(null)}
+                    >
+                      Remover imagem
+                    </button>
+                  ) : null}
+                  <span className="text-xs font-normal text-slate-500">
+                    JPG, PNG ou WebP, até 8 MB. A imagem será salva no
+                    Cloudinary.
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid gap-5 lg:grid-cols-2">
+                <label className="grid gap-2 text-sm font-medium text-slate-700">
+                  Orçamento geral (R$)
+                  <input
+                    className="new-route-input"
+                    name="orcamento"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.orcamento}
+                    onChange={updateField}
+                    placeholder="Opcional"
+                  />
+                </label>
+
+                <label className="new-route-visibility flex items-center gap-3 rounded-3xl p-4 text-sm">
+                  <input
+                    name="publico"
+                    type="checkbox"
+                    checked={form.publico}
+                    onChange={updateField}
+                    className="h-5 w-5 rounded border-slate-300 text-[#3B82E0]"
+                  />
+                  Tornar este roteiro público
+                </label>
               </div>
             </div>
+          </section>
 
-            <div className="grid gap-5 lg:grid-cols-2">
-              <label className="grid gap-2 text-sm font-medium text-slate-700">
-                Orçamento geral (R$)
-                <input
-                  className="input-field"
-                  name="orcamento"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.orcamento}
-                  onChange={updateField}
-                  placeholder="Opcional"
-                />
-              </label>
-
-              <label className="flex items-center gap-3 rounded-3xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-                <input
-                  name="publico"
-                  type="checkbox"
-                  checked={form.publico}
-                  onChange={updateField}
-                  className="h-5 w-5 rounded border-slate-300 text-[#2563EB]"
-                />
-                Tornar este roteiro público
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-8 rounded-[32px] border border-slate-200 bg-white p-8 shadow-[0_20px_70px_rgba(15,23,42,0.08)]">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[#2563EB]">
-                Dias
-              </p>
-              <h2 className="mt-2 text-2xl font-black text-slate-900">
-                Organize o percurso
-              </h2>
-            </div>
-            <button type="button" className="btn-primary" onClick={addDay}>
-              + Adicionar dia
-            </button>
-          </div>
-
-          <div className="mt-8 space-y-6">
-            {dias.map((day) => (
-              <div
-                key={day.id}
-                className="rounded-[28px] border border-slate-200 bg-slate-50 p-5"
+          <section className="new-route-card mt-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="new-route-kicker text-sm font-semibold uppercase tracking-[0.25em]">
+                  Dias
+                </p>
+                <h2 className="mt-2 text-2xl font-black">
+                  Organize o percurso
+                </h2>
+              </div>
+              <button
+                type="button"
+                className="new-route-button new-route-button--blue"
+                onClick={addDay}
               >
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="flex-1">
-                    {dayEditor?.id === day.id ? (
-                      <div className="flex flex-wrap gap-3">
-                        <input
-                          className="input-field max-w-md"
-                          value={dayEditor.titulo}
+                + Adicionar dia
+              </button>
+            </div>
+
+            <div className="mt-8 space-y-6">
+              {dias.map((day) => (
+                <div key={day.id} className="new-route-day rounded-[28px] p-5">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex-1">
+                      {dayEditor?.id === day.id ? (
+                        <div className="flex flex-wrap gap-3">
+                          <input
+                            className="new-route-input max-w-md"
+                            value={dayEditor.titulo}
+                            onChange={(event) =>
+                              setDayEditor((current) => ({
+                                ...current,
+                                titulo: event.target.value,
+                              }))
+                            }
+                            placeholder={`Dia ${day.numeroDia}`}
+                          />
+                          <button
+                            type="button"
+                            className="new-route-button new-route-button--blue"
+                            onClick={() => saveDayEdit(day.id)}
+                          >
+                            Salvar dia
+                          </button>
+                          <button
+                            type="button"
+                            className="new-route-button new-route-button--outline"
+                            onClick={() => setDayEditor(null)}
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="new-route-kicker text-sm font-semibold uppercase tracking-[0.22em]">
+                            Dia {day.numeroDia}
+                          </p>
+                          <h3 className="mt-2 text-xl font-bold">
+                            {day.titulo}
+                          </h3>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        className="new-route-button new-route-button--outline"
+                        onClick={() => openDayEditor(day)}
+                      >
+                        Editar dia
+                      </button>
+                      <button
+                        type="button"
+                        className="new-route-button new-route-button--outline new-route-button--danger"
+                        onClick={() => removeDay(day.id)}
+                      >
+                        Remover dia
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 space-y-4">
+                    {day.itens.length === 0 ? (
+                      <div className="new-route-empty rounded-2xl border border-dashed p-4 text-sm">
+                        Nenhuma atividade neste dia ainda.
+                      </div>
+                    ) : (
+                      day.itens.map((item, index) => (
+                        <div
+                          key={item.id}
+                          className="new-route-activity rounded-2xl p-4"
+                        >
+                          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                            <div className="flex-1">
+                              <p className="font-semibold">{item.titulo}</p>
+                              <p className="new-route-muted mt-1 text-sm">
+                                {item.descricao || "Sem descrição."}
+                              </p>
+                              <div className="new-route-muted mt-3 flex flex-wrap gap-2 text-xs">
+                                <span className="new-route-chip rounded-full px-3 py-1">
+                                  {item.localNome || "Local não informado"}
+                                </span>
+                                <span className="new-route-chip rounded-full px-3 py-1">
+                                  {item.horarioInicio || "Sem horário"}
+                                </span>
+                                <span className="new-route-chip rounded-full px-3 py-1">
+                                  {item.custoEstimado === null ||
+                                  item.custoEstimado === undefined ||
+                                  item.custoEstimado === ""
+                                    ? "Sem custo"
+                                    : `R$ ${Number(item.custoEstimado).toFixed(2)}`}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                className="new-route-button new-route-button--outline px-3 py-2"
+                                onClick={() => openItemEditor(day.id, item)}
+                              >
+                                Editar
+                              </button>
+                              <button
+                                type="button"
+                                className="new-route-button new-route-button--outline px-3 py-2"
+                                onClick={() => moveItem(day.id, item.id, -1)}
+                                disabled={index === 0}
+                              >
+                                ↑
+                              </button>
+                              <button
+                                type="button"
+                                className="new-route-button new-route-button--outline px-3 py-2"
+                                onClick={() => moveItem(day.id, item.id, 1)}
+                                disabled={index === day.itens.length - 1}
+                              >
+                                ↓
+                              </button>
+                              <button
+                                type="button"
+                                className="new-route-button new-route-button--outline new-route-button--danger px-3 py-2"
+                                onClick={() => deleteItem(day.id, item.id)}
+                              >
+                                Excluir
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {itemEditor?.dayId === day.id ? (
+                    <form
+                      className="new-route-activity-editor mt-5 grid gap-4 rounded-2xl p-4"
+                      onSubmit={saveItem}
+                    >
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <label className="grid gap-2 text-sm font-medium text-slate-700">
+                          Título da atividade
+                          <input
+                            className="new-route-input"
+                            value={itemEditor.form.titulo}
+                            onChange={(event) =>
+                              setItemEditor((current) => ({
+                                ...current,
+                                form: {
+                                  ...current.form,
+                                  titulo: event.target.value,
+                                },
+                              }))
+                            }
+                            required
+                          />
+                        </label>
+
+                        <label className="grid gap-2 text-sm font-medium text-slate-700">
+                          Local
+                          <input
+                            className="new-route-input"
+                            value={itemEditor.form.localNome}
+                            onChange={(event) =>
+                              setItemEditor((current) => ({
+                                ...current,
+                                form: {
+                                  ...current.form,
+                                  localNome: event.target.value,
+                                },
+                              }))
+                            }
+                          />
+                        </label>
+                      </div>
+
+                      <label className="grid gap-2 text-sm font-medium text-slate-700">
+                        Descrição
+                        <textarea
+                          className="new-route-input"
+                          rows={2}
+                          value={itemEditor.form.descricao}
                           onChange={(event) =>
-                            setDayEditor((current) => ({
+                            setItemEditor((current) => ({
                               ...current,
-                              titulo: event.target.value,
+                              form: {
+                                ...current.form,
+                                descricao: event.target.value,
+                              },
                             }))
                           }
-                          placeholder={`Dia ${day.numeroDia}`}
                         />
+                      </label>
+
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <label className="grid gap-2 text-sm font-medium text-slate-700">
+                          Horário
+                          <input
+                            className="new-route-input"
+                            type="time"
+                            value={itemEditor.form.horarioInicio}
+                            onChange={(event) =>
+                              setItemEditor((current) => ({
+                                ...current,
+                                form: {
+                                  ...current.form,
+                                  horarioInicio: event.target.value,
+                                },
+                              }))
+                            }
+                          />
+                        </label>
+
+                        <label className="grid gap-2 text-sm font-medium text-slate-700">
+                          Custo estimado (R$)
+                          <input
+                            className="new-route-input"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={itemEditor.form.custoEstimado}
+                            onChange={(event) =>
+                              setItemEditor((current) => ({
+                                ...current,
+                                form: {
+                                  ...current.form,
+                                  custoEstimado: event.target.value,
+                                },
+                              }))
+                            }
+                          />
+                        </label>
+                      </div>
+
+                      <div className="flex flex-wrap gap-3">
                         <button
-                          type="button"
-                          className="btn-primary"
-                          onClick={() => saveDayEdit(day.id)}
+                          type="submit"
+                          className="new-route-button new-route-button--blue"
                         >
-                          Salvar dia
+                          Salvar atividade
                         </button>
                         <button
                           type="button"
-                          className="btn-secondary"
-                          onClick={() => setDayEditor(null)}
+                          className="new-route-button new-route-button--outline"
+                          onClick={() => setItemEditor(null)}
                         >
                           Cancelar
                         </button>
                       </div>
-                    ) : (
-                      <div>
-                        <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#2563EB]">
-                          Dia {day.numeroDia}
-                        </p>
-                        <h3 className="mt-2 text-xl font-bold text-slate-900">
-                          {day.titulo}
-                        </h3>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      onClick={() => openDayEditor(day)}
-                    >
-                      Editar dia
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-secondary border-red-200 text-red-700 hover:bg-red-50"
-                      onClick={() => removeDay(day.id)}
-                    >
-                      Remover dia
-                    </button>
-                  </div>
-                </div>
-
-                <div className="mt-6 space-y-4">
-                  {day.itens.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-500">
-                      Nenhuma atividade neste dia ainda.
-                    </div>
+                    </form>
                   ) : (
-                    day.itens.map((item, index) => (
-                      <div
-                        key={item.id}
-                        className="rounded-2xl border border-slate-200 bg-white p-4"
-                      >
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                          <div className="flex-1">
-                            <p className="font-semibold text-slate-900">
-                              {item.titulo}
-                            </p>
-                            <p className="mt-1 text-sm text-slate-600">
-                              {item.descricao || "Sem descrição."}
-                            </p>
-                            <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
-                              <span className="rounded-full bg-slate-100 px-3 py-1">
-                                {item.localNome || "Local não informado"}
-                              </span>
-                              <span className="rounded-full bg-slate-100 px-3 py-1">
-                                {item.horarioInicio || "Sem horário"}
-                              </span>
-                              <span className="rounded-full bg-slate-100 px-3 py-1">
-                                {item.custoEstimado === null ||
-                                item.custoEstimado === undefined ||
-                                item.custoEstimado === ""
-                                  ? "Sem custo"
-                                  : `R$ ${Number(item.custoEstimado).toFixed(2)}`}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              className="btn-secondary px-3 py-2"
-                              onClick={() => openItemEditor(day.id, item)}
-                            >
-                              Editar
-                            </button>
-                            <button
-                              type="button"
-                              className="btn-secondary px-3 py-2"
-                              onClick={() => moveItem(day.id, item.id, -1)}
-                              disabled={index === 0}
-                            >
-                              ↑
-                            </button>
-                            <button
-                              type="button"
-                              className="btn-secondary px-3 py-2"
-                              onClick={() => moveItem(day.id, item.id, 1)}
-                              disabled={index === day.itens.length - 1}
-                            >
-                              ↓
-                            </button>
-                            <button
-                              type="button"
-                              className="btn-secondary border-red-200 px-3 py-2 text-red-700 hover:bg-red-50"
-                              onClick={() => deleteItem(day.id, item.id)}
-                            >
-                              Excluir
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))
+                    <button
+                      type="button"
+                      className="new-route-button new-route-button--soft mt-5"
+                      onClick={() => openItemEditor(day.id)}
+                    >
+                      + Adicionar atividade
+                    </button>
                   )}
                 </div>
+              ))}
+            </div>
+          </section>
 
-                {itemEditor?.dayId === day.id ? (
-                  <form
-                    className="mt-5 grid gap-4 rounded-2xl border border-slate-200 bg-white p-4"
-                    onSubmit={saveItem}
-                  >
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <label className="grid gap-2 text-sm font-medium text-slate-700">
-                        Título da atividade
-                        <input
-                          className="input-field"
-                          value={itemEditor.form.titulo}
-                          onChange={(event) =>
-                            setItemEditor((current) => ({
-                              ...current,
-                              form: {
-                                ...current.form,
-                                titulo: event.target.value,
-                              },
-                            }))
-                          }
-                          required
-                        />
-                      </label>
-
-                      <label className="grid gap-2 text-sm font-medium text-slate-700">
-                        Local
-                        <input
-                          className="input-field"
-                          value={itemEditor.form.localNome}
-                          onChange={(event) =>
-                            setItemEditor((current) => ({
-                              ...current,
-                              form: {
-                                ...current.form,
-                                localNome: event.target.value,
-                              },
-                            }))
-                          }
-                        />
-                      </label>
-                    </div>
-
-                    <label className="grid gap-2 text-sm font-medium text-slate-700">
-                      Descrição
-                      <textarea
-                        className="input-field"
-                        rows={2}
-                        value={itemEditor.form.descricao}
-                        onChange={(event) =>
-                          setItemEditor((current) => ({
-                            ...current,
-                            form: {
-                              ...current.form,
-                              descricao: event.target.value,
-                            },
-                          }))
-                        }
-                      />
-                    </label>
-
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <label className="grid gap-2 text-sm font-medium text-slate-700">
-                        Horário
-                        <input
-                          className="input-field"
-                          type="time"
-                          value={itemEditor.form.horarioInicio}
-                          onChange={(event) =>
-                            setItemEditor((current) => ({
-                              ...current,
-                              form: {
-                                ...current.form,
-                                horarioInicio: event.target.value,
-                              },
-                            }))
-                          }
-                        />
-                      </label>
-
-                      <label className="grid gap-2 text-sm font-medium text-slate-700">
-                        Custo estimado (R$)
-                        <input
-                          className="input-field"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={itemEditor.form.custoEstimado}
-                          onChange={(event) =>
-                            setItemEditor((current) => ({
-                              ...current,
-                              form: {
-                                ...current.form,
-                                custoEstimado: event.target.value,
-                              },
-                            }))
-                          }
-                        />
-                      </label>
-                    </div>
-
-                    <div className="flex flex-wrap gap-3">
-                      <button type="submit" className="btn-primary">
-                        Salvar atividade
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-secondary"
-                        onClick={() => setItemEditor(null)}
-                      >
-                        Cancelar
-                      </button>
-                    </div>
-                  </form>
-                ) : (
-                  <button
-                    type="button"
-                    className="btn-accent mt-5"
-                    onClick={() => openItemEditor(day.id)}
-                  >
-                    + Adicionar atividade
-                  </button>
-                )}
-              </div>
-            ))}
+          <div className="new-route-actions mt-8 flex flex-wrap justify-end gap-3">
+            <button
+              type="button"
+              className="new-route-button new-route-button--outline"
+              onClick={() => navigate("/roteiros")}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className="new-route-button new-route-button--blue disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={saving}
+              onClick={handleSaveRoteiro}
+            >
+              {saving ? "Salvando..." : "Salvar roteiro"}
+            </button>
           </div>
         </div>
 
-        <div className="mt-8 flex flex-wrap justify-end gap-3">
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => navigate("/roteiros")}
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            className="btn-primary disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={saving}
-            onClick={handleSaveRoteiro}
-          >
-            {saving ? "Salvando..." : "Salvar roteiro"}
-          </button>
-        </div>
+        <aside className="new-route-preview-aside">
+          <article className="new-route-card new-route-preview">
+            <div className="new-route-preview-cover">
+              {coverFile ? (
+                <ObjectUrlImage
+                  file={coverFile}
+                  alt="Prévia da capa do roteiro"
+                  className="new-route-preview-image"
+                />
+              ) : (
+                <span>Prévia da capa do roteiro</span>
+              )}
+            </div>
+            <div className="new-route-preview-body">
+              <h2>{form.titulo.trim() || "Seu roteiro sem título"}</h2>
+              <p className="new-route-preview-destination">
+                {form.destino.trim() || "Destino a definir"}
+              </p>
+              <div className="new-route-preview-stats">
+                <span>
+                  {dias.length} {dias.length === 1 ? "dia" : "dias"}
+                </span>
+                <span>
+                  {totalAtividades}{" "}
+                  {totalAtividades === 1 ? "atividade" : "atividades"}
+                </span>
+                <span>
+                  {form.orcamento
+                    ? `R$ ${Number(form.orcamento).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+                    : "Orçamento opcional"}
+                </span>
+              </div>
+              <p className="new-route-preview-visibility">
+                {form.publico
+                  ? "Público, outros viajantes poderão ver."
+                  : "Privado, só você vê."}
+              </p>
+            </div>
+          </article>
+          <div className="new-route-aside-actions">
+            <button
+              type="button"
+              className="new-route-button new-route-button--blue"
+              disabled={saving}
+              onClick={handleSaveRoteiro}
+            >
+              {saving ? "Salvando..." : "Salvar roteiro"}
+            </button>
+            <button
+              type="button"
+              className="new-route-button new-route-button--outline"
+              onClick={() => navigate("/roteiros")}
+            >
+              Cancelar
+            </button>
+          </div>
+        </aside>
       </div>
     </main>
   );

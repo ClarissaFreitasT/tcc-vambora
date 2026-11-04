@@ -9,6 +9,7 @@ export default function RoteiroSearchPanel({
   onSubmit,
   busy = false,
   submitLabel = "Buscar roteiros",
+  homeLayout = false,
 }) {
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -128,6 +129,76 @@ export default function RoteiroSearchPanel({
     );
   }
 
+  function renderHomeFilters() {
+    const inputClass =
+      "home-filter-input w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none focus:border-blue-400";
+    const labelClass = "grid min-w-0 gap-1 text-xs font-bold text-slate-600";
+
+    return (
+      <>
+        <label className={labelClass} htmlFor="route-budget-filter-home">
+          Valor (até quanto)
+          <span className="relative flex items-center">
+            <span className="absolute left-3 text-xs text-slate-500">R$</span>
+            <input
+              id="route-budget-filter-home"
+              className={`${inputClass} pl-9`}
+              type="number"
+              min="0"
+              step="0.01"
+              inputMode="decimal"
+              placeholder="Sem limite"
+              value={value.orcamentoMax}
+              onChange={(event) =>
+                updateField("orcamentoMax", event.target.value)
+              }
+            />
+          </span>
+        </label>
+        <label className={labelClass} htmlFor="route-days-filter-home">
+          Dias
+          <input
+            id="route-days-filter-home"
+            className={inputClass}
+            type="number"
+            min="1"
+            step="1"
+            inputMode="numeric"
+            placeholder="Qualquer duração"
+            value={value.dias}
+            onChange={(event) => updateField("dias", event.target.value)}
+          />
+        </label>
+        <label className={labelClass} htmlFor="route-rating-filter-home">
+          Avaliações
+          <select
+            id="route-rating-filter-home"
+            className={inputClass}
+            value={value.avaliacaoMin}
+            onChange={(event) =>
+              updateField("avaliacaoMin", event.target.value)
+            }
+          >
+            <option value="">Qualquer avaliação</option>
+            {[1, 2, 3, 4, 5].map((rating) => (
+              <option key={rating} value={rating}>
+                {rating}+ estrelas
+              </option>
+            ))}
+          </select>
+        </label>
+      </>
+    );
+  }
+
+  const filtersActive = Boolean(
+    value.categoriaIds.length ||
+    value.orcamentoMin ||
+    value.orcamentoMax ||
+    value.dias ||
+    value.avaliacaoMin,
+  );
+
   function renderCategories() {
     if (!categories.length) return null;
     return (
@@ -172,16 +243,20 @@ export default function RoteiroSearchPanel({
         setSuggestionsOpen(false);
         onSubmit(value);
       }}
-      className="grid gap-3"
+      className={`${homeLayout ? "home-search-form " : ""}grid gap-3`}
     >
-      <div className="relative rounded-[24px] border border-white/30 bg-white/95 p-3 text-slate-900 shadow-[0_18px_52px_rgba(1,12,31,.28)] backdrop-blur-xl sm:p-4">
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-end">
+      <div
+        className={`relative rounded-[24px] border border-white/30 bg-white/95 p-3 text-slate-900 shadow-[0_18px_52px_rgba(1,12,31,.28)] backdrop-blur-xl sm:p-4 ${homeLayout ? "home-search-shell" : ""}`}
+      >
+        <div
+          className={`grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-end ${homeLayout ? "home-search-fields" : ""}`}
+        >
           <div className="relative min-w-0">
             <label
               className="block text-xs font-extrabold uppercase tracking-[.12em] text-slate-500"
               htmlFor="route-destination-search"
             >
-              Destino, país ou roteiro
+              {homeLayout ? "Destino" : "Destino, país ou roteiro"}
             </label>
             <input
               id="route-destination-search"
@@ -216,17 +291,34 @@ export default function RoteiroSearchPanel({
           <button
             type="button"
             aria-expanded={filtersOpen}
+            aria-label={
+              homeLayout
+                ? `${filtersOpen ? "Fechar" : "Abrir"} filtros${filtersActive ? ", filtros ativos" : ""}`
+                : undefined
+            }
+            aria-controls={homeLayout ? "route-filter-options" : undefined}
             onClick={() => setFiltersOpen((open) => !open)}
-            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition hover:border-blue-300 hover:text-blue-700"
+            className={`inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition hover:border-blue-300 hover:text-blue-700 ${homeLayout ? `home-filter-toggle ${filtersActive ? "is-active" : ""}` : ""}`}
           >
-            Filtros
-            {value.categoriaIds.length ||
-            value.orcamentoMin ||
-            value.orcamentoMax ||
-            value.dias ||
-            value.avaliacaoMin
-              ? " · ativos"
-              : ""}
+            {homeLayout ? (
+              <>
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="h-5 w-5"
+                >
+                  <circle cx="5" cy="12" r="1.7" />
+                  <circle cx="12" cy="12" r="1.7" />
+                  <circle cx="19" cy="12" r="1.7" />
+                </svg>
+                {filtersActive ? (
+                  <span className="sr-only">Filtros ativos</span>
+                ) : null}
+              </>
+            ) : (
+              <>Filtros{filtersActive ? " · ativos" : ""}</>
+            )}
           </button>
           <button
             type="submit"
@@ -235,16 +327,39 @@ export default function RoteiroSearchPanel({
           >
             {busy ? (
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+            ) : homeLayout ? (
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <path d="m20 20-4-4" />
+              </svg>
             ) : null}
             {busy ? "Buscando" : submitLabel}
           </button>
         </div>
         {filtersOpen ? (
-          <div className="mt-4 grid gap-4 border-t border-slate-200 pt-4 sm:grid-cols-2 lg:grid-cols-4">
-            {renderFilters("panel", true)}
-            <div className="sm:col-span-2 lg:col-span-4">
-              {renderCategories()}
-            </div>
+          <div
+            id={homeLayout ? "route-filter-options" : undefined}
+            className={`mt-4 grid gap-4 border-t border-slate-200 pt-4 sm:grid-cols-2 ${homeLayout ? "home-filter-fields" : "lg:grid-cols-4"}`}
+          >
+            {homeLayout ? (
+              renderHomeFilters()
+            ) : (
+              <>
+                {renderFilters("panel", true)}
+                <div className="sm:col-span-2 lg:col-span-4">
+                  {renderCategories()}
+                </div>
+              </>
+            )}
           </div>
         ) : null}
         {suggestionsOpen && suggestions.length ? (

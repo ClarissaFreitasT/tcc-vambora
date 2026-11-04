@@ -1,0 +1,430 @@
+@import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Geologica:wght@300;400;500;600&display=swap");
+
+.new-route-page {
+  --new-route-navy: #0f2a5c;
+  --new-route-blue: #3b82e0;
+  --new-route-sky: #66aaf0;
+  --new-route-pale: #9ccbf5;
+  --new-route-mist: #d9eafb;
+  --new-route-bg: #f4f9ff;
+  --new-route-ink: #0f2a5c;
+  --new-route-muted: #52709f;
+  --new-route-surface: #fff;
+  --new-route-field: #eaf3fd;
+  --new-route-line: #d3e4f8;
+  --new-route-danger: #c2415a;
+  --new-route-shadow: 0 20px 44px -22px rgba(15, 42, 92, 0.3);
+  min-height: 100vh;
+  overflow: hidden;
+  background: var(--new-route-bg);
+  color: var(--new-route-ink);
+  font-family: "Geologica", "Segoe UI", system-ui, sans-serif;
+}
+
+.new-route-page,
+.new-route-page * {
+  box-sizing: border-box;
+}
+
+.new-route-header {
+  position: relative;
+  overflow: hidden;
+  padding: 3.2rem 1.25rem 8rem;
+  background: linear-gradient(180deg, #0f2a5c 0%, #1f4fa8 55%, #3b82e0 100%);
+  color: #fff;
+}
+
+.new-route-header-inner {
+  position: relative;
+  z-index: 1;
+  width: min(1120px, 100%);
+  margin-inline: auto;
+}
+
+.new-route-kicker {
+  color: var(--new-route-blue);
+  font-family: "Fredoka", "Trebuchet MS", sans-serif;
+  font-weight: 600;
+}
+
+.new-route-header .new-route-kicker {
+  color: #c8e3ff;
+  font-size: 0.82rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.new-route-header h1 {
+  margin-top: 0.8rem;
+  font:
+    600 clamp(2.2rem, 5vw, 3.8rem) / 1.06 "Fredoka",
+    "Trebuchet MS",
+    sans-serif;
+  letter-spacing: -0.025em;
+}
+
+.new-route-header-inner > p:last-child {
+  max-width: 46ch;
+  margin: 0.7rem 0 0;
+  color: #dcecff;
+  font-size: 0.98rem;
+  font-weight: 300;
+}
+
+.new-route-wave {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 90px;
+}
+
+.new-route-layout {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  width: min(1120px, calc(100% - 2.5rem));
+  grid-template-columns: minmax(0, 1fr) 310px;
+  align-items: start;
+  gap: 1.6rem;
+  margin: -5.2rem auto 0;
+  padding-bottom: 4rem;
+}
+
+.new-route-main {
+  min-width: 0;
+}
+
+.new-route-card {
+  min-width: 0;
+  border: 1px solid rgba(211, 228, 248, 0.75);
+  border-radius: 30px;
+  background: var(--new-route-surface);
+  padding: clamp(1.25rem, 3vw, 2rem);
+  box-shadow: var(--new-route-shadow);
+}
+
+.new-route-card h2 {
+  margin: 0;
+  color: var(--new-route-ink);
+  font:
+    600 1.5rem / 1.15 "Fredoka",
+    "Trebuchet MS",
+    sans-serif;
+}
+
+.new-route-hint {
+  margin: 0.25rem 0 1.5rem;
+  color: var(--new-route-muted);
+  font-size: 0.9rem;
+  font-weight: 300;
+}
+
+.new-route-page label {
+  color: var(--new-route-ink);
+}
+
+.new-route-input {
+  width: 100%;
+  min-width: 0;
+  border: 2px solid transparent;
+  border-radius: 17px;
+  background: var(--new-route-field);
+  padding: 0.85rem 1rem;
+  color: var(--new-route-ink);
+  font:
+    400 0.95rem / 1.5 "Geologica",
+    "Segoe UI",
+    system-ui,
+    sans-serif;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.new-route-input::placeholder {
+  color: var(--new-route-muted);
+  opacity: 0.72;
+}
+
+.new-route-input:focus {
+  border-color: var(--new-route-blue);
+  outline: 0;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(59, 130, 224, 0.14);
+}
+
+textarea.new-route-input {
+  min-height: 105px;
+  resize: vertical;
+}
+
+.new-route-button {
+  display: inline-flex;
+  min-height: 2.7rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
+  padding: 0.62rem 1.15rem;
+  cursor: pointer;
+  font:
+    500 0.9rem "Fredoka",
+    "Trebuchet MS",
+    sans-serif;
+  text-decoration: none;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+.new-route-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 9px 18px -12px rgba(15, 42, 92, 0.55);
+}
+
+.new-route-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.new-route-button--blue {
+  background: var(--new-route-blue);
+  color: #fff;
+}
+
+.new-route-button--blue:hover:not(:disabled) {
+  background: #2f70c5;
+}
+
+.new-route-button--soft {
+  background: var(--new-route-field);
+  color: var(--new-route-blue);
+}
+
+.new-route-button--outline {
+  border-color: var(--new-route-line);
+  background: transparent;
+  color: var(--new-route-ink);
+}
+
+.new-route-button--danger {
+  border-color: #f0cbd2;
+  color: var(--new-route-danger);
+}
+
+.new-route-visibility {
+  min-height: 4rem;
+  border: 1px solid var(--new-route-line);
+  background: var(--new-route-field);
+  padding: 0.8rem 1rem;
+}
+
+.new-route-visibility input {
+  accent-color: var(--new-route-blue);
+}
+
+.new-route-status {
+  border: 1px solid #c9def6;
+  background: #eaf3fd;
+  color: var(--new-route-navy);
+}
+
+.new-route-day {
+  border: 1px solid var(--new-route-line);
+  background: #f3f8ff;
+}
+
+.new-route-empty {
+  border-color: #b7d4f4;
+  background: #fff;
+  color: var(--new-route-muted);
+}
+
+.new-route-activity,
+.new-route-activity-editor {
+  border: 1px solid var(--new-route-line);
+  background: #fff;
+}
+
+.new-route-muted {
+  color: var(--new-route-muted);
+}
+
+.new-route-chip {
+  background: var(--new-route-field);
+  color: var(--new-route-muted);
+}
+
+.new-route-preview-aside {
+  position: sticky;
+  top: 1rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.new-route-preview {
+  overflow: hidden;
+  padding: 0;
+}
+
+.new-route-preview-cover {
+  position: relative;
+  display: grid;
+  min-height: 170px;
+  place-items: center;
+  overflow: hidden;
+  background: linear-gradient(165deg, #9ccbf5, #3b82e0 60%, #0f2a5c);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.75rem;
+}
+
+.new-route-preview-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.new-route-preview-body {
+  padding: 1.25rem 1.4rem 1.5rem;
+}
+
+.new-route-preview-body h2 {
+  overflow-wrap: anywhere;
+  font-size: 1.3rem;
+}
+
+.new-route-preview-destination {
+  margin: 0.2rem 0 0;
+  color: var(--new-route-muted);
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
+.new-route-preview-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.new-route-preview-stats span {
+  border-radius: 999px;
+  background: var(--new-route-field);
+  padding: 0.35rem 0.75rem;
+  color: var(--new-route-ink);
+  font:
+    500 0.82rem "Fredoka",
+    "Trebuchet MS",
+    sans-serif;
+}
+
+.new-route-preview-visibility {
+  margin: 0;
+  color: var(--new-route-muted);
+  font-size: 0.84rem;
+}
+
+.new-route-aside-actions {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.new-route-aside-actions .new-route-button {
+  width: 100%;
+  min-height: 3rem;
+}
+
+.new-route-actions {
+  display: none;
+}
+
+@media (max-width: 940px) {
+  .new-route-layout {
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: -4rem;
+  }
+
+  .new-route-preview-aside {
+    display: none;
+  }
+
+  .new-route-actions {
+    display: flex;
+    position: sticky;
+    z-index: 4;
+    bottom: 0;
+    margin: 1.5rem -0.5rem 0;
+    border: 1px solid rgba(211, 228, 248, 0.9);
+    border-radius: 24px 24px 0 0;
+    background: rgba(255, 255, 255, 0.96);
+    padding: 0.8rem 1rem calc(0.8rem + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -12px 28px -20px rgba(15, 42, 92, 0.4);
+  }
+
+  .new-route-actions .new-route-button {
+    flex: 1;
+  }
+}
+
+@media (max-width: 620px) {
+  .new-route-header {
+    padding: 2.2rem 1.1rem 6.8rem;
+  }
+
+  .new-route-header h1 {
+    font-size: clamp(2rem, 9vw, 2.8rem);
+  }
+
+  .new-route-layout {
+    width: calc(100% - 1.25rem);
+    gap: 1rem;
+    margin-top: -4.7rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .new-route-card {
+    border-radius: 25px;
+    padding: 1.2rem;
+  }
+
+  .new-route-card h2 {
+    font-size: 1.32rem;
+  }
+
+  .new-route-layout
+    > .new-route-main
+    > section:nth-of-type(2)
+    > div:first-child {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .new-route-layout
+    > .new-route-main
+    > section:nth-of-type(2)
+    > div:first-child
+    > button {
+    width: 100%;
+  }
+
+  .new-route-day {
+    padding: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .new-route-page *,
+  .new-route-page *::before,
+  .new-route-page *::after {
+    scroll-behavior: auto;
+    transition-duration: 0.01ms;
+    animation-duration: 0.01ms;
+  }
+}
