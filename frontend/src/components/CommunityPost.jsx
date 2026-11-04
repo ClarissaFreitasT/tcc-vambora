@@ -115,7 +115,7 @@ export default function CommunityPost({
   return (
     <article
       id={`community-post-${post.id}`}
-      className="border-b border-slate-200 px-4 py-5 transition hover:bg-slate-50/60 sm:px-6"
+      className="community-publication-card px-4 py-5 transition sm:px-6"
     >
       <div className="flex items-start gap-3">
         <Link

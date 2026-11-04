@@ -1,14 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import { apiFetch } from "../data/api";
 import ImageFallback from "../components/ImageFallback";
 import RoteiroSearchPanel from "../components/RoteiroSearchPanel";
+import { useAuth } from "../context/useAuth";
 import {
   emptyRouteFilters,
   getRecentRouteSuggestions,
   getRouteCategories,
   getRouteDestinations,
 } from "../utils/homeRoutes";
+import "./RoteirosPublicos.css";
 
 function money(value) {
   if (value === null || value === undefined || value === "")
@@ -29,50 +36,170 @@ function formatDays(route) {
   return `${total} ${total === 1 ? "dia" : "dias"}`;
 }
 
-function PublicRouteCard({ route, suggestion = false }) {
+function PublicRouteCard({
+  route,
+  suggestion = false,
+  isAuthenticated,
+  saved,
+  savedLoading,
+  onSavedChange,
+}) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const totalReviews = Number(route.totalAvaliacoes || 0);
+  const [totalLikes, setTotalLikes] = useState(
+    Number(route.totalCurtidas || 0),
+  );
+  const [liked, setLiked] = useState(false);
+  const [likesLoading, setLikesLoading] = useState(true);
+  const [likeBusy, setLikeBusy] = useState(false);
+  const [saveBusy, setSaveBusy] = useState(false);
+  const [actionError, setActionError] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    apiFetch(`/roteiros/${route.id}/curtidas`)
+      .then((result) => {
+        if (!active) return;
+        setTotalLikes(
+          Number(result?.totalCurtidas ?? route.totalCurtidas ?? 0),
+        );
+        setLiked(Boolean(result?.curtiu));
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setLikesLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [route.id, route.totalCurtidas]);
+
+  function requireLogin() {
+    navigate("/login", {
+      state: { from: `${location.pathname}${location.search}` },
+    });
+  }
+
+  async function toggleLike(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!isAuthenticated) {
+      requireLogin();
+      return;
+    }
+    if (likeBusy || likesLoading) return;
+    setLikeBusy(true);
+    setActionError(null);
+    try {
+      const result = await apiFetch(`/roteiros/${route.id}/curtir`, {
+        method: liked ? "DELETE" : "POST",
+      });
+      setLiked(!liked);
+      setTotalLikes(Number(result?.totalCurtidas ?? totalLikes));
+    } catch (error) {
+      if (!liked && error.status === 409) {
+        setLiked(true);
+        setTotalLikes((current) => current + 1);
+      } else setActionError(error.message);
+    } finally {
+      setLikeBusy(false);
+    }
+  }
+
+  async function toggleSaved(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!isAuthenticated) {
+      requireLogin();
+      return;
+    }
+    if (saveBusy || savedLoading) return;
+    setSaveBusy(true);
+    setActionError(null);
+    try {
+      await apiFetch(`/roteiros/${route.id}/salvar`, {
+        method: saved ? "DELETE" : "POST",
+      });
+      onSavedChange(route.id, !saved);
+    } catch (error) {
+      if (!saved && error.status === 409) onSavedChange(route.id, true);
+      else setActionError(error.message);
+    } finally {
+      setSaveBusy(false);
+    }
+  }
+
   return (
-    <Link
-      to={`/roteiros/${route.id}`}
-      className="group block overflow-hidden rounded-[24px] border border-slate-200 bg-white transition hover:-translate-y-1 hover:border-blue-300 hover:shadow-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
-    >
-      <div className="relative h-48 overflow-hidden bg-slate-100 sm:h-56">
+    <article className="home-route-card public-route-card group relative isolate">
+      <Link to={`/roteiros/${route.id}`} className="public-route-card-link">
         <ImageFallback
           src={route.imagemUrl}
-          alt={`Fotografia do roteiro para ${route.destino}`}
-          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+          alt={`Paisagem do roteiro para ${route.destino}`}
+          className="public-route-image"
         />
-        <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-700 backdrop-blur">
-          {suggestion ? "Sugestão recente" : "Roteiro público"}
-        </span>
-      </div>
-      <div className="p-5">
-        <p className="text-xs font-bold uppercase tracking-[.17em] text-blue-700">
-          {route.destino}
-        </p>
-        <h2 className="mt-2 line-clamp-2 text-xl font-black leading-snug text-slate-950">
-          {route.titulo}
-        </h2>
-        <p className="mt-2 text-sm text-slate-500">
-          Por {route.usuario?.nome || "Viajante Vambora"}
-        </p>
-        <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-xs text-slate-600">
-          {totalReviews ? (
-            <span className="font-semibold text-amber-600">
-              ★ {Number(route.mediaAvaliacao).toFixed(1)}{" "}
-              <span className="font-normal text-slate-500">
-                ({totalReviews} avaliações)
+        <div className="public-route-image-overlay" />
+        {suggestion ? (
+          <span className="public-route-card-badge">Sugestão recente</span>
+        ) : null}
+        <div className="home-route-card-content absolute inset-x-0 bottom-0 p-5 sm:p-6">
+          <p className="home-route-destination text-xs font-bold uppercase tracking-[.2em] text-cyan-200">
+            {route.destino}
+          </p>
+          <h2 className="home-display mt-2 line-clamp-2 text-2xl font-black leading-tight text-white">
+            {route.titulo}
+          </h2>
+          <p className="mt-2 text-sm text-white/75">
+            Por {route.usuario?.nome || "Viajante Vambora"}
+          </p>
+          <div className="public-route-meta mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-white/20 pt-3 text-sm font-medium text-white/90">
+            {totalReviews ? (
+              <span>
+                ★ {Number(route.mediaAvaliacao).toFixed(1)} ({totalReviews})
               </span>
-            </span>
-          ) : (
-            <span>Ainda sem avaliações</span>
-          )}
-          <span>{money(route.orcamento)}</span>
-          <span>{formatDays(route)}</span>
-          <span>♥ {route.totalCurtidas || 0}</span>
+            ) : (
+              <span>Ainda sem avaliações</span>
+            )}
+            <span>{money(route.orcamento)}</span>
+            <span>{formatDays(route)}</span>
+          </div>
         </div>
+      </Link>
+      <div className="public-route-social-actions">
+        <button
+          type="button"
+          className={`public-route-social-button public-route-like-button${liked ? " is-active" : ""}`}
+          onClick={toggleLike}
+          disabled={likesLoading || likeBusy}
+          aria-label={liked ? "Remover curtida do roteiro" : "Curtir roteiro"}
+          aria-pressed={liked}
+          title={liked ? "Remover curtida" : "Curtir roteiro"}
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.4a4.3 4.3 0 0 1 7.5 2.4C19.5 15.4 12 20 12 20Z" />
+          </svg>
+          <span>{totalLikes}</span>
+        </button>
+        <button
+          type="button"
+          className={`public-route-social-button public-route-save-button${saved ? " is-active" : ""}`}
+          onClick={toggleSaved}
+          disabled={savedLoading || saveBusy}
+          aria-label={saved ? "Remover roteiro dos salvos" : "Salvar roteiro"}
+          aria-pressed={saved}
+          title={saved ? "Remover dos salvos" : "Salvar roteiro"}
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M6 4.75A1.75 1.75 0 0 1 7.75 3h8.5A1.75 1.75 0 0 1 18 4.75V21l-6-4-6 4V4.75Z" />
+          </svg>
+        </button>
       </div>
-    </Link>
+      {actionError ? (
+        <span className="public-route-action-error" role="status">
+          {actionError}
+        </span>
+      ) : null}
+    </article>
   );
 }
 
@@ -136,6 +263,7 @@ function chipsFor(filters, categories) {
 
 export default function RoteirosPublicos() {
   const [searchParams] = useSearchParams();
+  const { user, isAuthenticated } = useAuth();
   const searchParamsKey = searchParams.toString();
   const initialFilters = useMemo(
     () => filtersFromSearchParams(searchParams),
@@ -153,6 +281,54 @@ export default function RoteirosPublicos() {
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [loadingResults, setLoadingResults] = useState(true);
   const [error, setError] = useState(null);
+  const [savedRouteState, setSavedRouteState] = useState({
+    userId: null,
+    ids: [],
+  });
+
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) return undefined;
+
+    let active = true;
+    apiFetch("/roteiros/salvos")
+      .then((entries) => {
+        if (!active) return;
+        setSavedRouteState({
+          userId: user.id,
+          ids: entries
+            .map((entry) => entry.roteiroId || entry.roteiro?.id)
+            .filter(Boolean),
+        });
+      })
+      .catch(() => {
+        if (active) setSavedRouteState({ userId: user.id, ids: [] });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isAuthenticated, user?.id]);
+
+  const savedRouteIds =
+    isAuthenticated && savedRouteState.userId === user?.id
+      ? savedRouteState.ids
+      : [];
+  const savedRoutesLoading =
+    isAuthenticated && savedRouteState.userId !== user?.id;
+
+  function updateSavedRoute(routeId, saved) {
+    setSavedRouteState((current) => {
+      if (current.userId !== user?.id) return current;
+      if (saved)
+        return current.ids.includes(routeId)
+          ? current
+          : { ...current, ids: [...current.ids, routeId] };
+      return {
+        ...current,
+        ids: current.ids.filter((id) => id !== routeId),
+      };
+    });
+  }
 
   const destinations = useMemo(
     () => getRouteDestinations(allRoutes),
@@ -241,57 +417,61 @@ export default function RoteirosPublicos() {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.08),_transparent_45%)] px-4 py-10 sm:py-14 lg:px-8">
-      <div className="container mx-auto max-w-[1280px]">
-        <header className="rounded-[32px] bg-slate-950 p-6 text-white shadow-xl sm:p-9">
-          <h1 className="mt-3 text-3xl font-black sm:text-4xl">
-            Encontre um roteiro para começar a planejar
-          </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-            Combine destino, duração, orçamento, avaliação e tipos de viagem.
+    <main className="public-routes-page">
+      <header className="public-routes-hero">
+        <div className="public-routes-hero-content">
+          <h1>Encontre roteiros para sua próxima viagem</h1>
+          <p>
+            Use os filtros para encontrar opções por destino, duração,
+            orçamento, avaliação.
           </p>
-          <div className="mt-6 text-slate-900">
-            <RoteiroSearchPanel
-              destinations={destinations}
-              categories={categories}
-              value={filters}
-              onChange={setFilters}
-              onSubmit={searchRoutes}
-              busy={loadingResults || loadingOptions}
-              submitLabel="Buscar roteiros"
-            />
-          </div>
-        </header>
-
-        <section
-          className="mt-9"
-          aria-live="polite"
-          aria-labelledby="public-routes-title"
+        </div>
+        <svg
+          className="public-routes-wave"
+          viewBox="0 0 1440 80"
+          preserveAspectRatio="none"
+          aria-hidden="true"
         >
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <p className="eyebrow">Planeje no seu ritmo</p>
-              <h2
-                id="public-routes-title"
-                className="mt-2 text-2xl font-black text-slate-950"
-              >
-                {appliedFilters
-                  ? `${routes.length} roteiros correspondentes`
-                  : "Todos os roteiros públicos"}
-              </h2>
-            </div>
-            {appliedFilters && chips.length ? (
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="text-sm font-bold text-blue-700 hover:underline"
-              >
-                Limpar todos
-              </button>
-            ) : null}
-          </div>
-          {appliedFilters && chips.length ? (
-            <div className="mt-3 flex flex-wrap gap-2">
+          <path
+            d="M0 44Q180 0 360 44T720 44T1080 44T1440 44V80H0Z"
+            fill="#9CCBF5"
+            opacity=".45"
+          />
+          <path
+            d="M0 60Q180 26 360 60T720 60T1080 60T1440 60V80H0Z"
+            fill="var(--public-routes-bg)"
+          />
+        </svg>
+      </header>
+
+      <div className="public-routes-search">
+        <RoteiroSearchPanel
+          destinations={destinations}
+          categories={categories}
+          value={filters}
+          onChange={setFilters}
+          onSubmit={searchRoutes}
+          busy={loadingResults || loadingOptions}
+          submitLabel="Vambora!"
+          homeLayout
+          showAllFilters
+          filtersInitiallyOpen
+        />
+      </div>
+
+      <section
+        className="public-routes-results"
+        aria-live="polite"
+        aria-labelledby="public-routes-title"
+      >
+        <h2 id="public-routes-title" className="sr-only">
+          {appliedFilters
+            ? `${routes.length} roteiros correspondentes`
+            : "Todos os roteiros públicos"}
+        </h2>
+        {appliedFilters && chips.length ? (
+          <div className="public-routes-applied-filters">
+            <div className="public-routes-filter-chips">
               {chips.map((chip) => (
                 <button
                   key={chip.id}
@@ -303,80 +483,98 @@ export default function RoteirosPublicos() {
                 </button>
               ))}
             </div>
-          ) : null}
-          {loadingOptions || loadingResults ? (
-            <div
-              className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
-              role="status"
-              aria-label="Carregando roteiros"
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="public-routes-clear-filters"
             >
-              <div className="h-72 animate-pulse rounded-3xl bg-slate-100" />
-              <div className="h-72 animate-pulse rounded-3xl bg-slate-100" />
-              <div className="h-72 animate-pulse rounded-3xl bg-slate-100" />
-            </div>
-          ) : null}
-          {error ? (
-            <div className="mt-6 rounded-2xl bg-red-50 p-5 text-sm text-red-800">
-              <p role="alert">Não foi possível carregar os roteiros: {error}</p>
-              <button
-                type="button"
-                onClick={() =>
-                  searchRoutes(appliedFilters || emptyRouteFilters)
-                }
-                className="mt-2 font-bold underline"
-              >
-                Tentar novamente
-              </button>
-            </div>
-          ) : null}
-          {!loadingOptions && !loadingResults && !error && routes.length ? (
-            <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {routes.map((route) => (
-                <PublicRouteCard key={route.id} route={route} />
-              ))}
-            </div>
-          ) : null}
-          {!loadingOptions && !loadingResults && !error && !allRoutes.length ? (
-            <div className="mt-6 rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center">
-              <p className="font-bold text-slate-800">
-                Ainda não há roteiros públicos.
+              Limpar todos
+            </button>
+          </div>
+        ) : null}
+        {loadingOptions || loadingResults ? (
+          <div
+            className="public-route-grid"
+            role="status"
+            aria-label="Carregando roteiros"
+          >
+            <div className="public-route-skeleton" />
+            <div className="public-route-skeleton" />
+            <div className="public-route-skeleton" />
+          </div>
+        ) : null}
+        {error ? (
+          <div className="public-routes-error">
+            <p role="alert">Não foi possível carregar os roteiros: {error}</p>
+            <button
+              type="button"
+              onClick={() => searchRoutes(appliedFilters || emptyRouteFilters)}
+            >
+              Tentar novamente
+            </button>
+          </div>
+        ) : null}
+        {!loadingOptions && !loadingResults && !error && routes.length ? (
+          <div className="public-route-grid">
+            {routes.map((route) => (
+              <PublicRouteCard
+                key={route.id}
+                route={route}
+                isAuthenticated={isAuthenticated}
+                saved={savedRouteIds.includes(route.id)}
+                savedLoading={savedRoutesLoading}
+                onSavedChange={updateSavedRoute}
+              />
+            ))}
+          </div>
+        ) : null}
+        {!loadingOptions && !loadingResults && !error && !allRoutes.length ? (
+          <div className="public-routes-empty">
+            <p className="font-bold text-slate-800">
+              Ainda não há roteiros públicos.
+            </p>
+            <p className="mt-2 text-sm text-slate-600">
+              Quando viajantes compartilharem seus planos, eles aparecerão aqui.
+            </p>
+          </div>
+        ) : null}
+        {!loadingOptions &&
+        !loadingResults &&
+        !error &&
+        routes.length === 0 &&
+        allRoutes.length > 0 ? (
+          <div className="public-routes-no-results">
+            <div>
+              <p className="font-bold text-slate-900">
+                Não encontramos roteiros que atendam a todos os filtros.
               </p>
-              <p className="mt-2 text-sm text-slate-600">
-                Quando viajantes compartilharem seus planos, eles aparecerão
-                aqui.
+              <p className="mt-1 text-sm text-slate-600">
+                Estas sugestões recentes podem não atender a todos os critérios
+                selecionados.
               </p>
             </div>
-          ) : null}
-          {!loadingOptions &&
-          !loadingResults &&
-          !error &&
-          routes.length === 0 &&
-          allRoutes.length > 0 ? (
-            <div className="mt-6">
-              <div className="rounded-2xl bg-blue-50 p-5">
-                <p className="font-bold text-slate-900">
-                  Não encontramos roteiros que atendam a todos os filtros.
-                </p>
-                <p className="mt-1 text-sm text-slate-600">
-                  Estas sugestões recentes podem não atender a todos os
-                  critérios selecionados.
-                </p>
+            {recentAlternatives.length ? (
+              <div className="public-route-grid public-route-grid--suggestions">
+                {recentAlternatives.map((route) => (
+                  <PublicRouteCard
+                    key={route.id}
+                    route={route}
+                    suggestion
+                    isAuthenticated={isAuthenticated}
+                    saved={savedRouteIds.includes(route.id)}
+                    savedLoading={savedRoutesLoading}
+                    onSavedChange={updateSavedRoute}
+                  />
+                ))}
               </div>
-              {recentAlternatives.length ? (
-                <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                  {recentAlternatives.map((route) => (
-                    <PublicRouteCard key={route.id} route={route} suggestion />
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-4 text-sm text-slate-600">
-                  Não há outras sugestões disponíveis.
-                </p>
-              )}
-            </div>
-          ) : null}
-        </section>
-      </div>
+            ) : (
+              <p className="public-routes-no-suggestions">
+                Não há outras sugestões disponíveis.
+              </p>
+            )}
+          </div>
+        ) : null}
+      </section>
     </main>
   );
 }

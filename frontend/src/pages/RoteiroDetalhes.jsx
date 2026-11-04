@@ -1200,6 +1200,7 @@ export default function RoteiroDetalhes() {
                       <input
                         className="input-field"
                         type="time"
+                        lang="pt-BR"
                         value={formatTime(itemForm.horarioInicio)}
                         onChange={(e) =>
                           setItemForm({

@@ -1,0 +1,429 @@
+.community-page {
+  --community-navy: #0f2a5c;
+  --community-blue: #3b82e0;
+  --community-sky: #66aaf0;
+  --community-pale: #9ccbf5;
+  --community-bg: #f4f9ff;
+  --community-ink: #0f2a5c;
+  --community-muted: #5b769f;
+  --community-surface: #fff;
+  --community-field: #eaf3fd;
+  --community-line: #dce9f9;
+  min-height: 100vh;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      900px 560px at 88% 6%,
+      rgba(102, 170, 240, 0.32),
+      transparent 62%
+    ),
+    radial-gradient(
+      760px 560px at 2% 48%,
+      rgba(169, 155, 240, 0.16),
+      transparent 62%
+    ),
+    radial-gradient(
+      800px 600px at 78% 92%,
+      rgba(59, 130, 224, 0.12),
+      transparent 62%
+    ),
+    var(--community-bg);
+  color: var(--community-ink);
+  font-family: "Geologica", "Segoe UI", system-ui, sans-serif;
+}
+
+.community-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 1.1rem 1.25rem 6rem;
+  background: linear-gradient(180deg, #cfe6fc, #eaf4fe 72%, transparent);
+}
+
+.community-hero::before {
+  position: absolute;
+  top: -35%;
+  right: -6%;
+  width: min(560px, 60vw);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(102, 170, 240, 0.3),
+    transparent 65%
+  );
+  content: "";
+  pointer-events: none;
+}
+
+.community-hero-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: min(1180px, 100%);
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 auto;
+  padding-top: 2.6rem;
+}
+
+.community-hero-content h1 {
+  margin: 0;
+  font:
+    500 clamp(2rem, 4.6vw, 3.1rem) / 1.12 "Fredoka",
+    "Trebuchet MS",
+    sans-serif;
+}
+
+.community-hero-content p {
+  margin: 0.6rem 0 0;
+  color: var(--community-muted);
+  font-size: 0.95rem;
+  font-weight: 300;
+}
+
+.community-route-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.community-route-art path {
+  fill: none;
+  stroke: var(--community-blue);
+  stroke-dasharray: 2 12;
+  stroke-linecap: round;
+  stroke-width: 2;
+  opacity: 0.3;
+}
+
+.community-route-art path + path {
+  stroke: var(--community-sky);
+  stroke-width: 1.7;
+}
+
+.community-route-art circle {
+  fill: var(--community-blue);
+  opacity: 0.42;
+}
+
+.community-refresh-button {
+  display: grid;
+  width: 2.65rem;
+  height: 2.65rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(59, 130, 224, 0.18);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.58);
+  color: var(--community-blue);
+  cursor: pointer;
+  font-size: 1.3rem;
+  transition:
+    transform 180ms ease,
+    background 180ms ease;
+}
+
+.community-refresh-button:hover:not(:disabled) {
+  transform: rotate(45deg);
+  background: #fff;
+}
+
+.community-refresh-button:disabled {
+  cursor: wait;
+  opacity: 0.5;
+}
+
+.community-layout {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  width: min(1180px, calc(100% - 2.5rem));
+  grid-template-columns: 230px minmax(0, 1fr) 300px;
+  align-items: start;
+  gap: 1.6rem;
+  margin: -3.6rem auto 0;
+  padding-bottom: 7rem;
+}
+
+.community-feed-sidebar {
+  position: sticky;
+  top: 1rem;
+  min-width: 0;
+}
+
+.community-feed-tabs {
+  display: grid;
+  gap: 0.3rem;
+  border: 1px solid rgba(220, 233, 249, 0.8);
+  border-radius: 26px;
+  background: var(--community-surface);
+  padding: 0.8rem;
+  box-shadow: 0 22px 44px -28px rgba(15, 42, 92, 0.4);
+}
+
+.community-feed-tabs button {
+  display: flex;
+  min-height: 3.4rem;
+  align-items: center;
+  gap: 0.8rem;
+  border: 0;
+  border-radius: 18px;
+  background: transparent;
+  padding: 0.72rem 0.9rem;
+  color: var(--community-muted);
+  cursor: pointer;
+  font:
+    500 0.98rem "Fredoka",
+    "Trebuchet MS",
+    sans-serif;
+  text-align: left;
+  transition:
+    background 180ms ease,
+    color 180ms ease;
+}
+
+.community-feed-tabs button:hover {
+  background: var(--community-field);
+  color: var(--community-ink);
+}
+
+.community-feed-tabs button.is-active {
+  background: var(--community-navy);
+  color: #fff;
+}
+
+.community-feed-tabs button span {
+  min-width: 0;
+}
+
+.community-feed-tabs small {
+  display: block;
+  margin-top: -0.15rem;
+  font:
+    300 0.76rem "Geologica",
+    "Segoe UI",
+    sans-serif;
+  opacity: 0.82;
+}
+
+.community-feed-tabs svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.community-feed-tabs button:focus-visible,
+.community-refresh-button:focus-visible {
+  outline: 3px solid var(--community-sky);
+  outline-offset: 3px;
+}
+
+.community-feed {
+  width: 100%;
+  min-width: 0;
+  overflow: visible;
+  border: 0 !important;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.community-feed > form,
+.community-composer-prompt {
+  margin-bottom: 1.2rem;
+  border: 1px solid var(--community-line) !important;
+  border-radius: 26px;
+  background: var(--community-surface);
+  padding: 1.2rem 1.35rem !important;
+  box-shadow: 0 22px 44px -28px rgba(15, 42, 92, 0.32);
+}
+
+.community-category-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.2rem;
+  border: 0 !important;
+  padding: 0 !important;
+}
+
+.community-publication-card {
+  margin-bottom: 1.2rem;
+  border: 1px solid rgba(220, 233, 249, 0.9);
+  border-radius: 26px;
+  background: var(--community-surface);
+  padding: 1.3rem 1.4rem 1rem;
+  box-shadow: 0 22px 44px -28px rgba(15, 42, 92, 0.4);
+  animation: community-post-in 500ms cubic-bezier(0.22, 0.8, 0.3, 1) both;
+}
+
+.community-publication-card:hover {
+  background: #fff;
+  box-shadow: 0 22px 44px -24px rgba(15, 42, 92, 0.46);
+}
+
+@keyframes community-post-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+.community-right-sidebar {
+  position: sticky;
+  top: 1rem;
+  min-width: 0;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  padding: 0;
+  scrollbar-width: thin;
+}
+
+.community-right-sidebar > label {
+  min-height: 3.1rem;
+  border: 1px solid var(--community-line);
+  background: #fff;
+  box-shadow: 0 10px 24px -20px rgba(15, 42, 92, 0.45);
+}
+
+.community-right-sidebar > section {
+  border: 1px solid rgba(220, 233, 249, 0.8);
+  border-radius: 26px;
+  background: var(--community-surface);
+  box-shadow: 0 22px 44px -28px rgba(15, 42, 92, 0.4);
+}
+
+.community-right-sidebar > section > h2 {
+  font:
+    500 1.25rem "Fredoka",
+    "Trebuchet MS",
+    sans-serif;
+}
+
+.community-right-sidebar > footer {
+  padding: 0.5rem 0.3rem;
+}
+
+.community-feed > [role="status"],
+.community-feed > [role="alert"],
+.community-feed > div.border-b:not(.community-category-filters) {
+  border-radius: 20px;
+  background: #fff;
+}
+
+@media (max-width: 1060px) {
+  .community-layout {
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap: 1.2rem;
+  }
+
+  .community-right-sidebar {
+    position: static;
+    grid-column: 2;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 1rem;
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .community-right-sidebar > label,
+  .community-right-sidebar > footer {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 760px) {
+  .community-hero {
+    padding: 0.75rem 1rem 5.2rem;
+  }
+
+  .community-hero-content {
+    padding-top: 1.6rem;
+  }
+
+  .community-hero-content h1 {
+    font-size: clamp(2rem, 8vw, 2.7rem);
+  }
+
+  .community-hero-content p {
+    max-width: 34ch;
+    font-size: 0.86rem;
+  }
+
+  .community-layout {
+    width: min(100% - 1.5rem, 620px);
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+    margin-top: -3rem;
+    padding-bottom: 3rem;
+  }
+
+  .community-feed-sidebar {
+    position: static;
+  }
+
+  .community-feed-tabs {
+    display: flex;
+    gap: 0.3rem;
+    overflow-x: auto;
+    border-radius: 20px;
+    padding: 0.45rem;
+    scrollbar-width: none;
+  }
+
+  .community-feed-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .community-feed-tabs button {
+    min-height: 2.8rem;
+    flex: 1 0 auto;
+    gap: 0.55rem;
+    padding: 0.55rem 0.75rem;
+    white-space: nowrap;
+  }
+
+  .community-feed-tabs small {
+    display: none;
+  }
+
+  .community-feed {
+    border: 0 !important;
+  }
+
+  .community-publication-card {
+    border-radius: 22px;
+    padding: 1rem 1rem 0.85rem;
+  }
+
+  .community-right-sidebar {
+    grid-column: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .community-feed-tabs button,
+  .community-refresh-button {
+    transition: none;
+  }
+
+  .community-publication-card {
+    animation: none;
+  }
+}

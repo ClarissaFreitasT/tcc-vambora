@@ -10,9 +10,11 @@ export default function RoteiroSearchPanel({
   busy = false,
   submitLabel = "Buscar roteiros",
   homeLayout = false,
+  showAllFilters = false,
+  filtersInitiallyOpen = false,
 }) {
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(filtersInitiallyOpen);
   const [validationError, setValidationError] = useState(null);
   const normalized = normalizeHomeSearch(value.destino);
   const suggestions = useMemo(() => {
@@ -350,7 +352,7 @@ export default function RoteiroSearchPanel({
             id={homeLayout ? "route-filter-options" : undefined}
             className={`mt-4 grid gap-4 border-t border-slate-200 pt-4 sm:grid-cols-2 ${homeLayout ? "home-filter-fields" : "lg:grid-cols-4"}`}
           >
-            {homeLayout ? (
+            {homeLayout && !showAllFilters ? (
               renderHomeFilters()
             ) : (
               <>

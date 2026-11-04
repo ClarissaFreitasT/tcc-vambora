@@ -373,9 +373,8 @@ export default function NovoRoteiro() {
 
           <section className="new-route-card">
             <h2>Sobre a viagem</h2>
-            <p className="new-route-hint">
-              O básico para o roteiro ganhar forma.
-            </p>
+            <p> </p>
+
             <div className="grid gap-6">
               <div className="grid gap-5 lg:grid-cols-2">
                 <label className="grid gap-2 text-sm font-medium text-slate-700">
@@ -445,8 +444,7 @@ export default function NovoRoteiro() {
                     </button>
                   ) : null}
                   <span className="text-xs font-normal text-slate-500">
-                    JPG, PNG ou WebP, até 8 MB. A imagem será salva no
-                    Cloudinary.
+                    JPG, PNG ou WebP, até 8 MB.
                   </span>
                 </div>
               </div>
@@ -462,7 +460,7 @@ export default function NovoRoteiro() {
                     step="0.01"
                     value={form.orcamento}
                     onChange={updateField}
-                    placeholder="Opcional"
+                    placeholder="Informe seu orçamento"
                   />
                 </label>
 
@@ -700,6 +698,7 @@ export default function NovoRoteiro() {
                           <input
                             className="new-route-input"
                             type="time"
+                            lang="pt-BR"
                             value={itemEditor.form.horarioInicio}
                             onChange={(event) =>
                               setItemEditor((current) => ({

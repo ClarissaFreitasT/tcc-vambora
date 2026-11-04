@@ -14,7 +14,6 @@ import ImageFallback from "../components/ImageFallback";
 import RoteiroSearchPanel from "../components/RoteiroSearchPanel";
 import {
   emptyRouteFilters,
-  getRecentRouteSuggestions,
   getRouteCategories,
   getRouteDestinations,
 } from "../utils/homeRoutes";
@@ -227,28 +226,13 @@ export default function Home() {
   const popularRoutes = useMemo(
     () =>
       roteiros
-        .filter(
-          (route) =>
-            Number(route.totalCurtidas || 0) +
-              Number(route.totalAvaliacoes || 0) +
-              Number(route.totalUsos || 0) >
-            0,
-        )
+        .filter((route) => Number(route.totalAvaliacoes || 0) >= 3)
         .sort(
           (a, b) => Number(b.popularidade || 0) - Number(a.popularidade || 0),
         ),
     [roteiros],
   );
-  const featuredPopular = popularRoutes.slice(0, 4);
-  const recentRoutes = getRecentRouteSuggestions(
-    roteiros,
-    featuredPopular.map((route) => route.id),
-    Math.max(0, 4 - featuredPopular.length),
-  );
-  const featuredRoutes = [
-    ...featuredPopular.map((route) => ({ route, recent: false })),
-    ...recentRoutes.map((route) => ({ route, recent: true })),
-  ];
+  const featuredRoutes = popularRoutes.slice(0, 4);
   function submitSearch(nextFilters) {
     setFilters({ ...nextFilters, categoriaIds: [...nextFilters.categoriaIds] });
     const params = new URLSearchParams();
@@ -334,14 +318,11 @@ export default function Home() {
       >
         <div className="container grid items-center gap-6 py-12 sm:py-16 lg:grid-cols-[0.8fr_1.2fr] lg:gap-10">
           <div className="home-globe-copy">
-            <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">
-              O mundo em perspectiva
-            </p>
             <h2
               id="home-globe-title"
               className="home-display mt-3 text-3xl text-white sm:text-4xl"
             >
-              Sua próxima descoberta pode estar em qualquer lugar.
+              Tem sempre um novo destino esperando por você.
             </h2>
             <Link
               to="/roteiros/publicos"
@@ -402,8 +383,7 @@ export default function Home() {
                 Roteiros populares
               </h2>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-                Experiências que viajantes curtiram, avaliaram ou escolheram
-                como ponto de partida.
+                Veja quais roteiros estão recebendo as melhores avaliações.
               </p>
             </div>
           </div>
@@ -434,21 +414,15 @@ export default function Home() {
                 </button>
               </div>
             ) : null}
-            {!loadingRoutes && !routesError && roteiros.length === 0 ? (
-              <div className="mt-7 rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+            {!loadingRoutes && !routesError && featuredRoutes.length === 0 ? (
+              <div className="home-popular-empty-state mt-7 rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
                 <p className="font-bold text-slate-800">
-                  Ainda não há roteiros públicos.
+                  Ainda não há roteiros mais votados por aqui.
                 </p>
                 <p className="mt-2 text-sm text-slate-600">
-                  Seja a primeira pessoa a criar e compartilhar um roteiro.
+                  Seja uma das primeiras pessoas a avaliar um roteiro e ajude a
+                  comunidade a descobrir boas opções!
                 </p>
-                <button
-                  type="button"
-                  onClick={createRoute}
-                  className="btn-primary mt-5"
-                >
-                  Criar o primeiro roteiro
-                </button>
               </div>
             ) : null}
             {!loadingRoutes && !routesError && featuredRoutes.length ? (
@@ -462,16 +436,8 @@ export default function Home() {
                   <span aria-hidden="true">←</span>
                 </button>
                 <div ref={routeRailRef} className="home-route-rail">
-                  <HomeRouteCard
-                    route={featuredRoutes[0].route}
-                    recent={featuredRoutes[0].recent}
-                  />
-                  {featuredRoutes.slice(1).map(({ route, recent }) => (
-                    <HomeRouteCard
-                      key={route.id}
-                      route={route}
-                      recent={recent}
-                    />
+                  {featuredRoutes.map((route) => (
+                    <HomeRouteCard key={route.id} route={route} />
                   ))}
                 </div>
                 <button
@@ -495,17 +461,15 @@ export default function Home() {
         <div className="container mx-auto max-w-[1280px]">
           <div className="home-process-heading">
             <div>
-              <p className="home-section-kicker">
-                Do primeiro clique ao embarque
-              </p>
               <h2
                 id="how-it-works-title"
                 className="home-display mt-2 text-2xl font-black text-slate-950 sm:text-3xl"
               >
-                Como funciona
+                Descubra, planeje e faça parte
               </h2>
               <p className="home-process-intro">
-                Um bom plano deixa espaço para o melhor da viagem: descobrir.
+                Encontre novas ideias para viajar, organize seus planos e
+                conecte-se com pessoas que também gostam de conhecer o mundo.
               </p>
             </div>
           </div>
@@ -513,18 +477,18 @@ export default function Home() {
             {[
               [
                 "01",
-                "Encontre seu próximo roteiro",
-                "Inspire-se em viagens planejadas e compartilhadas por outros viajantes.",
+                "Descubra novos lugares",
+                "Explore destinos e conheça roteiros compartilhados por outros viajantes.",
               ],
               [
                 "02",
                 "Planeje do seu jeito",
-                "Organize os dias, as atividades e os custos da sua viagem em um só lugar.",
+                "Crie seu roteiro, organize atividades por dia e acompanhe os custos da viagem.",
               ],
               [
                 "03",
-                "Descubra com outros viajantes",
-                "Encontre dicas e experiências que podem ajudar você a viajar melhor.",
+                "Faça parte da comunidade",
+                "Acompanhe outros viajantes, compartilhe suas publicações e troque dicas e experiências.",
               ],
             ].map(([number, title, description]) => (
               <article
@@ -553,21 +517,18 @@ export default function Home() {
         <div className="home-community-layout mx-auto max-w-[1180px]">
           <div className="home-community-intro">
             <div className="home-community-copy">
-              <p className="home-section-kicker home-community-kicker">
-                Comunidade
-              </p>
               <h2
                 id="community-preview-title"
                 className="home-display mt-2 text-3xl font-black text-slate-950"
               >
-                Viagens reais, experiências compartilhadas.
+                Conheça quem também gosta de viajar.
               </h2>
               <p className="mt-2 text-sm text-slate-600">
-                Descubra dicas, relatos e descobertas de quem também ama
-                explorar novos lugares.
+                Veja publicações, compartilhe suas viagens e troque dicas com
+                outros viajantes.
               </p>
               <Link to="/comunidade" className="home-community-link">
-                Bora conhecer a Comunidade <span aria-hidden="true">↗</span>
+                Vem pra comunidade <span aria-hidden="true">↗</span>
               </Link>
             </div>
             <div
@@ -620,7 +581,7 @@ export default function Home() {
         >
           <path d="M0 80V43Q180 2 360 43T720 43T1080 43T1440 43V80Z" />
         </svg>
-        <div className="home-footer-content mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-3 text-sm">
+        <div className="home-footer-content text-sm">
           <Link
             to="/"
             className="home-footer-brand"
@@ -633,12 +594,6 @@ export default function Home() {
             />
           </Link>
           <p className="text-slate-500">Planeje junto. Viaje melhor.</p>
-          <Link
-            to="/comunidade"
-            className="font-semibold text-blue-700 hover:underline"
-          >
-            Comunidade
-          </Link>
         </div>
       </footer>
     </main>

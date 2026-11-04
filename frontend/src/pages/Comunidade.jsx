@@ -8,6 +8,7 @@ import { apiFetch } from "../data/api";
 import { useAuth } from "../context/useAuth";
 import { filterTravelers, updatePostLike } from "../utils/community";
 import { profilePath } from "../utils/profile";
+import "./Comunidade.css";
 
 export default function Comunidade() {
   const navigate = useNavigate();
@@ -69,25 +70,43 @@ export default function Comunidade() {
       else setLoadingFeed(true);
       setFeedError(null);
       try {
+        const savedMode = feedMode === "saved";
         const path =
           feedMode === "following"
             ? "/publicacoes/feed"
-            : "/publicacoes/timeline";
+            : savedMode
+              ? "/publicacoes/salvas"
+              : "/publicacoes/timeline";
         const query = new URLSearchParams({ limit: "12" });
         if (append && nextCursorRef.current)
           query.set("cursor", nextCursorRef.current);
         if (selectedCategoryIds.length)
           query.set("categorias", selectedCategoryIds.join(","));
-        const page = await apiFetch(`${path}?${query.toString()}`);
+        const response = await apiFetch(
+          savedMode ? path : `${path}?${query.toString()}`,
+        );
         if (requestId !== feedRequestId.current) return;
+        const pageItems = Array.isArray(response)
+          ? response
+          : response.items || [];
+        const incoming =
+          savedMode && selectedCategoryIds.length
+            ? pageItems.filter((post) =>
+                post.categorias?.some(({ categoriaId, categoria }) =>
+                  selectedCategoryIds.includes(categoriaId || categoria?.id),
+                ),
+              )
+            : pageItems;
         setPublicacoes((current) => {
-          const incoming = page.items;
           if (!append) return incoming;
           const ids = new Set(current.map((post) => post.id));
           return [...current, ...incoming.filter((post) => !ids.has(post.id))];
         });
-        nextCursorRef.current = page.nextCursor || null;
-        setNextCursor(page.nextCursor || null);
+        const cursor = Array.isArray(response)
+          ? null
+          : response.nextCursor || null;
+        nextCursorRef.current = cursor;
+        setNextCursor(cursor);
       } catch (error) {
         if (requestId !== feedRequestId.current) return;
         setFeedError(error.message);
@@ -581,7 +600,7 @@ export default function Comunidade() {
   }
 
   function selectFeedMode(mode) {
-    if (mode === "following" && !user) {
+    if ((mode === "following" || mode === "saved") && !user) {
       navigate("/login", { state: { from: "/comunidade" } });
       return;
     }
@@ -589,71 +608,98 @@ export default function Comunidade() {
   }
 
   return (
-    <main className="min-h-screen bg-white text-slate-950">
-      <div className="mx-auto grid w-full max-w-[1040px] grid-cols-1 items-start gap-0 px-0 lg:grid-cols-[minmax(0,680px)_280px] lg:gap-6 lg:px-4">
+    <main className="community-page min-h-screen text-slate-950">
+      <header className="community-hero">
+        <div className="community-hero-content">
+          <div>
+            <h1 id="community-heading">Comunidade</h1>
+            <p>Compartilhe experiências, dicas e roteiros de viagem.</p>
+          </div>
+          <button
+            type="button"
+            onClick={loadFeed}
+            disabled={loadingFeed}
+            aria-label="Atualizar timeline"
+            className="community-refresh-button"
+          >
+            ⟳
+          </button>
+        </div>
+        <svg
+          className="community-route-art"
+          viewBox="0 0 1440 300"
+          preserveAspectRatio="xMidYMid slice"
+          aria-hidden="true"
+        >
+          <path d="M-20 240C220 120 360 300 620 190S1000 40 1180 130s200 70 300-40" />
+          <path d="M-20 110c220 90 440-90 720-30s400 160 780 80" />
+          <circle cx="620" cy="190" r="6" />
+          <circle cx="1180" cy="130" r="6" />
+          <circle cx="330" cy="205" r="5" />
+        </svg>
+      </header>
+      <div className="community-layout">
+        <aside className="community-feed-sidebar">
+          <nav
+            className="community-feed-tabs"
+            role="tablist"
+            aria-label="Timeline"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={feedMode === "for-you"}
+              onClick={() => selectFeedMode("for-you")}
+              className={feedMode === "for-you" ? "is-active" : ""}
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18" />
+              </svg>
+              <span>
+                Feed geral
+                <small>Tudo da comunidade</small>
+              </span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={feedMode === "saved"}
+              onClick={() => selectFeedMode("saved")}
+              className={feedMode === "saved" ? "is-active" : ""}
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M6 3h12v18l-6-4.5L6 21Z" />
+              </svg>
+              <span>Salvos</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={feedMode === "following"}
+              onClick={() => selectFeedMode("following")}
+              className={feedMode === "following" ? "is-active" : ""}
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <circle cx="9" cy="8" r="3.5" />
+                <path d="M2.5 20c0-3.6 3-6 6.5-6s6.5 2.4 6.5 6M17 4.5a3.5 3.5 0 0 1 0 7M19 14.5c1.7.8 2.8 2.6 2.8 5" />
+              </svg>
+              <span>
+                Seguindo
+                <small>Feed de quem você segue</small>
+              </span>
+            </button>
+          </nav>
+        </aside>
+
         <section
           aria-labelledby="community-heading"
-          className="min-w-0 border-y border-slate-200 lg:border-x lg:border-y-0"
+          className="community-feed min-w-0 border-y border-slate-200 lg:border-x lg:border-y-0"
         >
-          <header className="sticky top-[72px] z-20 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur-xl sm:px-6">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h1
-                  id="community-heading"
-                  className="text-xl font-extrabold tracking-tight"
-                >
-                  Comunidade
-                </h1>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  Compartilhe experiências, dicas e roteiros de viagem.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={loadFeed}
-                disabled={loadingFeed}
-                aria-label="Atualizar timeline"
-                className="grid h-10 w-10 place-items-center rounded-full text-xl text-blue-600 transition hover:bg-blue-50 disabled:opacity-50"
-              >
-                ⟳
-              </button>
-            </div>
-            <div
-              role="tablist"
-              aria-label="Timeline"
-              className="-mb-3 mt-3 grid grid-cols-2"
-            >
-              <button
-                type="button"
-                role="tab"
-                aria-selected={feedMode === "for-you"}
-                onClick={() => selectFeedMode("for-you")}
-                className={`relative px-3 py-4 text-sm transition hover:bg-slate-50 ${feedMode === "for-you" ? "font-extrabold text-slate-950" : "font-medium text-slate-500"}`}
-              >
-                Explorar
-                {feedMode === "for-you" ? (
-                  <span className="absolute inset-x-10 bottom-0 h-1 rounded-full bg-blue-600" />
-                ) : null}
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={feedMode === "following"}
-                onClick={() => selectFeedMode("following")}
-                className={`relative px-3 py-4 text-sm transition hover:bg-slate-50 ${feedMode === "following" ? "font-extrabold text-slate-950" : "font-medium text-slate-500"}`}
-              >
-                Seguindo
-                {feedMode === "following" ? (
-                  <span className="absolute inset-x-10 bottom-0 h-1 rounded-full bg-blue-600" />
-                ) : null}
-              </button>
-            </div>
-          </header>
-
           {isAuthenticated ? (
             <form
               onSubmit={publishPost}
-              className="flex gap-3 border-b border-slate-200 px-4 py-4 sm:px-6 sm:py-5"
+              className="community-composer flex gap-3 border-b border-slate-200 px-4 py-4 sm:px-6 sm:py-5"
             >
               <UserAvatar
                 user={user}
@@ -766,7 +812,7 @@ export default function Comunidade() {
               </div>
             </form>
           ) : (
-            <div className="flex items-center gap-3 border-b border-slate-200 px-4 py-5 sm:px-6">
+            <div className="community-composer-prompt flex items-center gap-3 border-b border-slate-200 px-4 py-5 sm:px-6">
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-blue-50 text-xl">
                 ✈️
               </span>
@@ -784,7 +830,7 @@ export default function Comunidade() {
           )}
 
           <div
-            className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-4 py-3 sm:px-6"
+            className="community-category-filters flex flex-wrap items-center gap-2 border-b border-slate-200 px-4 py-3 sm:px-6"
             aria-label="Filtrar publicações por categoria"
           >
             <span className="mr-1 text-xs font-bold text-slate-500">
@@ -844,14 +890,18 @@ export default function Comunidade() {
               <h2 className="mt-4 text-lg font-extrabold">
                 {feedMode === "following"
                   ? "Seu feed está quietinho"
-                  : "A timeline está começando"}
+                  : feedMode === "saved"
+                    ? "Você ainda não salvou publicações"
+                    : "A timeline está começando"}
               </h2>
               <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">
                 {feedMode === "following"
                   ? "Siga viajantes para acompanhar as dicas e histórias deles por aqui."
-                  : "Seja a primeira pessoa a compartilhar uma dica de viagem com a comunidade."}
+                  : feedMode === "saved"
+                    ? "Salve publicações interessantes para encontrá-las facilmente depois."
+                    : "Seja a primeira pessoa a compartilhar uma dica de viagem com a comunidade."}
               </p>
-              {feedMode === "following" ? (
+              {feedMode !== "for-you" ? (
                 <button
                   type="button"
                   onClick={() => setFeedMode("for-you")}
@@ -921,7 +971,7 @@ export default function Comunidade() {
           ) : null}
         </section>
 
-        <aside className="space-y-4 px-4 py-5 sm:px-6 lg:sticky lg:top-[72px] lg:max-h-[calc(100vh-72px)] lg:overflow-y-auto lg:px-0">
+        <aside className="community-right-sidebar space-y-4 px-4 py-5 sm:px-6 lg:sticky lg:top-[88px] lg:max-h-[calc(100vh-88px)] lg:overflow-y-auto lg:px-0">
           <label className="flex items-center gap-3 rounded-full bg-slate-100 px-5 py-3 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-500">
             <span aria-hidden="true" className="text-lg text-slate-500">
               ⌕
