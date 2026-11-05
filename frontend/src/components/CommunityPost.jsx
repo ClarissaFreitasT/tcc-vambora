@@ -29,6 +29,8 @@ export default function CommunityPost({
   onAddComment,
   onAdminDeletePost,
   onAdminDeleteComment,
+  currentUserId,
+  onDeleteComment,
 }) {
   const [commentText, setCommentText] = useState("");
   const [replyTo, setReplyTo] = useState(null);
@@ -520,6 +522,20 @@ export default function CommunityPost({
                                 Excluir pela moderação
                               </button>
                             ) : null}
+                            {comment.usuario?.id === currentUserId ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (
+                                    window.confirm("Excluir este comentário?")
+                                  )
+                                    onDeleteComment?.(comment.id);
+                                }}
+                                className="text-xs font-semibold text-red-600 hover:underline"
+                              >
+                                Excluir
+                              </button>
+                            ) : null}
                           </div>
                         </div>
                       </div>
@@ -558,6 +574,20 @@ export default function CommunityPost({
                                 <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-5 text-slate-600">
                                   {reply.texto}
                                 </p>
+                                {reply.usuario?.id === currentUserId ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (
+                                        window.confirm("Excluir esta resposta?")
+                                      )
+                                        onDeleteComment?.(reply.id);
+                                    }}
+                                    className="mt-2 text-xs font-semibold text-red-600 hover:underline"
+                                  >
+                                    Excluir
+                                  </button>
+                                ) : null}
                               </div>
                             </div>
                           ))}

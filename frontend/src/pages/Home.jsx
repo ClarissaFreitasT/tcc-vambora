@@ -117,17 +117,23 @@ export default function Home() {
     const section = globe?.closest(".home-globe-section");
     if (!globe || !section) return undefined;
     const shell = globe.closest(".site-shell");
-    let animationFrame = 0;
+    let frame = 0;
     let naturalCenterX = 0;
     let naturalCenterY = 0;
     let startScale = 1;
     let sectionTop = 0;
+    let finalCenterX = 0;
+    let finalCenterY = 0;
     let headerHeight = 0;
 
-    const measureLayout = () => {
-      const header = document.querySelector("nav");
-      const isSticky = header && getComputedStyle(header).position === "sticky";
-      headerHeight = isSticky ? header.getBoundingClientRect().height : 0;
+    function measureLayout() {
+      const header =
+        document.querySelector("header") || document.querySelector("nav");
+      const position = header ? getComputedStyle(header).position : "static";
+      headerHeight =
+        position === "sticky" || position === "fixed"
+          ? header.getBoundingClientRect().height
+          : 0;
       shell?.style.setProperty(
         "--home-screen-height",
         `${Math.max(1, window.innerHeight - headerHeight)}px`,
@@ -138,16 +144,20 @@ export default function Home() {
       globe.style.transform = previousTransform;
       naturalCenterX = rect.left + window.scrollX + rect.width / 2;
       naturalCenterY = rect.top + window.scrollY + rect.height / 2;
-      sectionTop = section.getBoundingClientRect().top + window.scrollY;
+      const sectionRect = section.getBoundingClientRect();
+      sectionTop = sectionRect.top + window.scrollY;
+      finalCenterX =
+        sectionRect.left + window.scrollX + sectionRect.width * 0.72;
+      finalCenterY = sectionTop + sectionRect.height / 2;
       const diameter = Math.min(
         window.innerWidth * 0.5,
         (window.innerHeight - headerHeight) * 0.95,
       );
       startScale = diameter / Math.max(rect.height * 0.86, 1);
-    };
+    }
 
-    const updatePosition = () => {
-      animationFrame = 0;
+    function updatePosition() {
+      frame = 0;
       const viewportCenterY =
         headerHeight + (window.innerHeight - headerHeight) / 2;
       const transitionEnd = Math.max(1, sectionTop - headerHeight);
@@ -158,34 +168,37 @@ export default function Home() {
       const progress = rawProgress * rawProgress * (3 - 2 * rawProgress);
       const naturalScreenX = naturalCenterX - window.scrollX;
       const naturalScreenY = naturalCenterY - window.scrollY;
+      const finalScreenX = finalCenterX - window.scrollX;
+      const finalScreenY = finalCenterY - window.scrollY;
       const targetCenterX =
-        window.innerWidth + (naturalScreenX - window.innerWidth) * progress;
+        window.innerWidth * (1 - progress) + finalScreenX * progress;
       const targetCenterY =
-        viewportCenterY - Math.max(0, window.scrollY - transitionEnd);
+        viewportCenterY * (1 - progress) + finalScreenY * progress;
       const offsetX = targetCenterX - naturalScreenX;
       const offsetY = targetCenterY - naturalScreenY;
       const scale = startScale + (1 - startScale) * progress;
       globe.style.transform = `translate3d(${offsetX}px, ${offsetY}px, 0) scale(${scale})`;
-    };
+    }
 
-    const scheduleUpdate = () => {
-      if (!animationFrame) {
-        animationFrame = window.requestAnimationFrame(updatePosition);
-      }
-    };
-    const handleResize = () => {
+    function schedulePositionUpdate() {
+      if (!frame) frame = window.requestAnimationFrame(updatePosition);
+    }
+
+    function handleResize() {
       measureLayout();
-      scheduleUpdate();
-    };
+      schedulePositionUpdate();
+    }
 
     measureLayout();
-    scheduleUpdate();
-    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+    schedulePositionUpdate();
+    window.addEventListener("scroll", schedulePositionUpdate, {
+      passive: true,
+    });
     window.addEventListener("resize", handleResize);
     return () => {
-      window.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("scroll", schedulePositionUpdate);
       window.removeEventListener("resize", handleResize);
-      window.cancelAnimationFrame(animationFrame);
+      window.cancelAnimationFrame(frame);
       globe.style.transform = "";
       shell?.style.removeProperty("--home-screen-height");
     };
@@ -584,6 +597,146 @@ export default function Home() {
                 <figcaption>Novas perspectivas</figcaption>
               </figure>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="equipe"
+        className="home-team-section container py-16 sm:py-24"
+        aria-labelledby="team-title"
+      >
+        <div className="home-team-layout mx-auto max-w-[1180px]">
+          <div className="home-team-copy">
+            <h2
+              id="team-title"
+              className="home-display max-w-xl text-3xl font-black text-slate-950 sm:text-5xl"
+            >
+              Quem está por trás do Vambora!?
+            </h2>
+            <p className="mt-6 max-w-2xl text-base leading-7 text-slate-700">
+              Somos Clarissa, Lívia, Valérya e Emilly, estudantes do 3º ano do
+              Ensino Médio Técnico em Informática (3º TI B). Unidas pelo
+              interesse em tecnologia e inovação, desenvolvemos o Vambora com o
+              objetivo de tornar o planejamento de viagens mais simples,
+              acessível e colaborativo.
+            </p>
+            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
+              O projeto nasceu da percepção das dificuldades enfrentadas por
+              muitos viajantes na hora de organizar seus roteiros. Queríamos
+              criar uma solução prática e moderna, que reunisse planejamento e
+              compartilhamento de experiências em um só lugar.
+            </p>
+            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
+              Acreditamos na criatividade, na colaboração e no aprendizado
+              contínuo. O Vambora representa não apenas a aplicação dos
+              conhecimentos adquiridos durante nossa formação, mas também nosso
+              compromisso em desenvolver soluções que façam a diferença na vida
+              das pessoas.
+            </p>
+          </div>
+
+          <div className="home-team-art">
+            <svg
+              viewBox="0 0 520 460"
+              role="img"
+              aria-label="Ilustração de viagem com avião, montanhas, mala e marcadores de destino"
+            >
+              <defs>
+                <clipPath id="home-team-circle">
+                  <circle cx="270" cy="225" r="195" />
+                </clipPath>
+              </defs>
+              <circle cx="270" cy="225" r="195" fill="#c9e0fa" />
+              <g clipPath="url(#home-team-circle)">
+                <circle cx="350" cy="140" r="36" fill="#fff" opacity=".9" />
+                <ellipse
+                  cx="170"
+                  cy="120"
+                  rx="60"
+                  ry="16"
+                  fill="#fff"
+                  opacity=".85"
+                />
+                <ellipse
+                  cx="205"
+                  cy="108"
+                  rx="34"
+                  ry="14"
+                  fill="#fff"
+                  opacity=".85"
+                />
+                <path
+                  d="M60 330 170 185Q180 172 192 185l58 90 70-80Q330 183 342 195l128 145v90H60Z"
+                  fill="#66aaf0"
+                />
+                <path
+                  d="M40 360 150 255Q162 244 174 255l86 85 90-70Q362 260 374 270l116 110v60H40Z"
+                  fill="#1f4fa8"
+                />
+                <path
+                  d="M40 395q90-25 180 0t180 0 160 0v55H40Z"
+                  fill="#0f2a5c"
+                />
+              </g>
+              <path
+                d="M52 318C140 250 200 330 270 230S400 120 436 78"
+                fill="none"
+                stroke="#3b82e0"
+                strokeWidth="3"
+                strokeDasharray="2 11"
+                strokeLinecap="round"
+              />
+              <path
+                d="M186 168c0-9 7-16 16-16s16 7 16 16c0 12-16 28-16 28s-16-16-16-28Z"
+                fill="#0f2a5c"
+              />
+              <circle cx="202" cy="168" r="5" fill="#f4f9ff" />
+              <path
+                d="M326 178c0-9 7-16 16-16s16 7 16 16c0 12-16 28-16 28s-16-16-16-28Z"
+                fill="#fff"
+              />
+              <circle cx="342" cy="178" r="5" fill="#0f2a5c" />
+              <g className="home-team-plane">
+                <g transform="translate(412 60) rotate(-12) scale(.62)">
+                  <path
+                    d="M5 40 115 8 82 72 58 48 40 62 42 44Z"
+                    fill="#0f2a5c"
+                    stroke="#0f2a5c"
+                    strokeWidth="4"
+                    strokeLinejoin="round"
+                  />
+                </g>
+              </g>
+              <g transform="translate(70 335)">
+                <path
+                  d="M32 0h26v14h-8V8H40v6h-8Z"
+                  fill="none"
+                  stroke="#0f2a5c"
+                  strokeWidth="5"
+                  strokeLinejoin="round"
+                />
+                <rect y="14" width="90" height="72" rx="16" fill="#3b82e0" />
+                <rect
+                  x="22"
+                  y="14"
+                  width="8"
+                  height="72"
+                  fill="#fff"
+                  opacity=".35"
+                />
+                <rect
+                  x="60"
+                  y="14"
+                  width="8"
+                  height="72"
+                  fill="#fff"
+                  opacity=".35"
+                />
+                <circle cx="20" cy="92" r="5" fill="#0f2a5c" />
+                <circle cx="70" cy="92" r="5" fill="#0f2a5c" />
+              </g>
+            </svg>
           </div>
         </div>
       </section>

@@ -481,3 +481,26 @@ export async function excluirComentarioAdmin(req, res) {
     comentario: comentarioRemovido,
   });
 }
+
+export async function excluirComentarioProprio(req, res) {
+  const { comentarioId } = req.params;
+  const comentario = await PublicacaoModel.obterComentarioPorId(comentarioId);
+
+  if (!comentario) {
+    return res.status(404).json({ erro: "Comentário não encontrado" });
+  }
+
+  if (comentario.usuarioId !== req.user.id) {
+    return res.status(403).json({
+      erro: "Você só pode excluir seus próprios comentários",
+    });
+  }
+
+  const comentarioRemovido =
+    await PublicacaoModel.excluirComentario(comentarioId);
+
+  return res.status(200).json({
+    mensagem: "Comentário removido com sucesso",
+    comentario: comentarioRemovido,
+  });
+}

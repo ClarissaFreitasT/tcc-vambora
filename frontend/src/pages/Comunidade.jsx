@@ -623,6 +623,34 @@ export default function Comunidade() {
     }
   }
 
+  async function removeOwnComment(commentId, postId) {
+    try {
+      await apiFetch(`/publicacoes/comentarios/${commentId}`, {
+        method: "DELETE",
+      });
+      const comments = await apiFetch(`/publicacoes/${postId}/comentarios`);
+      setCommentsByPost((current) => ({ ...current, [postId]: comments }));
+      setPublicacoes((current) =>
+        current.map((post) =>
+          post.id === postId
+            ? {
+                ...post,
+                comentarios: comments
+                  .filter((comment) => !comment.comentarioPaiId)
+                  .slice(-2)
+                  .reverse(),
+                _count: { ...post._count, comentarios: comments.length },
+              }
+            : post,
+        ),
+      );
+      return true;
+    } catch (error) {
+      setStatus({ type: "error", message: error.message });
+      return false;
+    }
+  }
+
   function selectFeedMode(mode) {
     if ((mode === "following" || mode === "saved") && !user) {
       navigate("/login", { state: { from: "/comunidade" } });
@@ -848,6 +876,10 @@ export default function Comunidade() {
               onAdminDeletePost={() => removePublicationAsAdmin(post.id)}
               onAdminDeleteComment={(commentId) =>
                 removeCommentAsAdmin(commentId, post.id)
+              }
+              currentUserId={user?.id}
+              onDeleteComment={(commentId) =>
+                removeOwnComment(commentId, post.id)
               }
             />
           ))}

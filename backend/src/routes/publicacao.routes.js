@@ -73,6 +73,11 @@ router.delete(
   adminMiddleware,
   publicacaoController.excluirComentarioAdmin,
 );
+router.delete(
+  "/comentarios/:comentarioId",
+  authMiddleware,
+  publicacaoController.excluirComentarioProprio,
+);
 router.get("/:id", optionalAuth, publicacaoController.obterPublicacao);
 router.get(
   "/:id/comentarios",
