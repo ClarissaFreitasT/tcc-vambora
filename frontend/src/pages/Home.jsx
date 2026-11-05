@@ -34,6 +34,7 @@ export default function Home() {
   const globeRef = useRef(null);
   const routeRailRef = useRef(null);
   const [filters, setFilters] = useState({ ...emptyRouteFilters });
+  const [routesOverflow, setRoutesOverflow] = useState(false);
   const [savedRouteState, setSavedRouteState] = useState({
     userId: null,
     ids: [],
@@ -218,6 +219,25 @@ export default function Home() {
     [roteiros],
   );
   const featuredRoutes = popularRoutes.slice(0, 4);
+
+  useEffect(() => {
+    const rail = routeRailRef.current;
+    if (!rail) return undefined;
+
+    const updateOverflow = () => {
+      setRoutesOverflow(rail.scrollWidth > rail.clientWidth + 1);
+    };
+
+    updateOverflow();
+    const observer = new ResizeObserver(updateOverflow);
+    observer.observe(rail);
+    window.addEventListener("resize", updateOverflow);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateOverflow);
+    };
+  }, [featuredRoutes.length]);
+
   function submitSearch(nextFilters) {
     setFilters({ ...nextFilters, categoriaIds: [...nextFilters.categoriaIds] });
     const params = new URLSearchParams();
@@ -412,14 +432,16 @@ export default function Home() {
             ) : null}
             {!loadingRoutes && !routesError && featuredRoutes.length ? (
               <div className="home-route-rail-wrap">
-                <button
-                  type="button"
-                  className="home-route-arrow home-route-arrow-left"
-                  aria-label="Ver roteiros anteriores"
-                  onClick={() => scrollRoutes(-1)}
-                >
-                  <span aria-hidden="true">←</span>
-                </button>
+                {routesOverflow ? (
+                  <button
+                    type="button"
+                    className="home-route-arrow home-route-arrow-left"
+                    aria-label="Ver roteiros anteriores"
+                    onClick={() => scrollRoutes(-1)}
+                  >
+                    <span aria-hidden="true">←</span>
+                  </button>
+                ) : null}
                 <div ref={routeRailRef} className="home-route-rail">
                   {featuredRoutes.map((route) => (
                     <RoteiroPublicoCard
@@ -432,14 +454,16 @@ export default function Home() {
                     />
                   ))}
                 </div>
-                <button
-                  type="button"
-                  className="home-route-arrow home-route-arrow-right"
-                  aria-label="Ver mais roteiros"
-                  onClick={() => scrollRoutes(1)}
-                >
-                  <span aria-hidden="true">→</span>
-                </button>
+                {routesOverflow ? (
+                  <button
+                    type="button"
+                    className="home-route-arrow home-route-arrow-right"
+                    aria-label="Ver mais roteiros"
+                    onClick={() => scrollRoutes(1)}
+                  >
+                    <span aria-hidden="true">→</span>
+                  </button>
+                ) : null}
               </div>
             ) : null}
           </div>

@@ -647,15 +647,6 @@ export default function Comunidade() {
             <h1 id="community-heading">Comunidade</h1>
             <p>Compartilhe experiências, dicas e roteiros de viagem.</p>
           </div>
-          <button
-            type="button"
-            onClick={loadFeed}
-            disabled={loadingFeed}
-            aria-label="Atualizar timeline"
-            className="community-refresh-button"
-          >
-            ⟳
-          </button>
         </div>
         <svg
           className="community-route-art"

@@ -70,7 +70,7 @@ router.delete(
  */
 router.post("/:id/duplicar", authMiddleware, roteiroController.duplicarRoteiro);
 
-router.get("/:id", optionalAuth, roteiroController.obterRoteiro);
+router.get("/:id", authMiddleware, roteiroController.obterRoteiro);
 
 /**
  * POST /roteiros - Cria um novo roteiro

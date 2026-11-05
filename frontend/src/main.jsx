@@ -34,8 +34,8 @@ function AppLayout() {
           <Route path="/roteiros/salvos" element={<RoteirosSalvos />} />
           <Route path="/roteiros/novo" element={<NovoRoteiro />} />
           <Route path="/perfil" element={<Perfil />} />
+          <Route path="/roteiros/:id" element={<RoteiroDetalhes />} />
         </Route>
-        <Route path="/roteiros/:id" element={<RoteiroDetalhes />} />
         <Route path="/login" element={<Login />} />
       </Routes>
     </>
