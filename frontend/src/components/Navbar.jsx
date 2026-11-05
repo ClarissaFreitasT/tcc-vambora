@@ -98,85 +98,78 @@ export default function Navbar() {
         </div>
 
         <div className="vambora-navbar-actions">
-          <button
-            type="button"
-            className={`vambora-create-link${isCreate ? " is-active" : ""}`}
-            onClick={() => navigate("/roteiros/novo")}
-            aria-current={isCreate ? "page" : undefined}
-          >
-            Criar Roteiro
-          </button>
-
-          <div className="vambora-account-menu" ref={profileMenuRef}>
-            <button
-              ref={profileButtonRef}
-              type="button"
-              onClick={() => setProfileMenuOpen((open) => !open)}
-              className={`vambora-account-button${isProfile ? " is-active" : ""}`}
-              aria-label="Abrir menu da conta"
-              aria-haspopup="menu"
-              aria-expanded={profileMenuOpen}
-              aria-controls="navbar-profile-menu"
-            >
-              <UserAvatar
-                user={user}
-                alt=""
-                className="vambora-account-avatar"
-              />
-            </button>
-            {profileMenuOpen ? (
-              <div
-                id="navbar-profile-menu"
-                role="menu"
-                aria-label="Menu da conta"
-                className="vambora-account-dropdown"
+          {isAuthenticated ? (
+            <>
+              <button
+                type="button"
+                className={`vambora-create-link${isCreate ? " is-active" : ""}`}
+                onClick={() => navigate("/roteiros/novo")}
+                aria-current={isCreate ? "page" : undefined}
               >
-                {loading ? (
-                  <span className="vambora-account-status">
-                    Verificando sessão…
-                  </span>
-                ) : isAuthenticated ? (
-                  <>
-                    <Link
-                      role="menuitem"
-                      to="/perfil"
-                      onClick={() => setProfileMenuOpen(false)}
-                      className="vambora-account-menu-item"
-                    >
-                      Ver perfil
-                    </Link>
-                    <button
-                      role="menuitem"
-                      type="button"
-                      onClick={handleLogout}
-                      className="vambora-account-menu-item is-danger"
-                    >
-                      Sair
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      role="menuitem"
-                      to="/login"
-                      onClick={() => setProfileMenuOpen(false)}
-                      className="vambora-account-menu-item"
-                    >
-                      Entrar
-                    </Link>
-                    <Link
-                      role="menuitem"
-                      to="/cadastro"
-                      onClick={() => setProfileMenuOpen(false)}
-                      className="vambora-account-menu-item"
-                    >
-                      Criar conta
-                    </Link>
-                  </>
-                )}
+                Criar Roteiro
+              </button>
+              <div className="vambora-account-menu" ref={profileMenuRef}>
+                <button
+                  ref={profileButtonRef}
+                  type="button"
+                  onClick={() => setProfileMenuOpen((open) => !open)}
+                  className={`vambora-account-button${isProfile ? " is-active" : ""}`}
+                  aria-label="Abrir menu da conta"
+                  aria-haspopup="menu"
+                  aria-expanded={profileMenuOpen}
+                  aria-controls="navbar-profile-menu"
+                >
+                  <UserAvatar
+                    user={user}
+                    alt=""
+                    className="vambora-account-avatar"
+                  />
+                </button>
+                {profileMenuOpen ? (
+                  <div
+                    id="navbar-profile-menu"
+                    role="menu"
+                    aria-label="Menu da conta"
+                    className="vambora-account-dropdown"
+                  >
+                    {loading ? (
+                      <span className="vambora-account-status">
+                        Verificando sessão…
+                      </span>
+                    ) : (
+                      <>
+                        <Link
+                          role="menuitem"
+                          to="/perfil"
+                          onClick={() => setProfileMenuOpen(false)}
+                          className="vambora-account-menu-item"
+                        >
+                          Ver perfil
+                        </Link>
+                        <button
+                          role="menuitem"
+                          type="button"
+                          onClick={handleLogout}
+                          className="vambora-account-menu-item is-danger"
+                        >
+                          Sair
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ) : null}
               </div>
-            ) : null}
-          </div>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className="vambora-auth-link">
+                Entrar
+              </Link>
+              <Link to="/cadastro" className="vambora-auth-link is-primary">
+                Cadastrar
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </nav>

@@ -4,6 +4,7 @@ import { apiFetch } from "../data/api";
 import ObjectUrlImage from "../components/ObjectUrlImage";
 import { useAuth } from "../context/useAuth";
 import { profilePath } from "../utils/profile";
+import "./RoteiroDetalhes.css";
 
 const emptyItem = {
   titulo: "",
@@ -42,6 +43,7 @@ export default function RoteiroDetalhes() {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const [roteiro, setRoteiro] = useState(null);
+  const [activeDayId, setActiveDayId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState(null);
@@ -72,6 +74,11 @@ export default function RoteiroDetalhes() {
     try {
       const data = await apiFetch(`/roteiros/${id}`);
       setRoteiro(data);
+      setActiveDayId((current) =>
+        data.dias?.some((day) => day.id === current)
+          ? current
+          : data.dias?.[0]?.id || null,
+      );
       setRoteiroForm({
         titulo: data.titulo,
         destino: data.destino,
@@ -90,13 +97,10 @@ export default function RoteiroDetalhes() {
 
   useEffect(() => {
     async function loadInitialRoteiro() {
-      if (!localStorage.getItem("vambora_token")) {
-        navigate("/login", { state: { from: `/roteiros/${id}` } });
-        return;
-      }
       try {
         const data = await apiFetch(`/roteiros/${id}`);
         setRoteiro(data);
+        setActiveDayId(data.dias?.[0]?.id || null);
         setRoteiroForm({
           titulo: data.titulo,
           destino: data.destino,
@@ -606,88 +610,95 @@ export default function RoteiroDetalhes() {
     );
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.12),_transparent_42%)] px-4 py-16 lg:px-8">
-      <div className="container mx-auto max-w-6xl">
-        <button
-          type="button"
-          className="mb-4 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-white hover:text-[#2563EB]"
-          onClick={() => navigate("/")}
-        >
-          <span aria-hidden="true" className="text-lg leading-none">
-            ←
-          </span>
-          Voltar à tela inicial
-        </button>
-        <header className="rounded-[36px] border border-slate-200 bg-white p-8 shadow-[0_20px_70px_rgba(15,23,42,0.08)] lg:p-10">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#2563EB]">
-                {isOwner ? "Meu roteiro" : "Roteiro de viagem"}
-              </p>
-              <h1 className="mt-3 text-4xl font-black text-slate-900">
-                {roteiro.titulo}
-              </h1>
-              <p className="mt-2 text-slate-600">{roteiro.destino}</p>
-              <p className="mt-3 text-sm text-slate-500">
+    <main className="route-details-page min-h-screen">
+      <header className="route-hero">
+        {roteiro.imagemUrl ? (
+          <img
+            className="route-hero-image"
+            src={roteiro.imagemUrl}
+            alt=""
+            onError={(event) => {
+              event.currentTarget.hidden = true;
+            }}
+          />
+        ) : null}
+        <div className="route-hero-content">
+          <div className="route-titlebox">
+            <span className="route-badge">
+              <span aria-hidden="true">✦</span>
+              {isOwner ? "Meu roteiro" : "Roteiro de viagem"}
+            </span>
+            <h1>{roteiro.titulo}</h1>
+            <p className="route-location">
+              <span aria-hidden="true">⌖</span> {roteiro.destino}
+            </p>
+            <p className="route-author">
+              <span className="route-author-avatar" aria-hidden="true">
+                {(roteiro.usuario?.nome || "V").slice(0, 1).toUpperCase()}
+              </span>
+              <span>
                 Criado por{" "}
                 {roteiro.usuario?.id ? (
-                  <Link
-                    to={profilePath(roteiro.usuario)}
-                    className="font-semibold text-slate-800 hover:text-blue-700 hover:underline"
-                  >
+                  <Link to={profilePath(roteiro.usuario)}>
                     {roteiro.usuario.nome || "Viajante"}
                   </Link>
                 ) : (
-                  <span className="font-semibold text-slate-800">
-                    {roteiro.usuario?.nome || "Viajante"}
-                  </span>
+                  <strong>{roteiro.usuario?.nome || "Viajante"}</strong>
                 )}
-              </p>
-              <div className="mt-4 flex flex-wrap gap-2 text-sm">
-                <span className="rounded-full bg-slate-100 px-3 py-1">
-                  {roteiro.publico ? "Público" : "Privado"}
-                </span>
-                <span className="rounded-full bg-slate-100 px-3 py-1">
-                  Orçamento: {money(roteiro.orcamento)}
-                </span>
-              </div>
+              </span>
+            </p>
+          </div>
+          <div className="route-hero-bottom">
+            <div className="route-facts">
+              <span className="route-fact">
+                <span aria-hidden="true">▦</span>
+                {roteiro.dias?.length || 0} dias
+              </span>
+              <span className="route-fact">
+                <span aria-hidden="true">▣</span>
+                {money(roteiro.orcamento)}
+              </span>
+              <span className="route-fact">
+                <span aria-hidden="true">◉</span>
+                {roteiro.publico ? "Público" : "Privado"}
+              </span>
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className="route-owner-actions">
               {isOwner ? (
                 <>
                   <button
-                    className="btn-primary"
+                    className="route-hero-button route-hero-button--light"
                     onClick={() => setEditingRoteiro((value) => !value)}
                   >
                     {editingRoteiro ? "Concluir edição" : "Editar meu roteiro"}
                   </button>
                   <button
-                    className="btn-secondary border-red-200 text-red-700 hover:bg-red-50"
+                    className="route-hero-button route-hero-button--danger"
                     onClick={deleteRoteiro}
                   >
                     Excluir roteiro
                   </button>
                 </>
               ) : roteiro.publico ? (
-                <div className="max-w-xs">
+                <div className="route-copy-action">
                   <button
-                    className="btn-primary w-full"
+                    className="route-hero-button route-hero-button--light"
                     onClick={copyRoteiro}
                     disabled={copying}
                   >
                     {copying ? "Copiando…" : "Copiar para editar"}
                   </button>
-                  <p className="mt-2 text-xs leading-5 text-slate-500">
-                    Será criada uma cópia privada nos seus roteiros. O original
-                    continua intacto.
-                  </p>
+                  <p>A cópia será privada; o roteiro original continua intacto.</p>
                 </div>
               ) : null}
             </div>
           </div>
-          {editingRoteiro ? (
+        </div>
+      </header>
+      <div className="route-detail-container">
+        {editingRoteiro ? (
             <form
-              className="mt-8 grid gap-5 border-t border-slate-200 pt-8"
+                className="route-edit-form grid gap-5"
               onSubmit={saveRoteiro}
             >
               <Field label="Título">
@@ -811,206 +822,167 @@ export default function RoteiroDetalhes() {
               </button>
             </form>
           ) : null}
-        </header>
+        <div className="route-detail-layout">
         {status ? (
-          <div className="mt-6 rounded-3xl bg-blue-50 p-4 text-sm text-[#1d4ed8]">
+          <div className="route-feedback" role="status">
             {status}
           </div>
         ) : null}
 
         {roteiro.publico ? (
-          <section className="mt-6 rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.24em] text-blue-600">
-                  Comunidade Vambora
-                </p>
-                <div className="mt-2 flex flex-wrap items-center gap-3">
-                  <h2 className="text-2xl font-black text-slate-950">
-                    {resumoAvaliacoes.media > 0
-                      ? resumoAvaliacoes.media.toFixed(1)
-                      : "—"}
-                  </h2>
-                  <span
-                    className="text-xl tracking-wider text-amber-400"
+          <aside className="route-community-sidebar">
+            <section className="route-community-card route-score-card">
+              <h2>Comunidade Vambora</h2>
+              <div className="route-score">
+                <span className="route-score-number">
+                  {resumoAvaliacoes.media > 0
+                    ? resumoAvaliacoes.media.toFixed(1).replace(".", ",")
+                    : "0,0"}
+                </span>
+                <div>
+                  <div
+                    className="route-score-stars"
                     aria-label={`${resumoAvaliacoes.media.toFixed(1)} de 5 estrelas`}
                   >
                     {"★".repeat(Math.round(resumoAvaliacoes.media))}
                     {"☆".repeat(5 - Math.round(resumoAvaliacoes.media))}
-                  </span>
-                  <span className="text-sm text-slate-500">
+                  </div>
+                  <p>
                     {resumoAvaliacoes.total}{" "}
                     {resumoAvaliacoes.total === 1 ? "avaliação" : "avaliações"}
-                  </span>
-                  <span className="text-sm text-slate-500">
-                    · {totalCurtidas} curtidas
-                  </span>
+                    {" · "}
+                    {totalCurtidas} curtidas
+                  </p>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-3">
+              <div className="route-social-buttons">
                 <button
                   type="button"
                   onClick={toggleCurtida}
                   disabled={socialBusy}
                   aria-pressed={curtido}
-                  className={`rounded-full px-5 py-2.5 text-sm font-bold transition disabled:opacity-50 ${curtido ? "border border-rose-200 bg-rose-50 text-rose-700" : "btn-secondary"}`}
+                  className={curtido ? "is-active" : ""}
                 >
-                  {curtido ? "♥ Curtido" : "♡ Curtir roteiro"}
+                  <span aria-hidden="true">♡</span>
+                  {curtido ? "Curtido" : "Curtir"}
                 </button>
                 <button
                   type="button"
                   onClick={toggleSalvo}
                   disabled={socialBusy}
                   aria-pressed={salvo}
-                  className={`rounded-full px-5 py-2.5 text-sm font-bold transition disabled:opacity-50 ${salvo ? "border border-blue-200 bg-blue-50 text-blue-700" : "btn-secondary"}`}
+                  className={salvo ? "is-active" : ""}
                 >
-                  {salvo ? "✓ Salvo" : "Salvar roteiro"}
+                  <span aria-hidden="true">▱</span>
+                  {salvo ? "Salvo" : "Salvar"}
                 </button>
               </div>
-            </div>
+            </section>
 
-            <div className="mt-7 grid gap-8 border-t border-slate-100 pt-7 lg:grid-cols-[0.85fr_1.15fr]">
-              <div>
-                <h3 className="text-lg font-black text-slate-950">
-                  Sua avaliação
-                </h3>
-                {isAuthenticated ? (
-                  (() => {
-                    const ownReview = avaliacoes.find(
-                      (review) => review.usuarioId === user?.id,
-                    );
-                    return ownReview ? (
-                      <div className="mt-4 rounded-2xl bg-slate-50 p-4">
-                        <p className="text-lg tracking-wider text-amber-400">
-                          {"★".repeat(ownReview.nota)}
-                          {"☆".repeat(5 - ownReview.nota)}
-                        </p>
-                        <p className="mt-2 text-sm leading-6 text-slate-700">
-                          {ownReview.comentario ||
-                            "Você não adicionou um comentário."}
-                        </p>
-                        <button
-                          type="button"
-                          onClick={deleteReview}
-                          disabled={socialBusy}
-                          className="mt-3 text-sm font-semibold text-red-600 hover:underline disabled:opacity-50"
-                        >
-                          Excluir avaliação
-                        </button>
-                      </div>
-                    ) : (
-                      <form onSubmit={submitReview} className="mt-4 grid gap-3">
-                        <fieldset>
-                          <legend className="text-sm text-slate-600">
-                            Como foi esse roteiro?
-                          </legend>
-                          <div
-                            className="mt-2 flex gap-1"
-                            role="radiogroup"
-                            aria-label="Nota de 1 a 5 estrelas"
-                          >
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <button
-                                key={star}
-                                type="button"
-                                role="radio"
-                                aria-checked={nota === star}
-                                aria-label={`${star} ${star === 1 ? "estrela" : "estrelas"}`}
-                                onClick={() => setNota(star)}
-                                className={`text-3xl transition hover:scale-110 ${star <= nota ? "text-amber-400" : "text-slate-300"}`}
-                              >
-                                ★
-                              </button>
-                            ))}
-                          </div>
-                        </fieldset>
-                        <label className="grid gap-2 text-sm font-medium text-slate-700">
-                          Comentário (opcional)
-                          <textarea
-                            className="input-field rounded-2xl"
-                            rows={3}
-                            maxLength={1000}
-                            value={comentarioAvaliacao}
-                            onChange={(event) =>
-                              setComentarioAvaliacao(event.target.value)
-                            }
-                            placeholder="O que foi útil? O que outros viajantes deveriam saber?"
-                          />
-                        </label>
-                        <button
-                          type="submit"
-                          disabled={socialBusy || nota === 0}
-                          className="btn-primary w-fit disabled:opacity-50"
-                        >
-                          Publicar avaliação
-                        </button>
-                        <p className="text-xs leading-5 text-slate-500">
-                          Você pode avaliar uma vez. Para alterar depois, exclua
-                          a avaliação e publique outra.
-                        </p>
-                      </form>
-                    );
-                  })()
-                ) : (
-                  <p className="mt-3 text-sm leading-6 text-slate-600">
-                    <Link
-                      to="/login"
-                      state={{ from: `/roteiros/${id}` }}
-                      className="font-bold text-blue-600 hover:underline"
-                    >
-                      Entre na sua conta
-                    </Link>{" "}
-                    para curtir, salvar ou avaliar este roteiro.
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <h3 className="text-lg font-black text-slate-950">
-                  O que dizem os viajantes
-                </h3>
-                {avaliacoes.length ? (
-                  <div className="mt-4 space-y-3">
-                    {avaliacoes.map((review) => (
-                      <article
-                        key={review.id}
-                        className="rounded-2xl border border-slate-100 p-4"
+            <section className="route-community-card route-review-form-card">
+              <h2>Sua avaliação</h2>
+              <p className="route-card-subtitle">Como foi esse roteiro?</p>
+              {(() => {
+                const ownReview = isAuthenticated
+                  ? avaliacoes.find((review) => review.usuarioId === user?.id)
+                  : null;
+                return ownReview ? (
+                    <div className="route-own-review">
+                      <p className="route-review-stars" aria-label={`${ownReview.nota} de 5 estrelas`}>
+                        {"★".repeat(ownReview.nota)}
+                        {"☆".repeat(5 - ownReview.nota)}
+                      </p>
+                      <p>{ownReview.comentario || "Você não adicionou um comentário."}</p>
+                      <button
+                        type="button"
+                        onClick={deleteReview}
+                        disabled={socialBusy}
+                        className="route-delete-review"
                       >
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <Link
-                            to={profilePath(review.usuario)}
-                            className="text-sm font-bold text-slate-900 hover:text-blue-700 hover:underline"
-                          >
-                            {review.usuario?.nome || "Viajante"}
-                          </Link>
-                          <span
-                            className="text-sm tracking-wider text-amber-400"
-                            aria-label={`${review.nota} de 5 estrelas`}
-                          >
-                            {"★".repeat(review.nota)}
-                            {"☆".repeat(5 - review.nota)}
-                          </span>
-                        </div>
-                        {review.comentario ? (
-                          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-600">
-                            {review.comentario}
-                          </p>
-                        ) : null}
-                      </article>
-                    ))}
-                  </div>
+                        Excluir avaliação
+                      </button>
+                    </div>
                 ) : (
-                  <p className="mt-3 text-sm text-slate-500">
-                    Ainda não há avaliações. Seja a primeira pessoa a
-                    compartilhar uma opinião.
-                  </p>
-                )}
-              </div>
-            </div>
-          </section>
+                    <form onSubmit={submitReview} className="route-review-form">
+                      <div
+                        className="route-rating-stars"
+                        role="radiogroup"
+                        aria-label="Nota"
+                      >
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            role="radio"
+                            aria-checked={nota === star}
+                            aria-label={`${star} de 5`}
+                            onClick={() => setNota(star)}
+                            className={star <= nota ? "is-active" : ""}
+                          >
+                            ★
+                          </button>
+                        ))}
+                      </div>
+                      <label className="sr-only" htmlFor="route-review-comment">
+                        Comentário (opcional)
+                      </label>
+                      <textarea
+                        id="route-review-comment"
+                        rows={3}
+                        maxLength={1000}
+                        value={comentarioAvaliacao}
+                        onChange={(event) =>
+                          setComentarioAvaliacao(event.target.value)
+                        }
+                        placeholder="O que foi útil? O que outros viajantes deveriam saber?"
+                      />
+                      <button
+                        type="submit"
+                        disabled={socialBusy || nota === 0}
+                        className="route-review-submit"
+                      >
+                        {socialBusy ? "Publicando…" : "Publicar avaliação"}
+                      </button>
+                      <p className="route-review-note">
+                        Você pode avaliar uma vez. Para alterar depois, exclua a
+                        avaliação e publique outra.
+                      </p>
+                    </form>
+                );
+              })()}
+            </section>
+
+            <section className="route-community-card route-reviews-card">
+              <h2>O que dizem os viajantes</h2>
+              {avaliacoes.length ? (
+                <div className="route-reviews-list">
+                  {avaliacoes.map((review) => (
+                    <article key={review.id}>
+                      <div>
+                        <Link to={profilePath(review.usuario)}>
+                          {review.usuario?.nome || "Viajante"}
+                        </Link>
+                        <span aria-label={`${review.nota} de 5 estrelas`}>
+                          {"★".repeat(review.nota)}
+                          {"☆".repeat(5 - review.nota)}
+                        </span>
+                      </div>
+                      {review.comentario ? <p>{review.comentario}</p> : null}
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p className="route-empty-reviews">
+                  Ainda não há avaliações. Seja a primeira pessoa a compartilhar
+                  uma opinião.
+                </p>
+              )}
+            </section>
+          </aside>
         ) : null}
 
-        <section className="mt-8 rounded-[32px] border border-slate-200 bg-white p-8 shadow-sm">
+        <div className="route-planning-column">
+        <section className="route-planning-heading">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[#2563EB]">
@@ -1034,13 +1006,26 @@ export default function RoteiroDetalhes() {
               </form>
             ) : null}
           </div>
+          <div className="route-day-tabs" role="tablist" aria-label="Dias do roteiro">
+            {roteiro.dias?.map((day) => (
+              <button
+                key={day.id}
+                type="button"
+                role="tab"
+                aria-selected={activeDayId === day.id}
+                onClick={() => setActiveDayId(day.id)}
+              >
+                Dia {day.numeroDia}
+              </button>
+            ))}
+          </div>
         </section>
 
-        <div className="mt-6 space-y-6">
-          {roteiro.dias?.map((day) => (
+        <div className="route-day-content">
+          {roteiro.dias?.filter((day) => day.id === activeDayId).map((day) => (
             <article
               key={day.id}
-              className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm lg:p-8"
+              className="route-day-card"
             >
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -1097,27 +1082,30 @@ export default function RoteiroDetalhes() {
                   </div>
                 ) : null}
               </div>
-              <div className="mt-6 space-y-3">
+              <div className="route-timeline">
                 {day.itens?.map((item, index) => (
                   <div
                     key={item.id}
-                    className="rounded-3xl border border-slate-200 bg-slate-50 p-5"
+                    className="route-activity-card"
                   >
+                    <div className="route-activity-time">
+                      <span>{formatTime(item.horarioInicio) || "—"}</span>
+                    </div>
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div>
-                        <h4 className="font-semibold text-slate-900">
+                        <h4 className="route-activity-title">
                           {item.titulo}
                         </h4>
-                        <p className="mt-2 text-sm text-slate-600">
+                        <p className="route-activity-description">
                           {item.descricao || "Sem descrição."}
                         </p>
-                        <p className="mt-3 text-sm text-slate-500">
-                          {item.localNome || "Local não informado"}{" "}
-                          {item.horarioInicio
-                            ? `· ${formatTime(item.horarioInicio)}`
-                            : ""}{" "}
-                          · {money(item.custoEstimado)}
-                        </p>
+                        <div className="route-activity-tags">
+                          <span>⌖ {item.localNome || "Local não informado"}</span>
+                          {item.custoEstimado !== null &&
+                          item.custoEstimado !== undefined ? (
+                            <span>{money(item.custoEstimado)}</span>
+                          ) : null}
+                        </div>
                       </div>
                       {isOwner && editingRoteiro ? (
                         <div className="flex flex-wrap gap-2">
@@ -1250,6 +1238,8 @@ export default function RoteiroDetalhes() {
             </article>
           ))}
         </div>
+      </div>
+      </div>
       </div>
     </main>
   );

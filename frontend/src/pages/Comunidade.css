@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Geologica:wght@300;400;500;600;700&display=swap");
+
 .community-page {
   --community-navy: #0f2a5c;
   --community-blue: #3b82e0;
@@ -30,6 +32,7 @@
     var(--community-bg);
   color: var(--community-ink);
   font-family: "Geologica", "Segoe UI", system-ui, sans-serif;
+  color-scheme: light;
 }
 
 .community-hero {
@@ -73,6 +76,13 @@
     500 clamp(2rem, 4.6vw, 3.1rem) / 1.12 "Fredoka",
     "Trebuchet MS",
     sans-serif;
+}
+
+.community-hero-content h1,
+.community-right-sidebar > section > h2,
+.community-dialog-heading h2 {
+  font-family: "Fredoka", "Trebuchet MS", sans-serif;
+  font-weight: 500;
 }
 
 .community-hero-content p {
@@ -256,6 +266,31 @@
   padding: 0 !important;
 }
 
+.community-category-filters > button {
+  min-height: 2.25rem;
+  border: 1.5px solid var(--community-line);
+  border-radius: 999px;
+  background: var(--community-surface);
+  padding: 0.4rem 1rem;
+  color: var(--community-ink);
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.community-category-filters > button:hover {
+  transform: translateY(-1px);
+  border-color: var(--community-pale);
+}
+
+.community-category-filters > button[aria-pressed="true"] {
+  border-color: var(--community-blue);
+  background: var(--community-blue);
+  color: #fff;
+}
+
 .community-publication-card {
   margin-bottom: 1.2rem;
   border: 1px solid rgba(220, 233, 249, 0.9);
@@ -311,6 +346,274 @@
 
 .community-right-sidebar > footer {
   padding: 0.5rem 0.3rem;
+}
+
+.community-fab {
+  position: fixed;
+  right: max(1.4rem, env(safe-area-inset-right));
+  bottom: calc(1.4rem + env(safe-area-inset-bottom, 0px));
+  z-index: 30;
+  display: inline-flex;
+  min-width: 3.8rem;
+  height: 3.8rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--community-blue);
+  padding: 0 1.1rem;
+  box-shadow: 0 18px 30px -12px rgba(59, 130, 224, 0.7);
+  color: #fff;
+  cursor: pointer;
+  font: 500 1rem "Fredoka", "Trebuchet MS", sans-serif;
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease,
+    background 180ms ease;
+}
+
+.community-fab > span:first-child {
+  font: 400 1.8rem/1 "Geologica", sans-serif;
+}
+
+.community-fab:hover {
+  transform: translateY(-3px);
+  background: #2f73cf;
+  box-shadow: 0 22px 34px -12px rgba(59, 130, 224, 0.78);
+}
+
+.community-fab-label {
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: max-width 240ms ease;
+}
+
+.community-fab:hover .community-fab-label,
+.community-fab:focus-visible .community-fab-label {
+  max-width: 8rem;
+}
+
+.community-post-dialog {
+  width: min(560px, calc(100% - 1.5rem));
+  max-width: 560px;
+  max-height: min(90vh, 760px);
+  overflow-y: auto;
+  border: 1px solid var(--community-line);
+  border-radius: 30px;
+  background: var(--community-surface);
+  padding: 1.6rem;
+  color: var(--community-ink);
+  box-shadow: 0 40px 80px -30px rgba(8, 22, 49, 0.5);
+}
+
+.community-post-dialog::backdrop {
+  background: rgba(8, 22, 49, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+.community-dialog-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.community-dialog-heading,
+.community-dialog-actions,
+.community-dialog-actions > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.community-dialog-heading p {
+  margin: 0 0 0.2rem;
+  color: var(--community-blue);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.community-dialog-heading h2 {
+  font-size: 1.55rem;
+}
+
+.community-dialog-close {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--community-field);
+  color: var(--community-ink);
+  cursor: pointer;
+  font-size: 1.5rem;
+}
+
+.community-dialog-author {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-weight: 600;
+}
+
+.community-dialog-textarea,
+.community-dialog-route select {
+  width: 100%;
+  border: 1px solid var(--community-line);
+  border-radius: 18px;
+  background: var(--community-field);
+  padding: 0.9rem 1rem;
+  color: var(--community-ink);
+  font: 400 0.95rem/1.6 "Geologica", "Segoe UI", system-ui, sans-serif;
+}
+
+.community-dialog-textarea {
+  min-height: 130px;
+  resize: vertical;
+}
+
+.community-dialog-textarea:focus,
+.community-dialog-route select:focus {
+  border-color: var(--community-blue);
+  outline: 2px solid rgba(59, 130, 224, 0.2);
+}
+
+.community-dialog-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.community-dialog-categories legend,
+.community-dialog-route > span {
+  width: 100%;
+  margin-bottom: 0.45rem;
+  color: var(--community-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.community-dialog-categories label {
+  position: relative;
+  cursor: pointer;
+}
+
+.community-dialog-categories input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.community-dialog-categories label span {
+  display: block;
+  border: 1px solid var(--community-line);
+  border-radius: 999px;
+  background: var(--community-surface);
+  padding: 0.4rem 0.85rem;
+  color: var(--community-muted);
+  font-size: 0.78rem;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.community-dialog-categories input:checked + span {
+  border-color: var(--community-blue);
+  background: var(--community-field);
+  color: var(--community-navy);
+}
+
+.community-dialog-categories input:focus-visible + span {
+  outline: 3px solid var(--community-sky);
+  outline-offset: 2px;
+}
+
+.community-dialog-route {
+  display: grid;
+}
+
+.community-dialog-previews {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 0.55rem;
+}
+
+.community-dialog-preview {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--community-field);
+}
+
+.community-dialog-preview > button {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(8, 22, 49, 0.78);
+  color: #fff;
+  cursor: pointer;
+}
+
+.community-dialog-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--community-blue);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.community-dialog-upload input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.community-dialog-cancel,
+.community-dialog-submit {
+  min-height: 2.65rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  font: 500 0.86rem "Fredoka", "Trebuchet MS", sans-serif;
+}
+
+.community-dialog-cancel {
+  background: transparent;
+  color: var(--community-muted);
+}
+
+.community-dialog-submit {
+  background: var(--community-navy);
+  color: #fff;
+}
+
+.community-dialog-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .community-feed > [role="status"],
@@ -415,11 +718,27 @@
     gap: 1rem;
     padding: 0;
   }
+
+  .community-post-dialog {
+    padding: 1.2rem;
+  }
+
+  .community-fab {
+    right: max(1rem, env(safe-area-inset-right));
+    bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .community-feed-tabs button,
   .community-refresh-button {
+    transition: none;
+  }
+
+  .community-fab,
+  .community-fab-label,
+  .community-category-filters > button,
+  .community-dialog-categories label span {
     transition: none;
   }
 

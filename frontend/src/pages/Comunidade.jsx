@@ -21,11 +21,20 @@ export default function Comunidade() {
   const [destinos, setDestinos] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
+            <button
+              type="button"
+              onClick={openPostDialog}
+              className="floating-button"
+              aria-label="Criar nova publicação"
+            >
+              <span>+</span>
+            </button>
   const [selectedPostCategoryIds, setSelectedPostCategoryIds] = useState([]);
   const [search, setSearch] = useState("");
   const [postText, setPostText] = useState("");
   const [selectedPhotos, setSelectedPhotos] = useState([]);
   const [selectedRoteiroId, setSelectedRoteiroId] = useState("");
+  const [postDialogOpen, setPostDialogOpen] = useState(false);
   const [feedMode, setFeedMode] = useState("for-you");
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [loadingFeed, setLoadingFeed] = useState(true);
@@ -49,6 +58,14 @@ export default function Comunidade() {
   const feedRequestId = useRef(0);
   const nextCursorRef = useRef(null);
   const feedEndRef = useRef(null);
+  const postDialogRef = useRef(null);
+
+  useEffect(() => {
+    const dialog = postDialogRef.current;
+    if (!dialog) return;
+    if (postDialogOpen && !dialog.open) dialog.showModal();
+    else if (!postDialogOpen && dialog.open) dialog.close();
+  }, [postDialogOpen]);
   const loadUsers = useCallback(async () => {
     setLoadingUsers(true);
     try {
@@ -281,6 +298,7 @@ export default function Comunidade() {
       setSelectedRoteiroId("");
       setSelectedPostCategoryIds([]);
       setStatus({ type: "success", message: "Publicação enviada." });
+      setPostDialogOpen(false);
       await loadFeed();
     } catch (error) {
       setStatus({ type: "error", message: error.message });
@@ -607,6 +625,14 @@ export default function Comunidade() {
     setFeedMode(mode);
   }
 
+  function openPostDialog() {
+    if (!isAuthenticated) {
+      navigate("/login", { state: { from: "/comunidade" } });
+      return;
+    }
+    setPostDialogOpen(true);
+  }
+
   return (
     <main className="community-page min-h-screen text-slate-950">
       <header className="community-hero">
@@ -664,18 +690,6 @@ export default function Comunidade() {
             <button
               type="button"
               role="tab"
-              aria-selected={feedMode === "saved"}
-              onClick={() => selectFeedMode("saved")}
-              className={feedMode === "saved" ? "is-active" : ""}
-            >
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <path d="M6 3h12v18l-6-4.5L6 21Z" />
-              </svg>
-              <span>Salvos</span>
-            </button>
-            <button
-              type="button"
-              role="tab"
               aria-selected={feedMode === "following"}
               onClick={() => selectFeedMode("following")}
               className={feedMode === "following" ? "is-active" : ""}
@@ -696,122 +710,7 @@ export default function Comunidade() {
           aria-labelledby="community-heading"
           className="community-feed min-w-0 border-y border-slate-200 lg:border-x lg:border-y-0"
         >
-          {isAuthenticated ? (
-            <form
-              onSubmit={publishPost}
-              className="community-composer flex gap-3 border-b border-slate-200 px-4 py-4 sm:px-6 sm:py-5"
-            >
-              <UserAvatar
-                user={user}
-                alt=""
-                className="h-11 w-11 shrink-0 rounded-full object-cover"
-              />
-              <div className="min-w-0 flex-1">
-                <label htmlFor="community-post" className="sr-only">
-                  O que está acontecendo?
-                </label>
-                <textarea
-                  id="community-post"
-                  rows={3}
-                  maxLength={2000}
-                  value={postText}
-                  onChange={(event) => setPostText(event.target.value)}
-                  placeholder="O que está acontecendo na sua viagem?"
-                  className="w-full resize-none border-0 bg-transparent py-1 text-lg leading-7 text-slate-900 outline-none placeholder:text-slate-400 focus:ring-0"
-                />
-                <div className="mb-3 flex flex-wrap items-center gap-2">
-                  {categories.map((category) => (
-                    <button
-                      key={category.id}
-                      type="button"
-                      aria-pressed={selectedPostCategoryIds.includes(
-                        category.id,
-                      )}
-                      onClick={() =>
-                        setSelectedPostCategoryIds((current) =>
-                          current.includes(category.id)
-                            ? current.filter((id) => id !== category.id)
-                            : [...current, category.id],
-                        )
-                      }
-                      className={`rounded-full px-3 py-2 text-xs font-semibold transition ${selectedPostCategoryIds.includes(category.id) ? "bg-blue-100 text-blue-800" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
-                    >
-                      {category.nome}
-                    </button>
-                  ))}
-                </div>
-                {roteirosVinculaveis.length ? (
-                  <label className="mb-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
-                    <span aria-hidden="true">🧭</span>
-                    Vincular um roteiro seu
-                    <select
-                      value={selectedRoteiroId}
-                      onChange={(event) =>
-                        setSelectedRoteiroId(event.target.value)
-                      }
-                      className="max-w-full rounded-full border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none focus:border-blue-400"
-                    >
-                      <option value="">Sem roteiro vinculado</option>
-                      {roteirosVinculaveis.map((roteiro) => (
-                        <option key={roteiro.id} value={roteiro.id}>
-                          {roteiro.titulo} · {roteiro.destino}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                ) : null}
-                {selectedPhotos.length ? (
-                  <div className="mb-3 grid grid-cols-4 gap-2">
-                    {selectedPhotos.map((photo, index) => (
-                      <div
-                        key={`${photo.name}-${photo.lastModified}`}
-                        className="relative aspect-square overflow-hidden rounded-xl bg-slate-100"
-                      >
-                        <ObjectUrlImage
-                          file={photo}
-                          alt={`Prévia ${index + 1}`}
-                          className="h-full w-full object-cover"
-                        />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setSelectedPhotos((current) =>
-                              current.filter(
-                                (_, photoIndex) => photoIndex !== index,
-                              ),
-                            )
-                          }
-                          className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-slate-950/75 text-sm text-white"
-                          aria-label={`Remover foto ${index + 1}`}
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
-                <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
-                  <label className="cursor-pointer text-xs font-semibold text-blue-700 hover:text-blue-800">
-                    Adicionar fotos
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      multiple
-                      className="sr-only"
-                      onChange={choosePhotos}
-                    />
-                  </label>
-                  <button
-                    type="submit"
-                    disabled={posting || !postText.trim()}
-                    className="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-45"
-                  >
-                    {posting ? "Enviando…" : "Publicar"}
-                  </button>
-                </div>
-              </div>
-            </form>
-          ) : (
+          {!isAuthenticated ? (
             <div className="community-composer-prompt flex items-center gap-3 border-b border-slate-200 px-4 py-5 sm:px-6">
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-blue-50 text-xl">
                 ✈️
@@ -827,7 +726,7 @@ export default function Comunidade() {
                 Entrar
               </Link>
             </div>
-          )}
+          ) : null}
 
           <div
             className="community-category-filters flex flex-wrap items-center gap-2 border-b border-slate-200 px-4 py-3 sm:px-6"
@@ -1230,6 +1129,160 @@ export default function Comunidade() {
           </footer>
         </aside>
       </div>
+
+      <button
+        type="button"
+        onClick={openPostDialog}
+        className="community-fab"
+        aria-label="Criar publicação"
+      >
+        <span aria-hidden="true">+</span>
+        <span className="community-fab-label">Criar post</span>
+      </button>
+
+      <dialog
+        ref={postDialogRef}
+        className="community-post-dialog"
+        aria-labelledby="community-dialog-title"
+        onClose={() => setPostDialogOpen(false)}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) setPostDialogOpen(false);
+        }}
+      >
+        <form onSubmit={publishPost} className="community-dialog-form">
+          <div className="community-dialog-heading">
+            <div>
+              <p>Compartilhe com a comunidade</p>
+              <h2 id="community-dialog-title">Criar publicação</h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPostDialogOpen(false)}
+              className="community-dialog-close"
+              aria-label="Fechar publicação"
+            >
+              ×
+            </button>
+          </div>
+
+          <div className="community-dialog-author">
+            <UserAvatar
+              user={user}
+              alt=""
+              className="h-11 w-11 rounded-full object-cover"
+            />
+            <span>{user?.nome || "Viajante Vambora"}</span>
+          </div>
+
+          <label htmlFor="community-post" className="sr-only">
+            O que está acontecendo na sua viagem?
+          </label>
+          <textarea
+            id="community-post"
+            rows={5}
+            maxLength={2000}
+            value={postText}
+            onChange={(event) => setPostText(event.target.value)}
+            placeholder="O que está acontecendo na sua viagem?"
+            className="community-dialog-textarea"
+            autoFocus
+          />
+
+          <fieldset className="community-dialog-categories">
+            <legend>Categoria</legend>
+            {categories.map((category) => (
+              <label key={category.id}>
+                <input
+                  type="checkbox"
+                  checked={selectedPostCategoryIds.includes(category.id)}
+                  onChange={() =>
+                    setSelectedPostCategoryIds((current) =>
+                      current.includes(category.id)
+                        ? current.filter((id) => id !== category.id)
+                        : [...current, category.id],
+                    )
+                  }
+                />
+                <span>{category.nome}</span>
+              </label>
+            ))}
+          </fieldset>
+
+          {roteirosVinculaveis.length ? (
+            <label className="community-dialog-route">
+              <span>Vincular um roteiro seu</span>
+              <select
+                value={selectedRoteiroId}
+                onChange={(event) => setSelectedRoteiroId(event.target.value)}
+              >
+                <option value="">Sem roteiro vinculado</option>
+                {roteirosVinculaveis.map((roteiro) => (
+                  <option key={roteiro.id} value={roteiro.id}>
+                    {roteiro.titulo} · {roteiro.destino}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+
+          {selectedPhotos.length ? (
+            <div className="community-dialog-previews">
+              {selectedPhotos.map((photo, index) => (
+                <div
+                  key={`${photo.name}-${photo.lastModified}`}
+                  className="community-dialog-preview"
+                >
+                  <ObjectUrlImage
+                    file={photo}
+                    alt={`Prévia ${index + 1}`}
+                    className="h-full w-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSelectedPhotos((current) =>
+                        current.filter((_, photoIndex) => photoIndex !== index),
+                      )
+                    }
+                    aria-label={`Remover foto ${index + 1}`}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          <div className="community-dialog-actions">
+            <label className="community-dialog-upload">
+              <span aria-hidden="true">▧</span>
+              <span>Adicionar fotos</span>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                onChange={choosePhotos}
+              />
+            </label>
+            <div>
+              <button
+                type="button"
+                onClick={() => setPostDialogOpen(false)}
+                className="community-dialog-cancel"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={posting || !postText.trim()}
+                className="community-dialog-submit"
+              >
+                {posting ? "Publicando…" : "Publicar"}
+              </button>
+            </div>
+          </div>
+        </form>
+      </dialog>
     </main>
   );
 }

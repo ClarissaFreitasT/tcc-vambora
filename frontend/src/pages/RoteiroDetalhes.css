@@ -1,0 +1,409 @@
+@import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Geologica:wght@300;400;500;600;700&display=swap");
+
+.route-details-page {
+  --route-navy: #0f2a5c;
+  --route-blue: #3b82e0;
+  --route-sky: #66aaf0;
+  --route-pale: #9ccbf5;
+  --route-bg: #f4f9ff;
+  --route-ink: #0f2a5c;
+  --route-muted: #5b769f;
+  --route-surface: #fff;
+  --route-field: #eaf3fd;
+  --route-line: #dce9f9;
+  min-height: 100vh;
+  background: var(--route-bg);
+  color: var(--route-ink);
+  font-family: "Geologica", "Segoe UI", system-ui, sans-serif;
+}
+
+.route-hero {
+  position: relative;
+  display: flex;
+  min-height: min(78vh, 560px);
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  border-radius: 0 0 56px 56px;
+  background:
+    linear-gradient(180deg, #0a1d45 0%, #1b4797 46%, #3b82e0 74%, #9ccbf5 100%);
+  color: #fff;
+}
+
+.route-hero::before,
+.route-hero::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+}
+
+.route-hero::before {
+  opacity: 0.62;
+  background:
+    linear-gradient(180deg, transparent 55%, rgba(15, 42, 92, 0.94) 100%),
+    repeating-linear-gradient(90deg, transparent 0 4%, rgba(20, 54, 114, 0.72) 4% 5%, transparent 5% 7%),
+    linear-gradient(0deg, #123878 0 18%, transparent 18%);
+  clip-path: polygon(0 42%, 4% 42%, 4% 68%, 9% 68%, 9% 50%, 14% 50%, 14% 70%, 20% 70%, 20% 48%, 25% 48%, 25% 72%, 32% 72%, 32% 44%, 38% 44%, 38% 70%, 45% 70%, 45% 51%, 51% 51%, 51% 72%, 58% 72%, 58% 46%, 64% 46%, 64% 69%, 72% 69%, 72% 48%, 78% 48%, 78% 73%, 86% 73%, 86% 45%, 92% 45%, 92% 68%, 100% 68%, 100% 100%, 0 100%);
+}
+
+.route-hero::after {
+  background: linear-gradient(180deg, rgba(8, 22, 49, 0.46), transparent 28%, rgba(8, 22, 49, 0.62));
+}
+
+.route-hero-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 54%;
+}
+
+.route-hero-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: min(1120px, calc(100% - 2.5rem));
+  min-height: inherit;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.3rem;
+  margin-inline: auto;
+  padding: 1.1rem 0 3.4rem;
+}
+
+.route-back-link {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 0.48rem 0.9rem;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.82rem;
+  backdrop-filter: blur(8px);
+}
+
+.route-back-link:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.route-titlebox {
+  padding-top: 1.5rem;
+  animation: route-rise 700ms cubic-bezier(0.22, 0.8, 0.3, 1) both;
+}
+
+@keyframes route-rise {
+  from { opacity: 0; transform: translateY(18px); }
+}
+
+.route-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  padding: 0.32rem 0.9rem;
+  font: 500 0.85rem "Fredoka", "Trebuchet MS", sans-serif;
+  backdrop-filter: blur(8px);
+}
+
+.route-titlebox h1 {
+  max-width: 16ch;
+  margin: 0.9rem 0 0.45rem;
+  font: 500 clamp(2.3rem, 6vw, 4.6rem) / 1.06 "Fredoka", "Trebuchet MS", sans-serif;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+.route-location,
+.route-author {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.35rem 0 0;
+  color: #e4f0ff;
+}
+
+.route-location { font-size: 1.05rem; font-weight: 300; }
+.route-location span { font-size: 1.25rem; }
+.route-author { gap: 0.65rem; margin-top: 0.9rem; font-size: 0.9rem; font-weight: 300; }
+.route-author a,
+.route-author strong { color: #fff; font-weight: 600; }
+.route-author a:hover { text-decoration: underline; }
+
+.route-author-avatar {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font: 500 0.78rem "Fredoka", sans-serif;
+}
+
+.route-hero-bottom,
+.route-facts,
+.route-owner-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.route-hero-bottom { justify-content: space-between; align-items: flex-end; gap: 1rem; }
+.route-fact {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 0.5rem 1rem;
+  color: #fff;
+  font: 500 0.9rem "Fredoka", "Trebuchet MS", sans-serif;
+  backdrop-filter: blur(10px);
+}
+
+.route-hero-button {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.65rem 1.1rem;
+  cursor: pointer;
+  font: 500 0.88rem "Fredoka", "Trebuchet MS", sans-serif;
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+.route-hero-button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 24px -12px rgba(15, 42, 92, 0.6); }
+.route-hero-button:disabled { cursor: wait; opacity: 0.6; }
+.route-hero-button--light { background: #fff; color: var(--route-navy); }
+.route-hero-button--danger { background: rgba(255, 255, 255, 0.17); color: #ffd3db; backdrop-filter: blur(8px); }
+.route-copy-action { display: grid; justify-items: end; gap: 0.4rem; }
+.route-copy-action p { max-width: 20rem; margin: 0; color: rgba(255, 255, 255, 0.8); font-size: 0.7rem; text-align: right; }
+
+.route-detail-container {
+  width: min(1120px, calc(100% - 2.5rem));
+  margin: 2.4rem auto 0;
+  padding-bottom: 6rem;
+}
+
+.route-edit-form {
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--route-line);
+  border-radius: 28px;
+  background: var(--route-surface);
+  padding: 1.5rem;
+  box-shadow: 0 22px 44px -28px rgba(15, 42, 92, 0.28);
+}
+
+.route-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  align-items: start;
+  gap: 2rem;
+}
+
+.route-feedback {
+  grid-column: 1 / -1;
+  border: 1px solid #cfe0fb;
+  border-radius: 18px;
+  background: #eff6ff;
+  padding: 0.85rem 1rem;
+  color: #1d4ed8;
+  font-size: 0.88rem;
+}
+
+.route-planning-column { grid-column: 1; grid-row: 1; min-width: 0; }
+.route-planning-heading,
+.route-day-card,
+.route-community-card {
+  border: 1px solid var(--route-line);
+  border-radius: 28px;
+  background: var(--route-surface);
+  box-shadow: var(--route-shadow, 0 22px 44px -28px rgba(15, 42, 92, 0.4));
+}
+
+.route-planning-heading { padding: 1.5rem; }
+.route-planning-heading h2,
+.route-community-card h2,
+.route-community-card h3 {
+  font-family: "Fredoka", "Trebuchet MS", sans-serif;
+  font-weight: 500;
+}
+.route-planning-heading h2 { margin-top: 0.4rem; font-size: clamp(1.6rem, 3.4vw, 2.2rem); }
+.route-planning-heading > div:first-child > div:first-child > p { color: var(--route-blue); }
+
+.route-day-tabs {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  margin-top: 1.35rem;
+  padding: 0.15rem 0 0.25rem;
+  scrollbar-width: thin;
+}
+.route-day-tabs button {
+  flex: 0 0 auto;
+  border: 1.5px solid var(--route-line);
+  border-radius: 999px;
+  background: var(--route-surface);
+  padding: 0.55rem 1.25rem;
+  color: var(--route-ink);
+  cursor: pointer;
+  font: 500 0.92rem "Fredoka", "Trebuchet MS", sans-serif;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+.route-day-tabs button:hover { border-color: var(--route-pale); }
+.route-day-tabs button[aria-selected="true"] { border-color: var(--route-navy); background: var(--route-navy); color: #fff; }
+
+.route-day-content { margin-top: 1.1rem; }
+.route-day-card { padding: 1.25rem; }
+.route-day-card > div:first-child h3 { margin-top: 0.25rem; font: 500 1.25rem "Fredoka", "Trebuchet MS", sans-serif; color: var(--route-ink); }
+.route-day-card > div:first-child > div button { min-height: 2.25rem; }
+
+.route-timeline { position: relative; display: grid; gap: 1rem; margin-top: 1.4rem; }
+.route-activity-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 4.6rem minmax(0, 1fr);
+  align-items: start;
+  gap: 1rem;
+  animation: route-rise 500ms cubic-bezier(0.22, 0.8, 0.3, 1) both;
+}
+.route-activity-card:not(:last-child)::before {
+  position: absolute;
+  top: 2.45rem;
+  bottom: -1.05rem;
+  left: 2.26rem;
+  border-left: 2px dotted var(--route-pale);
+  content: "";
+}
+.route-activity-time { position: relative; z-index: 1; text-align: center; }
+.route-activity-time span {
+  display: grid;
+  min-width: 3.7rem;
+  min-height: 2.35rem;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--route-blue);
+  padding: 0.35rem;
+  color: #fff;
+  font: 500 0.88rem "Fredoka", sans-serif;
+}
+.route-activity-card > div:nth-child(2) {
+  min-width: 0;
+  border: 1px solid var(--route-line);
+  border-radius: 22px 22px 22px 8px;
+  background: #fff;
+  padding: 1.15rem 1.25rem;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+.route-activity-card > div:nth-child(2):hover { transform: translateY(-2px); box-shadow: 0 14px 28px -24px rgba(15, 42, 92, 0.55); }
+.route-activity-title { margin: 0; color: var(--route-ink); font: 500 1.12rem "Fredoka", "Trebuchet MS", sans-serif; }
+.route-activity-description { margin: 0.35rem 0 0.8rem; color: var(--route-muted); font-size: 0.9rem; font-weight: 300; }
+.route-activity-tags { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.route-activity-tags span { display: inline-flex; align-items: center; border-radius: 999px; background: var(--route-field); padding: 0.3rem 0.75rem; color: var(--route-ink); font-size: 0.76rem; }
+
+.route-community-sidebar { position: sticky; top: 1rem; grid-column: 2; grid-row: 1; display: grid; min-width: 0; gap: 1rem; }
+.route-community-card { padding: 1.35rem; }
+.route-community-card h2 { color: var(--route-ink); font: 500 1.25rem "Fredoka", "Trebuchet MS", sans-serif; }
+.route-score { display: flex; align-items: center; gap: 1rem; margin: 1rem 0 1.1rem; }
+.route-score-number { color: var(--route-ink); font: 600 2.4rem/1 "Fredoka", sans-serif; }
+.route-score-stars { display: flex; gap: 0.12rem; color: #f2b134; font-size: 1.05rem; letter-spacing: 0.02em; }
+.route-score p { margin: 0.15rem 0 0; color: var(--route-muted); font-size: 0.76rem; font-weight: 300; }
+.route-social-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+.route-social-buttons button {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--route-line);
+  border-radius: 999px;
+  background: #fff;
+  gap: 0.4rem;
+  padding: 0.55rem 0.65rem;
+  color: var(--route-ink);
+  cursor: pointer;
+  font: 500 0.88rem "Fredoka", sans-serif;
+}
+.route-social-buttons button:hover { border-color: var(--route-blue); background: var(--route-field); }
+.route-social-buttons button[aria-pressed="true"] { border-color: transparent; background: var(--route-field); color: var(--route-blue); }
+.route-social-buttons button:first-child[aria-pressed="true"] { color: #e0476b; }
+.route-card-subtitle { margin: 0.2rem 0 0; color: var(--route-muted); font-size: 0.9rem; font-weight: 300; }
+.route-rating-stars { display: flex; gap: 0.2rem; margin: 0.8rem 0 0.6rem; }
+.route-rating-stars button { border: 0; background: transparent; padding: 0.1rem; color: var(--route-line); cursor: pointer; font-size: 1.9rem; line-height: 1; transition: transform 160ms ease, color 160ms ease; }
+.route-rating-stars button:hover { transform: scale(1.12); }
+.route-rating-stars button.is-active,
+.route-review-stars { color: #f2b134; }
+.route-review-form { display: grid; gap: 0.65rem; }
+.route-review-form textarea { width: 100%; min-height: 96px; resize: vertical; border: 2px solid transparent; border-radius: 18px; background: var(--route-field); padding: 0.8rem 0.9rem; color: var(--route-ink); font: 400 0.85rem/1.5 "Geologica", sans-serif; }
+.route-review-form textarea:focus { border-color: var(--route-blue); outline: none; }
+.route-review-submit { justify-self: start; min-height: 2.7rem; border: 0; border-radius: 999px; background: var(--route-navy); padding: 0.65rem 1rem; color: #fff; cursor: pointer; font: 500 0.88rem "Fredoka", sans-serif; }
+.route-review-submit:disabled { cursor: not-allowed; opacity: 0.45; }
+.route-review-note { margin: 0; color: var(--route-muted); font-size: 0.73rem; font-weight: 300; line-height: 1.45; }
+.route-own-review { margin-top: 0.8rem; border-radius: 18px; background: var(--route-field); padding: 0.9rem; }
+.route-own-review p { margin: 0; color: var(--route-ink); font-size: 0.86rem; }
+.route-own-review .route-review-stars { margin-bottom: 0.4rem; font-size: 1.1rem; }
+.route-delete-review { margin-top: 0.55rem; border: 0; background: transparent; padding: 0; color: #c2415a; cursor: pointer; font: 500 0.8rem "Fredoka", sans-serif; }
+.route-login-prompt,
+.route-empty-reviews { margin: 0.8rem 0 0; color: var(--route-muted); font-size: 0.85rem; font-weight: 300; line-height: 1.5; }
+.route-login-prompt a { color: var(--route-blue); font-weight: 600; }
+.route-reviews-list { display: grid; gap: 0.7rem; margin-top: 0.85rem; }
+.route-reviews-list article { margin: 0; border-radius: 18px; background: var(--route-field); padding: 0.85rem 1rem; }
+.route-reviews-list article > div { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem; }
+.route-reviews-list article a { color: var(--route-ink); font: 500 0.92rem "Fredoka", sans-serif; }
+.route-reviews-list article a:hover { text-decoration: underline; }
+.route-reviews-list article span { color: #f2b134; font-size: 0.82rem; letter-spacing: 0.03em; }
+.route-reviews-list article p { margin: 0.35rem 0 0; color: #385477; font-size: 0.84rem; line-height: 1.5; overflow-wrap: anywhere; }
+
+@media (max-width: 940px) {
+  .route-detail-layout { grid-template-columns: minmax(0, 1fr); }
+  .route-community-sidebar { position: static; grid-row: 2; }
+  .route-community-card > div:last-child { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 700px) {
+  .route-hero { min-height: 540px; border-radius: 0 0 36px 36px; }
+  .route-hero-content { width: min(100% - 2rem, 620px); padding: 0.85rem 0 2rem; }
+  .route-titlebox { padding-top: 1.25rem; }
+  .route-titlebox h1 { font-size: clamp(2.2rem, 10vw, 3.5rem); }
+  .route-hero-bottom { align-items: flex-start; }
+  .route-facts { gap: 0.45rem; }
+  .route-fact { min-height: 2.2rem; padding: 0.4rem 0.75rem; font-size: 0.8rem; }
+  .route-owner-actions { width: 100%; }
+  .route-owner-actions > button,
+  .route-copy-action,
+  .route-copy-action button { flex: 1 1 auto; }
+  .route-copy-action { justify-items: start; }
+  .route-copy-action p { text-align: left; }
+  .route-detail-container { width: min(100% - 1.5rem, 620px); margin-top: 1.5rem; padding-bottom: 3rem; }
+  .route-edit-form,
+  .route-planning-heading,
+  .route-day-card,
+  .route-community-card { border-radius: 22px; padding: 1rem; }
+  .route-day-card { padding: 0.9rem; }
+  .route-activity-card { grid-template-columns: 3.4rem minmax(0, 1fr); gap: 0.7rem; }
+  .route-activity-card:not(:last-child)::before { left: 1.65rem; }
+  .route-activity-time span { min-width: 3.2rem; font-size: 0.78rem; }
+  .route-activity-card > div:nth-child(2) { border-radius: 18px 18px 18px 7px; padding: 0.9rem; }
+  .route-community-card > div:last-child { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-titlebox,
+  .route-activity-card { animation: none; }
+  .route-hero-button,
+  .route-day-tabs button,
+  .route-activity-card > div:nth-child(2) { transition: none; }
+}

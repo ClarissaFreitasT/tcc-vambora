@@ -54,6 +54,44 @@
   gap: 0.8rem;
 }
 
+.vambora-auth-link {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #cbd7eb;
+  border-radius: 999px;
+  padding: 0.6rem 1rem;
+  color: #24416f;
+  font-size: 0.88rem;
+  font-weight: 750;
+  text-decoration: none;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.vambora-auth-link:hover {
+  transform: translateY(-1px);
+  border-color: #7862e8;
+  background: #f0edff;
+  color: #5140c2;
+}
+
+.vambora-auth-link.is-primary {
+  border-color: #6654e8;
+  background: #6654e8;
+  color: #fff;
+}
+
+.vambora-auth-link.is-primary:hover {
+  border-color: #5645d1;
+  background: #5645d1;
+  color: #fff;
+}
+
 .vambora-nav-link {
   display: inline-flex;
   min-height: 40px;
@@ -208,6 +246,23 @@
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.18);
 }
 
+.vambora-navbar--home .vambora-auth-link {
+  border-color: rgba(255, 255, 255, 0.72);
+  color: #fff;
+}
+
+.vambora-navbar--home .vambora-auth-link:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.vambora-navbar--home .vambora-auth-link.is-primary,
+.vambora-navbar--home .vambora-auth-link.is-primary:hover {
+  border-color: #fff;
+  background: #fff;
+  color: #244ba4;
+}
+
 @media (max-width: 760px) {
   .vambora-navbar-inner {
     grid-template-columns: minmax(0, 1fr) auto;
@@ -227,6 +282,12 @@
   .vambora-create-link {
     min-height: 38px;
     padding-inline: 1rem;
+  }
+
+  .vambora-auth-link {
+    min-height: 38px;
+    padding-inline: 0.75rem;
+    font-size: 0.8rem;
   }
 
   .vambora-account-button {
@@ -259,7 +320,8 @@
 @media (prefers-reduced-motion: reduce) {
   .vambora-nav-link,
   .vambora-create-link,
-  .vambora-account-button {
+  .vambora-account-button,
+  .vambora-auth-link {
     transition: none;
   }
 }
