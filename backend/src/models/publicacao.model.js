@@ -42,12 +42,9 @@ function communityWhere({ followingUserId, categoryIds = [] } = {}) {
   return {
     ...(followingUserId
       ? {
-          OR: [
-            { usuarioId: followingUserId },
-            {
-              usuario: { seguindo: { some: { seguidorId: followingUserId } } },
-            },
-          ],
+          usuario: {
+            seguidores: { some: { seguidorId: followingUserId } },
+          },
         }
       : {}),
     ...(categoryIds.length

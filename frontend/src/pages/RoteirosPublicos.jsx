@@ -207,7 +207,6 @@ function makeQuery(filters) {
   const params = new URLSearchParams();
   if (filters.destino.trim()) params.set("destino", filters.destino.trim());
   if (filters.termo?.trim()) params.set("termo", filters.termo.trim());
-  if (filters.orcamentoMin) params.set("orcamentoMin", filters.orcamentoMin);
   if (filters.orcamentoMax) params.set("orcamentoMax", filters.orcamentoMax);
   if (filters.dias) params.set("dias", filters.dias);
   if (filters.avaliacaoMin) params.set("avaliacaoMin", filters.avaliacaoMin);
@@ -220,7 +219,7 @@ function filtersFromSearchParams(searchParams) {
   return {
     ...emptyRouteFilters,
     destino: searchParams.get("destino") || searchParams.get("busca") || "",
-    orcamentoMin: searchParams.get("orcamentoMin") || "",
+    orcamentoMin: "",
     orcamentoMax: searchParams.get("orcamentoMax") || "",
     dias: searchParams.get("dias") || "",
     avaliacaoMin: searchParams.get("avaliacaoMin") || "",
@@ -234,11 +233,6 @@ function chipsFor(filters, categories) {
   const chips = [];
   if (filters.destino)
     chips.push({ id: "destino", text: `Destino: ${filters.destino}` });
-  if (filters.orcamentoMin)
-    chips.push({
-      id: "orcamentoMin",
-      text: `Mín. ${money(filters.orcamentoMin)}`,
-    });
   if (filters.orcamentoMax)
     chips.push({
       id: "orcamentoMax",
@@ -454,7 +448,6 @@ export default function RoteirosPublicos() {
           busy={loadingResults || loadingOptions}
           submitLabel="Vambora!"
           homeLayout
-          showAllFilters
           filtersInitiallyOpen
         />
       </div>

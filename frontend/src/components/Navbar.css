@@ -33,6 +33,34 @@
   justify-self: start;
 }
 
+.vambora-navbar--home .vambora-navbar-brand {
+  position: relative;
+  isolation: isolate;
+}
+
+.vambora-navbar--home .vambora-navbar-brand::before {
+  position: absolute;
+  z-index: -1;
+  inset: -18% -13%;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse,
+    rgba(220, 241, 255, 0.48),
+    rgba(121, 190, 255, 0.24) 42%,
+    rgba(121, 190, 255, 0.08) 64%,
+    transparent 78%
+  );
+  content: "";
+  filter: blur(12px);
+  pointer-events: none;
+}
+
+.vambora-navbar--home .vambora-logo-image {
+  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.95))
+    drop-shadow(0 0 3px rgba(235, 247, 255, 0.8))
+    drop-shadow(0 0 9px rgba(102, 170, 240, 0.48));
+}
+
 .vambora-navbar-brand .vambora-logo-image {
   width: clamp(138px, 12vw, 174px);
   height: 46px;
@@ -81,15 +109,18 @@
 }
 
 .vambora-auth-link.is-primary {
-  border-color: #6654e8;
-  background: #6654e8;
+  border-color: #2563c9;
+  background: linear-gradient(135deg, #3b82e0, #2563c9);
   color: #fff;
+  box-shadow: 0 8px 20px rgba(37, 99, 201, 0.28);
 }
 
 .vambora-auth-link.is-primary:hover {
-  border-color: #5645d1;
-  background: #5645d1;
+  transform: translateY(-1px);
+  border-color: #1d4fa5;
+  background: linear-gradient(135deg, #2563c9, #1d4fa5);
   color: #fff;
+  box-shadow: 0 10px 24px rgba(37, 99, 201, 0.36);
 }
 
 .vambora-nav-link {
@@ -121,9 +152,9 @@
   justify-content: center;
   border: 0;
   border-radius: 999px;
-  background: linear-gradient(135deg, #6654e8, #8252e8);
+  background: linear-gradient(135deg, #3b82e0, #2563c9);
   padding: 0.65rem 1.2rem;
-  box-shadow: 0 8px 20px rgba(102, 84, 232, 0.24);
+  box-shadow: 0 8px 20px rgba(37, 99, 201, 0.28);
   color: #fff;
   cursor: pointer;
   font: inherit;
@@ -138,8 +169,8 @@
 .vambora-create-link:hover,
 .vambora-create-link.is-active {
   transform: translateY(-1px);
-  background: linear-gradient(135deg, #5645d1, #7040d5);
-  box-shadow: 0 10px 24px rgba(102, 84, 232, 0.34);
+  background: linear-gradient(135deg, #2563c9, #1d4fa5);
+  box-shadow: 0 10px 24px rgba(37, 99, 201, 0.36);
 }
 
 .vambora-account-menu {

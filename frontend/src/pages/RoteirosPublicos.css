@@ -60,35 +60,39 @@
 }
 
 .public-routes-search .home-search-form {
-  width: 100%;
+  width: min(100%, 860px);
   margin-top: 0;
   gap: 0;
 }
 
 .public-routes-search .home-search-form > div:first-child {
-  border: 1px solid rgba(220, 233, 249, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: 28px;
-  background: #fff;
-  padding: 1rem 1rem 1rem 1.6rem;
-  box-shadow: 0 22px 44px -26px rgba(15, 42, 92, 0.38);
+  background: rgba(248, 250, 255, 0.96);
+  padding: 0.9rem 1rem 0.9rem 1.4rem;
+  box-shadow:
+    0 18px 48px rgba(4, 9, 35, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
   color: var(--public-routes-ink);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
 .public-routes-search .home-search-fields {
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 0.8rem;
+  gap: 0.45rem;
 }
 
 .public-routes-search .home-search-fields > div:first-child {
   min-width: 0;
-  padding: 0.15rem 0.5rem;
+  padding: 0.2rem 0.9rem;
 }
 
 .public-routes-search label[for="route-destination-search"] {
-  color: var(--public-routes-blue);
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
+  color: #56698f;
+  font-size: 0.66rem;
+  letter-spacing: 0.13em;
 }
 
 .public-routes-search #route-destination-search {
@@ -103,19 +107,19 @@
 
 .public-routes-search .home-filter-toggle {
   position: relative;
-  width: 2.85rem;
-  min-height: 2.85rem;
-  flex: 0 0 2.85rem;
-  border: 1.5px solid #dce9f9;
+  width: 2.8rem;
+  min-height: 2.8rem;
+  flex: 0 0 2.8rem;
+  border: 1px solid #d6dfef;
   border-radius: 50%;
   background: #fff;
   padding: 0;
-  color: var(--public-routes-blue);
+  color: #3f5682;
 }
 
 .public-routes-search .home-filter-toggle:hover {
-  border-color: #9ccbf5;
-  background: #f4f9ff;
+  border-color: #9ab5df;
+  background: #f0f6ff;
 }
 
 .public-routes-search .home-filter-toggle.is-active::after {
@@ -126,29 +130,25 @@
   height: 0.55rem;
   border: 1px solid #fff;
   border-radius: 50%;
-  background: #3b82e0;
+  background: #7862d8;
   content: "";
 }
 
 .public-routes-search .home-search-fields button[type="submit"] {
-  min-height: 3rem;
+  min-height: 2.85rem;
   border-radius: 999px;
-  background: #0f2a5c;
-  padding-inline: 1.6rem;
+  background: #17285f;
+  padding-inline: 1.5rem;
   white-space: nowrap;
   box-shadow: none;
 }
 
 .public-routes-search .home-search-fields button[type="submit"]:hover {
-  background: #1b4797;
+  background: #17285f;
 }
 
 .public-routes-search .home-filter-fields {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.8rem;
-  margin-top: 1rem;
-  border-top: 1px solid #e8eff9;
-  padding-top: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .public-routes-search .home-filter-fields label {
@@ -160,21 +160,13 @@
 
 .public-routes-search .home-filter-fields input,
 .public-routes-search .home-filter-fields select {
-  min-height: 2.75rem;
-  border: 1px solid #dce9f9;
-  border-radius: 999px;
-  background: var(--public-routes-bg);
-  padding: 0.65rem 1rem;
-  color: var(--public-routes-ink);
-  font:
-    400 0.82rem "Geologica",
-    "Segoe UI",
-    sans-serif;
+  min-height: 2.7rem;
+  color: #253b65;
 }
 
 .public-routes-search .home-filter-fields input:focus,
 .public-routes-search .home-filter-fields select:focus {
-  border-color: var(--public-routes-blue);
+  border-color: #9ab5df;
   outline: 0;
   background: #fff;
 }

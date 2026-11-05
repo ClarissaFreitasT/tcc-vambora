@@ -10,6 +10,7 @@ import {
   profilePath,
   validateProfilePhotoUrl,
 } from "../utils/profile";
+import "./Perfil.css";
 
 function compactCount(value = 0) {
   return new Intl.NumberFormat("pt-BR", { notation: "compact" }).format(value);
@@ -27,6 +28,13 @@ function formatDate(value) {
   }).format(new Date(value));
 }
 
+function profileInitials(name = "") {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  const first = parts[0] || "";
+  const last = parts.length > 1 ? parts[parts.length - 1] : first.slice(1);
+  return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
+}
+
 function formatPersonality(value) {
   if (!value) return "";
   const normalized = value.toLocaleLowerCase("pt-BR");
@@ -40,22 +48,24 @@ function ProfileStat({ value, singular, plural, onClick }) {
       <button
         type="button"
         onClick={onClick}
-        className="group flex items-baseline gap-1.5 text-sm text-slate-600 hover:text-blue-700"
+        className="profile-stat group flex items-baseline gap-1.5 text-sm text-slate-600 hover:text-blue-700"
       >
-        <span className="font-extrabold text-slate-950 group-hover:text-blue-700">
+        <span className="profile-stat-number font-extrabold text-slate-950 group-hover:text-blue-700">
           {compactCount(value)}
         </span>
-        <span className="group-hover:underline">{label}</span>
+        <span className="profile-stat-label group-hover:underline">
+          {label}
+        </span>
       </button>
     );
   }
 
   return (
-    <div className="flex items-baseline gap-1.5 text-sm text-slate-600">
-      <span className="font-extrabold text-slate-950">
+    <div className="profile-stat flex items-baseline gap-1.5 text-sm text-slate-600">
+      <span className="profile-stat-number font-extrabold text-slate-950">
         {compactCount(value)}
       </span>
-      <span>{label}</span>
+      <span className="profile-stat-label">{label}</span>
     </div>
   );
 }
@@ -101,66 +111,133 @@ function ProfileTabIcon({ name }) {
 }
 
 function ProfileRouteCard({ roteiro }) {
+  const totalDias = roteiro.totalDias ?? roteiro.dias?.length ?? 0;
+
   return (
-    <Link
-      key={roteiro.id}
-      to={`/roteiros/${roteiro.id}`}
-      className="group relative flex aspect-square flex-col justify-end overflow-hidden rounded-xl border border-slate-200 bg-white p-4 transition hover:border-indigo-200 hover:shadow-md sm:rounded-2xl sm:p-5"
-    >
-      {roteiro.imagemUrl ? (
-        <img
-          src={roteiro.imagemUrl}
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
-          loading="lazy"
-        />
-      ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-white to-cyan-50" />
-      )}
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/15 to-transparent" />
-      <span className="absolute left-3 top-3 rounded-full border border-white/70 bg-white/90 px-2.5 py-1 text-[10px] font-bold text-indigo-700">
-        Roteiro
-      </span>
-      <div className="relative text-white">
-        <p className="truncate text-xs font-semibold text-white/80">
-          {roteiro.destino}
-        </p>
-        <h2 className="mt-1 line-clamp-2 text-base font-extrabold leading-5 sm:text-lg">
-          {roteiro.titulo}
-        </h2>
+    <article className="profile-route-card">
+      <Link to={`/roteiros/${roteiro.id}`} className="profile-route-card-link">
+        {roteiro.imagemUrl ? (
+          <img
+            src={roteiro.imagemUrl}
+            alt={`Paisagem do roteiro para ${roteiro.destino}`}
+            className="profile-route-image"
+            loading="lazy"
+          />
+        ) : (
+          <div className="profile-route-image profile-route-image-fallback" />
+        )}
+        <div className="profile-route-image-overlay" />
+        <div className="profile-route-card-content">
+          <p className="profile-route-destination">{roteiro.destino}</p>
+          <h2>{roteiro.titulo}</h2>
+          <p className="profile-route-author">
+            Por {roteiro.usuario?.nome || "Viajante Vambora"}
+          </p>
+          <div className="profile-route-meta">
+            <span>
+              {Number(roteiro.totalAvaliacoes || 0) > 0
+                ? `★ ${Number(roteiro.mediaAvaliacao || 0).toFixed(1)} (${roteiro.totalAvaliacoes})`
+                : "Ainda sem avaliações"}
+            </span>
+            <span>
+              {roteiro.orcamento !== null && roteiro.orcamento !== undefined
+                ? new Intl.NumberFormat("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  }).format(Number(roteiro.orcamento))
+                : "Orçamento não informado"}
+            </span>
+            <span>{`${totalDias} ${totalDias === 1 ? "dia" : "dias"}`}</span>
+          </div>
+        </div>
+      </Link>
+      <div
+        className="profile-route-social-actions"
+        aria-label="Interações do roteiro"
+      >
+        <span
+          className="profile-route-social-button"
+          aria-label={`${roteiro.totalCurtidas || 0} curtidas`}
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.4a4.3 4.3 0 0 1 7.5 2.4C19.5 15.4 12 20 12 20Z" />
+          </svg>
+          <span>{roteiro.totalCurtidas || 0}</span>
+        </span>
+        <span
+          className="profile-route-social-button"
+          aria-label="Salvar roteiro"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M6 3h12v18l-6-4.5L6 21Z" />
+          </svg>
+        </span>
       </div>
-    </Link>
+    </article>
   );
 }
 
 function ProfilePublicationCard({ post, onOpen }) {
   return (
-    <button
-      type="button"
-      onClick={() => onOpen(post)}
-      className="group relative flex aspect-square min-w-0 flex-col justify-between overflow-hidden rounded-md border border-slate-200/80 bg-white p-3 text-left transition hover:border-indigo-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5965F2] sm:rounded-lg sm:p-5"
-      aria-label={`Abrir publicação: ${post.texto}`}
-    >
-      <div className="flex w-full items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-wide text-indigo-700">
-        <span className="truncate">
-          {post.roteiro?.publico && post.roteiro?.titulo
-            ? "Roteiro compartilhado"
-            : "Publicação"}
+    <article className="profile-publication-card">
+      <header className="profile-publication-header">
+        <UserAvatar
+          user={post.usuario}
+          alt=""
+          className="profile-publication-avatar"
+        />
+        <div className="min-w-0">
+          <strong>{post.usuario?.nome || "Viajante Vambora"}</strong>
+          <span>
+            {formatDate(post.criadoEm)}
+            <em>{post.categorias?.[0]?.categoria?.nome || "Publicação"}</em>
+          </span>
+        </div>
+      </header>
+      <p className="profile-publication-text">{post.texto}</p>
+      {post.fotos?.length ? (
+        <div className="profile-publication-photos">
+          {post.fotos.map((photo, index) => (
+            <img
+              key={photo.id || photo.url}
+              src={photo.url}
+              alt={`Foto ${index + 1} da publicação`}
+              loading="lazy"
+              onError={(event) => {
+                event.currentTarget.hidden = true;
+              }}
+            />
+          ))}
+        </div>
+      ) : null}
+      <div className="profile-publication-actions">
+        <span aria-label={`${post._count?.curtidas || 0} curtidas`}>
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M12 20.5s-8-4.8-8-10.8A4.5 4.5 0 0 1 12 6.9a4.5 4.5 0 0 1 8 2.8c0 6-8 10.8-8 10.8Z" />
+          </svg>
+          {post._count?.curtidas || 0}
         </span>
-        <span
-          className="shrink-0 text-slate-500"
-          aria-label={`${post._count?.curtidas || 0} curtidas`}
+        <span aria-label={`${post._count?.comentarios || 0} comentários`}>
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M4 5h16v11H9l-5 4Z" />
+          </svg>
+          {post._count?.comentarios || 0}
+        </span>
+        <button
+          type="button"
+          className="profile-publication-open"
+          onClick={() => onOpen(post)}
+          aria-label="Abrir publicação"
         >
-          ♥ {post._count?.curtidas || 0}
+          Abrir
+        </button>
+        <span className="profile-publication-save" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M6 3h12v18l-6-4.5L6 21Z" />
+          </svg>
         </span>
       </div>
-      <p className="line-clamp-5 w-full whitespace-pre-wrap text-left text-sm font-semibold leading-5 text-[#171936] sm:text-base sm:leading-6">
-        {post.texto}
-      </p>
-      <time className="text-left text-[10px] text-slate-500">
-        {formatDate(post.criadoEm)}
-      </time>
-    </button>
+    </article>
   );
 }
 
@@ -182,6 +259,7 @@ export default function Perfil() {
   const [likesError, setLikesError] = useState(null);
   const [publicationModal, setPublicationModal] = useState(null);
   const [activeTab, setActiveTab] = useState("posts");
+  const [contentFilter, setContentFilter] = useState("roteiros");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [following, setFollowing] = useState(false);
@@ -203,8 +281,8 @@ export default function Perfil() {
   });
   const isOwnProfile =
     (!routeUsername && !userId) ||
-    routeUsername === user?.username ||
-    userId === user?.id;
+    (Boolean(routeUsername) && routeUsername === user?.username) ||
+    (Boolean(userId) && userId === user?.id);
 
   const loadProfile = useCallback(async () => {
     setLoading(true);
@@ -323,31 +401,34 @@ export default function Perfil() {
     queueMicrotask(() => loadProfile());
   }, [loadProfile]);
 
-  const activeContent = useMemo(
-    () =>
-      activeTab === "posts"
-        ? posts.map((item) => ({ type: "post", item }))
-        : activeTab === "saved"
-          ? [
-              ...savedPosts.map((item) => ({ type: "post", item })),
-              ...savedRoutes.map((item) => ({ type: "route", item })),
-            ]
-          : activeTab === "likes"
-            ? [
-                ...likedPosts.map((item) => ({ type: "post", item })),
-                ...likedRoutes.map((item) => ({ type: "route", item })),
-              ]
-            : roteiros.map((item) => ({ type: "route", item })),
-    [
-      activeTab,
-      posts,
-      roteiros,
-      savedRoutes,
-      savedPosts,
-      likedPosts,
-      likedRoutes,
-    ],
-  );
+  const activeContent = useMemo(() => {
+    if (activeTab === "posts")
+      return posts.map((item) => ({ type: "post", item }));
+    if (activeTab === "roteiros")
+      return roteiros.map((item) => ({ type: "route", item }));
+    if (activeTab === "saved")
+      return (contentFilter === "posts" ? savedPosts : savedRoutes).map(
+        (item) => ({
+          type: contentFilter === "posts" ? "post" : "route",
+          item,
+        }),
+      );
+    return (contentFilter === "posts" ? likedPosts : likedRoutes).map(
+      (item) => ({
+        type: contentFilter === "posts" ? "post" : "route",
+        item,
+      }),
+    );
+  }, [
+    activeTab,
+    contentFilter,
+    posts,
+    roteiros,
+    savedRoutes,
+    savedPosts,
+    likedPosts,
+    likedRoutes,
+  ]);
 
   async function openPublication(post) {
     setPublicationModal({ loading: true, data: null, error: null });
@@ -556,88 +637,149 @@ export default function Perfil() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F6F8FC] px-4 py-6 sm:px-6 lg:py-10">
-      <div className="mx-auto max-w-5xl">
-        <section className="pb-7 sm:pb-8">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-8">
-            <UserAvatar
-              user={profile}
-              alt={`Foto de ${profile.nome}`}
-              className="h-28 w-28 shrink-0 rounded-full object-cover ring-2 ring-white sm:h-32 sm:w-32"
-            />
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-4">
-                <div className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-3">
-                  <div className="min-w-0">
-                    <h1 className="truncate text-2xl font-black tracking-tight text-[#171936] sm:text-3xl">
-                      {profile.nome}
-                    </h1>
-                    <p className="mt-0.5 text-sm text-slate-500">
-                      @{profile.username || "viajante"}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-x-5 gap-y-2">
-                    <ProfileStat
-                      value={roteiros.length}
-                      singular="roteiro"
-                      plural="roteiros"
-                    />
-                    <ProfileStat
-                      value={profile.totalSeguidores ?? 0}
-                      singular="seguidor"
-                      plural="seguidores"
-                      onClick={() => openRelationshipList("seguidores")}
-                    />
-                    <ProfileStat
-                      value={profile.totalSeguindo ?? 0}
-                      singular="seguido"
-                      plural="seguidos"
-                      onClick={() => openRelationshipList("seguindo")}
-                    />
-                  </div>
-                </div>
-                <div className="flex shrink-0 flex-wrap gap-2">
-                  {isOwnProfile ? (
-                    <button
-                      type="button"
-                      onClick={() => setEditOpen(true)}
-                      className="rounded-full border border-slate-300 bg-white px-5 py-2 text-sm font-bold text-slate-800 transition hover:bg-slate-50"
+    <main className="profile-page px-4 py-6 sm:px-6 lg:py-8">
+      <div className="profile-page-inner">
+        <section className="profile-top">
+          <div className="profile-photo-column">
+            <div className="profile-photo-ring">
+              <div className="profile-photo-frame">
+                {profilePhotoFile ? (
+                  <ObjectUrlImage
+                    file={profilePhotoFile}
+                    alt={`Prévia da foto de ${profile.nome}`}
+                    className="profile-photo-image"
+                  />
+                ) : profile.fotoUrl ? (
+                  <UserAvatar
+                    user={profile}
+                    alt={`Foto de ${profile.nome}`}
+                    className="profile-photo-image"
+                  />
+                ) : (
+                  <span className="profile-photo-initials" aria-hidden="true">
+                    {profileInitials(profile.nome)}
+                  </span>
+                )}
+                {isOwnProfile ? (
+                  <label
+                    className={`profile-photo-edit ${profilePhotoBusy ? "is-busy" : ""}`}
+                    title="Alterar foto de perfil"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                     >
-                      Editar perfil
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={toggleFollow}
-                      disabled={followBusy}
-                      className={`rounded-full px-5 py-2 text-sm font-bold transition disabled:opacity-60 ${following ? "border border-slate-300 bg-white text-slate-800 hover:border-red-200 hover:text-red-600" : "bg-[#5965F2] text-white hover:bg-indigo-700"}`}
-                    >
-                      {followBusy
-                        ? "Aguarde…"
-                        : following
-                          ? "Deixar de seguir"
-                          : "Seguir"}
-                    </button>
-                  )}
+                      <path d="M4 8h3l2-3h6l2 3h3v11H4Z" />
+                      <circle cx="12" cy="13" r="3.5" />
+                    </svg>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      aria-label="Alterar foto de perfil"
+                      disabled={profilePhotoBusy}
+                      onChange={(event) =>
+                        uploadProfilePhoto(event.target.files?.[0])
+                      }
+                    />
+                  </label>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          <div className="profile-info min-w-0">
+            <div className="profile-title-row">
+              <div className="min-w-0">
+                <h1 className="profile-name">{profile.nome}</h1>
+                <p className="profile-username">
+                  @{profile.username || "viajante"}
+                </p>
+              </div>
+              <div className="profile-actions">
+                {isOwnProfile ? (
                   <button
                     type="button"
-                    onClick={shareProfile}
-                    className="grid h-9 w-9 place-items-center rounded-full border border-slate-300 text-lg text-slate-700 transition hover:bg-slate-50"
-                    aria-label="Compartilhar perfil"
-                    title="Compartilhar perfil"
+                    onClick={() => setEditOpen(true)}
+                    className="profile-button profile-button-secondary"
                   >
-                    ↗
+                    Editar perfil
                   </button>
-                </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={toggleFollow}
+                    disabled={followBusy}
+                    className={`profile-button ${following ? "profile-button-secondary" : ""}`}
+                  >
+                    {followBusy
+                      ? "Aguarde…"
+                      : following
+                        ? "Seguindo"
+                        : "Seguir"}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={shareProfile}
+                  className="profile-share-button"
+                  aria-label="Compartilhar perfil"
+                  title="Compartilhar perfil"
+                >
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M12 16V4m0 0L7 9m5-5 5 5" />
+                    <path d="M5 13v6h14v-6" />
+                  </svg>
+                </button>
               </div>
+            </div>
 
-              <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+            <div className="profile-stats">
+              <ProfileStat
+                value={roteiros.length}
+                singular="roteiro"
+                plural="roteiros"
+              />
+              <ProfileStat
+                value={profile.totalPublicacoes ?? posts.length}
+                singular="publicação"
+                plural="publicações"
+              />
+              <ProfileStat
+                value={profile.totalSeguidores ?? 0}
+                singular="seguidor"
+                plural="seguidores"
+                onClick={() => openRelationshipList("seguidores")}
+              />
+              <ProfileStat
+                value={profile.totalSeguindo ?? 0}
+                singular="seguindo"
+                plural="seguindo"
+                onClick={() => openRelationshipList("seguindo")}
+              />
+            </div>
+
+            <div className="profile-summary">
+              <span className="profile-role">Viajante</span>
+              <p className={`profile-bio ${profile.bio ? "" : "is-empty"}`}>
                 {profile.bio ||
                   "Ainda não adicionou uma bio. Cada viagem é uma nova história."}
               </p>
-              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
+              <div className="profile-meta">
                 {profile.personalidade ? (
-                  <span className="inline-flex items-center gap-1.5">
+                  <span>
                     <span aria-hidden="true">✦</span>
                     {formatPersonality(profile.personalidade)}
                   </span>
@@ -658,11 +800,11 @@ export default function Perfil() {
           <div
             role="tablist"
             aria-label="Conteúdo do perfil"
-            className={`grid border-b border-slate-200/90 ${isOwnProfile ? "grid-cols-4" : "grid-cols-2"}`}
+            className={`profile-tabs grid ${isOwnProfile ? "grid-cols-4" : "grid-cols-2"}`}
           >
             {[
-              { id: "posts", label: "Publicações" },
               { id: "roteiros", label: "Roteiros" },
+              { id: "posts", label: "Publicações" },
               ...(isOwnProfile
                 ? [
                     { id: "saved", label: "Salvos" },
@@ -677,22 +819,43 @@ export default function Perfil() {
                 aria-label={tab.label}
                 aria-selected={activeTab === tab.id}
                 title={tab.label}
-                onClick={() => setActiveTab(tab.id)}
-                className={`group relative flex min-h-14 items-center justify-center text-[#5965F2] transition hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#5965F2] ${activeTab === tab.id ? "" : "text-slate-400"}`}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setContentFilter("roteiros");
+                }}
+                className={`profile-tab group relative flex min-h-14 items-center justify-center gap-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset ${activeTab === tab.id ? "is-active" : ""}`}
               >
                 <ProfileTabIcon name={tab.id} />
-                <span
-                  aria-hidden="true"
-                  className="pointer-events-none absolute top-[calc(100%+0.4rem)] z-10 hidden whitespace-nowrap rounded-md bg-[#171936] px-2 py-1 text-xs font-medium text-white shadow-md group-hover:block group-focus-visible:block"
-                >
+                <span className="profile-tab-label">{tab.label}</span>
+                <span aria-hidden="true" className="sr-only">
                   {tab.label}
                 </span>
-                {activeTab === tab.id ? (
-                  <span className="absolute inset-x-1/4 bottom-0 h-0.5 rounded-full bg-[#5965F2]" />
-                ) : null}
               </button>
             ))}
           </div>
+
+          {activeTab === "saved" || activeTab === "likes" ? (
+            <div
+              className="profile-content-filter"
+              role="group"
+              aria-label="Filtrar conteúdo"
+            >
+              <button
+                type="button"
+                aria-pressed={contentFilter === "roteiros"}
+                onClick={() => setContentFilter("roteiros")}
+              >
+                Roteiros
+              </button>
+              <button
+                type="button"
+                aria-pressed={contentFilter === "posts"}
+                onClick={() => setContentFilter("posts")}
+              >
+                Publicações
+              </button>
+            </div>
+          ) : null}
 
           {activeTab === "saved" && savedError ? (
             <div
@@ -738,7 +901,15 @@ export default function Perfil() {
           {!(activeTab === "saved" && (savedLoading || savedError)) &&
             !(activeTab === "likes" && (likesLoading || likesError)) &&
             (activeContent.length ? (
-              <div className="grid grid-cols-2 gap-1 p-1 sm:grid-cols-3 sm:gap-2 sm:p-2">
+              <div
+                className={
+                  activeTab === "posts" ||
+                  ((activeTab === "saved" || activeTab === "likes") &&
+                    contentFilter === "posts")
+                    ? "profile-publication-list"
+                    : "profile-route-list"
+                }
+              >
                 {activeContent.map(({ type, item }) =>
                   type === "post" ? (
                     <ProfilePublicationCard
@@ -752,8 +923,8 @@ export default function Perfil() {
                 )}
               </div>
             ) : (
-              <div className="px-5 py-12 text-center sm:px-6 sm:py-14">
-                <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-indigo-50 text-indigo-600">
+              <div className="profile-empty px-5 py-12 text-center sm:px-6 sm:py-14">
+                <span className="profile-empty-icon mx-auto grid h-12 w-12 place-items-center rounded-full">
                   <ProfileTabIcon
                     name={
                       activeTab === "posts"
@@ -764,14 +935,20 @@ export default function Perfil() {
                     }
                   />
                 </span>
-                <h2 className="mt-4 text-lg font-extrabold text-[#171936]">
+                <h2 className="profile-empty-title mt-4 text-lg font-extrabold">
                   {activeTab === "posts"
                     ? "Ainda sem publicações"
-                    : activeTab === "saved"
-                      ? "Nenhum conteúdo salvo por enquanto"
-                      : activeTab === "likes"
-                        ? "Você ainda não curtiu nenhum conteúdo"
-                        : "Ainda sem roteiros públicos"}
+                    : activeTab === "roteiros"
+                      ? "Ainda sem roteiros públicos"
+                      : activeTab === "saved"
+                        ? contentFilter === "posts"
+                          ? "Nenhuma publicação salva"
+                          : "Nenhum roteiro salvo"
+                        : activeTab === "likes"
+                          ? contentFilter === "posts"
+                            ? "Você ainda não curtiu publicações"
+                            : "Você ainda não curtiu roteiros"
+                          : "Ainda sem roteiros públicos"}
                 </h2>
                 <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">
                   {activeTab === "posts"
@@ -779,9 +956,13 @@ export default function Perfil() {
                       ? "Compartilhe uma dica de viagem para começar sua coleção de publicações."
                       : "Este viajante ainda não compartilhou publicações por aqui."
                     : activeTab === "saved"
-                      ? "Salve publicações e roteiros interessantes para encontrá-los facilmente aqui."
+                      ? contentFilter === "posts"
+                        ? "As publicações que você salvar ficam reunidas aqui."
+                        : "Os roteiros que você salvar ficam reunidos aqui."
                       : activeTab === "likes"
-                        ? "Publicações e roteiros que você curtir aparecerão nesta coleção privada."
+                        ? contentFilter === "posts"
+                          ? "As publicações que você curtir ficam reunidas aqui."
+                          : "Os roteiros que você curtir ficam reunidos aqui."
                         : isOwnProfile
                           ? "Crie e compartilhe seu primeiro roteiro para inspirar outros viajantes."
                           : "Este viajante ainda não compartilhou roteiros públicos."}
@@ -802,10 +983,16 @@ export default function Perfil() {
                 ) : null}
                 {activeTab === "saved" ? (
                   <Link
-                    to="/roteiros/publicos"
+                    to={
+                      contentFilter === "posts"
+                        ? "/comunidade"
+                        : "/roteiros/publicos"
+                    }
                     className="mt-5 inline-flex rounded-full border border-indigo-200 bg-indigo-50 px-5 py-2.5 text-sm font-bold text-indigo-700 transition hover:bg-indigo-100"
                   >
-                    Explorar roteiros
+                    {contentFilter === "posts"
+                      ? "Explorar publicações"
+                      : "Explorar roteiros"}
                   </Link>
                 ) : null}
               </div>

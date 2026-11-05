@@ -18,7 +18,10 @@ export default function Cadastro() {
 
   function updateField(event) {
     const { name, value } = event.target;
-    setForm({ ...form, [name]: name === "dataNascimento" ? maskBrazilianDate(value) : value });
+    setForm({
+      ...form,
+      [name]: name === "dataNascimento" ? maskBrazilianDate(value) : value,
+    });
   }
 
   async function handleSubmit(event) {
@@ -26,7 +29,9 @@ export default function Cadastro() {
     setStatus(null);
     const dataNascimento = getAdultBirthDateIso(form.dataNascimento);
     if (!dataNascimento) {
-      setStatus("Informe uma data válida. É necessário ter pelo menos 18 anos para criar uma conta.");
+      setStatus(
+        "Informe uma data válida. É necessário ter pelo menos 18 anos para criar uma conta.",
+      );
       return;
     }
     if (form.password !== form.confirmPassword) {
@@ -70,9 +75,6 @@ export default function Cadastro() {
         <h1 className="mt-4 text-4xl font-black text-slate-900">
           Entre para planejar suas viagens
         </h1>
-        <p className="mt-3 text-slate-600">
-          Cadastre apenas os dados necessários para começar.
-        </p>
         {status ? (
           <div className="mt-6 rounded-3xl bg-red-50 p-4 text-sm text-red-800">
             {status}
@@ -115,7 +117,10 @@ export default function Cadastro() {
               onChange={updateField}
               required
             />
-            <span id="birth-date-help" className="text-xs font-normal text-slate-500">
+            <span
+              id="birth-date-help"
+              className="text-xs font-normal text-slate-500"
+            >
               Você precisa ter pelo menos 18 anos para criar uma conta.
             </span>
           </label>

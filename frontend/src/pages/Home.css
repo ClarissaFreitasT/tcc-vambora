@@ -546,13 +546,13 @@ body:has(.site-shell.home-page) {
 
 .home-hero-content > .mt-7 button {
   border: 1px solid rgba(255, 255, 255, 0.3);
-  background: #5366f2;
+  background: #3b82e0;
   color: #fff;
-  box-shadow: 0 12px 30px rgba(14, 19, 100, 0.32);
+  box-shadow: 0 12px 30px rgba(15, 42, 92, 0.28);
 }
 
 .home-hero-content > .mt-7 button:hover {
-  background: #6a7aff;
+  background: #2563c9;
 }
 
 .home-hero-content form {

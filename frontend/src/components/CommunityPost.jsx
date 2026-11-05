@@ -32,6 +32,7 @@ export default function CommunityPost({
 }) {
   const [commentText, setCommentText] = useState("");
   const [replyTo, setReplyTo] = useState(null);
+  const [openReplyThreads, setOpenReplyThreads] = useState([]);
   const [sendingComment, setSendingComment] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -80,6 +81,11 @@ export default function CommunityPost({
     const saved = await onAddComment(text, replyTo?.id || null);
     if (saved) {
       setCommentText("");
+      if (replyTo) {
+        setOpenReplyThreads((current) =>
+          current.includes(replyTo.id) ? current : [...current, replyTo.id],
+        );
+      }
       setReplyTo(null);
     }
     setSendingComment(false);
@@ -112,6 +118,16 @@ export default function CommunityPost({
     }
   }
 
+  function toggleReplyThread(commentId) {
+    setOpenReplyThreads((current) =>
+      current.includes(commentId)
+        ? current.filter((id) => id !== commentId)
+        : [...current, commentId],
+    );
+  }
+
+  const rootComments = comments.filter((comment) => !comment.comentarioPaiId);
+
   return (
     <article
       id={`community-post-${post.id}`}
@@ -126,55 +142,62 @@ export default function CommunityPost({
           aria-label={
             authorProfilePath ? `Ver perfil de ${author.nome}` : undefined
           }
-          className="shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="community-post-avatar-link shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <UserAvatar
             user={author}
             alt=""
-            className="h-11 w-11 rounded-full object-cover"
+            className="community-post-avatar h-11 w-11 rounded-full object-cover"
           />
         </Link>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
-            <header className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-[15px] leading-5">
-              {authorProfilePath ? (
-                <Link
-                  to={authorProfilePath}
-                  className="max-w-[55%] truncate font-extrabold text-slate-950 hover:underline"
-                >
-                  {author.nome || "Viajante Vambora"}
-                </Link>
-              ) : (
-                <span className="max-w-[55%] truncate font-extrabold text-slate-950">
-                  {author.nome || "Viajante Vambora"}
-                </span>
-              )}
-              {author.username ? (
-                <Link
-                  to={authorProfilePath}
-                  className="truncate text-sm text-slate-500 hover:underline"
-                >
-                  @{author.username}
-                </Link>
-              ) : null}
-              <span aria-hidden="true" className="text-slate-400">
-                ·
-              </span>
-              <time className="text-sm text-slate-500" dateTime={post.criadoEm}>
-                {formatCommunityDate(post.criadoEm)}
-              </time>
-              {canFollow ? (
-                <button
-                  type="button"
-                  onClick={onToggleFollow}
-                  disabled={followBusy}
-                  aria-label={`${isFollowing ? "Deixar de seguir" : "Seguir"} ${author.nome || "viajante"}`}
-                  className={`ml-1 rounded-full px-2.5 py-1 text-xs font-bold transition disabled:opacity-50 ${isFollowing ? "text-slate-500 hover:bg-red-50 hover:text-red-600" : "text-blue-700 hover:bg-blue-50"}`}
-                >
-                  {followBusy ? "…" : isFollowing ? "Seguindo" : "Seguir"}
-                </button>
-              ) : null}
-            </header>
+            <div className="min-w-0 flex-1">
+              <header className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-[15px] leading-5">
+                {authorProfilePath ? (
+                  <Link
+                    to={authorProfilePath}
+                    className="max-w-[55%] truncate font-extrabold text-slate-950 hover:underline"
+                  >
+                    {author.nome || "Viajante Vambora"}
+                  </Link>
+                ) : (
+                  <span className="max-w-[55%] truncate font-extrabold text-slate-950">
+                    {author.nome || "Viajante Vambora"}
+                  </span>
+                )}
+              </header>
+              <div className="community-post-meta mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
+                <time dateTime={post.criadoEm}>
+                  {formatCommunityDate(post.criadoEm)}
+                </time>
+                {author.username ? (
+                  <Link
+                    to={authorProfilePath}
+                    className="truncate hover:underline"
+                  >
+                    @{author.username}
+                  </Link>
+                ) : null}
+                {post.categorias?.map(({ categoria }) => (
+                  <span key={categoria.id} className="community-post-tag">
+                    {categoria.nome}
+                  </span>
+                ))}
+              </div>
+            </div>
+            {canFollow ? (
+              <button
+                type="button"
+                onClick={onToggleFollow}
+                disabled={followBusy}
+                aria-label={`${isFollowing ? "Deixar de seguir" : "Seguir"} ${author.nome || "viajante"}`}
+                aria-pressed={isFollowing}
+                className={`community-post-follow shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition disabled:opacity-50 ${isFollowing ? "is-following" : ""}`}
+              >
+                {followBusy ? "…" : isFollowing ? "Seguindo" : "Seguir"}
+              </button>
+            ) : null}
             <div className="relative shrink-0">
               <button
                 ref={deleteMenuButtonRef}
@@ -226,7 +249,7 @@ export default function CommunityPost({
             </div>
           </div>
 
-          <p className="mt-1 whitespace-pre-wrap break-words text-[15px] leading-6 text-slate-800">
+          <p className="mt-3 whitespace-pre-wrap break-words text-[15px] leading-6 text-slate-800">
             {post.texto}
           </p>
 
@@ -240,7 +263,7 @@ export default function CommunityPost({
                   src={foto.url}
                   alt={`Foto ${index + 1} da publicação`}
                   loading="lazy"
-                  className="aspect-[4/3] w-full bg-slate-100 object-cover"
+                  className={`w-full bg-slate-100 object-cover ${post.fotos.length === 1 ? "community-post-photo" : "aspect-[4/3]"}`}
                   onError={(event) => {
                     event.currentTarget.hidden = true;
                   }}
@@ -249,58 +272,27 @@ export default function CommunityPost({
             </div>
           ) : null}
 
-          {post.categorias?.length ? (
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {post.categorias.map(({ categoria }) => (
-                <span
-                  key={categoria.id}
-                  className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700"
-                >
-                  {categoria.nome}
-                </span>
-              ))}
-            </div>
-          ) : null}
-
           {post.roteiro?.publico ? (
             <Link
               to={`/roteiros/${post.roteiro.id}`}
-              className="mt-3 flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 transition hover:border-blue-300"
+              className="community-post-route mt-3 flex items-center gap-3 rounded-2xl p-3 transition"
             >
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-blue-50 text-lg">
-                🧭
-              </span>
+              <span className="community-post-route-thumb h-12 w-12 shrink-0 rounded-[14px]" />
               <span className="min-w-0 flex-1">
-                <span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-blue-600">
-                  Roteiro compartilhado
-                </span>
-                <span className="mt-0.5 block truncate text-sm font-bold text-slate-900">
+                <span className="block truncate text-sm font-semibold text-slate-900">
                   {post.roteiro.titulo}
                 </span>
-              </span>
-              <span aria-hidden="true" className="text-blue-600">
-                ↗
+                {post.roteiro.destino ? (
+                  <span className="mt-0.5 block truncate text-xs text-slate-500">
+                    {post.roteiro.destino}
+                  </span>
+                ) : null}
               </span>
             </Link>
           ) : null}
 
-          <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2">
-            <button
-              type="button"
-              onClick={onToggleComments}
-              aria-expanded={commentsOpen}
-              aria-label={`${commentCount} comentários`}
-              className="group flex items-center gap-2 rounded-full py-2 pr-3 text-slate-500 transition hover:text-blue-600"
-            >
-              <span
-                className="grid h-8 w-8 place-items-center rounded-full text-lg group-hover:bg-blue-50"
-                aria-hidden="true"
-              >
-                ◯
-              </span>
-              <span className="text-xs">{commentCount}</span>
-            </button>
-            <div className="flex items-center gap-1">
+          <div className="community-post-actions mt-3 flex items-center gap-1 border-t border-slate-200 pt-2">
+            <div className="flex items-center gap-0.5">
               <button
                 type="button"
                 onClick={onToggleLike}
@@ -309,19 +301,51 @@ export default function CommunityPost({
                 aria-label={
                   post.curtiu ? "Remover curtida" : "Curtir publicação"
                 }
-                className={`group grid h-9 w-9 place-items-center rounded-full text-xl transition ${post.curtiu ? "font-bold text-rose-600" : "text-slate-500 hover:bg-rose-50 hover:text-rose-600"}`}
+                className={`community-post-action community-post-action-like ${post.curtiu ? "is-liked" : ""}`}
               >
-                <span aria-hidden="true">{post.curtiu ? "♥" : "♡"}</span>
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5"
+                  fill={post.curtiu ? "currentColor" : "none"}
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.4a4.3 4.3 0 0 1 7.5 2.4C19.5 15.4 12 20 12 20Z" />
+                </svg>
               </button>
               <button
                 type="button"
                 onClick={showLikes}
                 aria-label={`Ver ${likeCount} pessoas que curtiram`}
-                className="rounded-full px-2 py-2 text-xs text-slate-500 hover:text-rose-600 hover:underline"
+                className="community-post-action-count"
               >
                 {likeBusy ? "…" : likeCount}
               </button>
             </div>
+            <button
+              type="button"
+              onClick={onToggleComments}
+              aria-expanded={commentsOpen}
+              aria-label={`${commentCount} comentários`}
+              className="community-post-action"
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M4 5h16v11H9l-5 4Z" />
+              </svg>
+              <span>{commentCount}</span>
+            </button>
             <button
               type="button"
               onClick={onToggleSave}
@@ -330,15 +354,21 @@ export default function CommunityPost({
               aria-label={
                 post.salvo ? "Remover dos salvos" : "Salvar publicação"
               }
-              className={`group flex items-center gap-2 rounded-full py-2 pr-3 transition ${post.salvo ? "text-blue-700" : "text-slate-500 hover:text-blue-600"}`}
+              className={`community-post-action community-post-action-save ${post.salvo ? "is-saved" : ""}`}
             >
-              <span
-                className="grid h-8 w-8 place-items-center rounded-full text-lg group-hover:bg-blue-50"
+              <svg
                 aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill={post.salvo ? "currentColor" : "none"}
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                {post.salvo ? "▣" : "▱"}
-              </span>
-              <span className="text-xs">{saveBusy ? "…" : "Salvar"}</span>
+                <path d="M6 3h12v18l-6-4.5L6 21Z" />
+              </svg>
+              {saveBusy ? <span className="sr-only">Salvando…</span> : null}
             </button>
           </div>
 
@@ -392,78 +422,143 @@ export default function CommunityPost({
                 </p>
               ) : null}
               <div className="space-y-3">
-                {comments.map((comment) => (
-                  <div
-                    key={comment.id}
-                    className={`flex gap-2.5 ${comment.comentarioPaiId ? "ml-8 border-l-2 border-blue-100 pl-3" : ""}`}
-                  >
-                    <Link
-                      to={profilePath(comment.usuario) || "/comunidade"}
-                      onClick={(event) => {
-                        if (!profilePath(comment.usuario))
-                          event.preventDefault();
-                      }}
-                      aria-label={
-                        profilePath(comment.usuario)
-                          ? `Ver perfil de ${comment.usuario?.nome}`
-                          : undefined
-                      }
-                      className="shrink-0"
-                    >
-                      <UserAvatar
-                        user={comment.usuario}
-                        alt=""
-                        className="h-8 w-8 rounded-full object-cover"
-                      />
-                    </Link>
-                    <div className="min-w-0 flex-1 rounded-2xl bg-slate-50 px-3.5 py-2.5">
-                      <div className="flex flex-wrap items-baseline gap-x-2">
-                        <p className="text-xs font-bold text-slate-800">
-                          {comment.usuario?.nome || "Viajante"}
-                        </p>
-                        <time className="text-[10px] text-slate-400">
-                          {formatCommunityDate(comment.criadoEm)}
-                        </time>
+                {rootComments.map((comment) => {
+                  const replies = comments.filter(
+                    (item) => item.comentarioPaiId === comment.id,
+                  );
+                  const repliesOpen = openReplyThreads.includes(comment.id);
+
+                  return (
+                    <div key={comment.id} className="space-y-2">
+                      <div className="flex gap-2.5">
+                        <Link
+                          to={profilePath(comment.usuario) || "/comunidade"}
+                          onClick={(event) => {
+                            if (!profilePath(comment.usuario))
+                              event.preventDefault();
+                          }}
+                          aria-label={
+                            profilePath(comment.usuario)
+                              ? `Ver perfil de ${comment.usuario?.nome}`
+                              : undefined
+                          }
+                          className="shrink-0"
+                        >
+                          <UserAvatar
+                            user={comment.usuario}
+                            alt=""
+                            className="h-8 w-8 rounded-full object-cover"
+                          />
+                        </Link>
+                        <div className="min-w-0 flex-1 rounded-2xl bg-slate-50 px-3.5 py-2.5">
+                          <div className="flex flex-wrap items-baseline gap-x-2">
+                            <p className="text-xs font-bold text-slate-800">
+                              {comment.usuario?.nome || "Viajante"}
+                            </p>
+                            <time className="text-[10px] text-slate-400">
+                              {formatCommunityDate(comment.criadoEm)}
+                            </time>
+                          </div>
+                          <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-5 text-slate-600">
+                            {comment.texto}
+                          </p>
+                          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+                            {isAuthenticated ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setReplyTo(comment);
+                                  setOpenReplyThreads((current) =>
+                                    current.includes(comment.id)
+                                      ? current
+                                      : [...current, comment.id],
+                                  );
+                                  setCommentText(
+                                    `@${comment.usuario?.username || comment.usuario?.nome || "viajante"} `,
+                                  );
+                                  document
+                                    .getElementById(`comment-${post.id}`)
+                                    ?.focus();
+                                }}
+                                className="text-xs font-semibold text-blue-600 hover:underline"
+                              >
+                                Responder
+                              </button>
+                            ) : null}
+                            {replies.length ? (
+                              <button
+                                type="button"
+                                aria-expanded={repliesOpen}
+                                onClick={() => toggleReplyThread(comment.id)}
+                                className="text-xs font-semibold text-blue-600 hover:underline"
+                              >
+                                {repliesOpen
+                                  ? "Ocultar respostas"
+                                  : `Ver respostas (${replies.length})`}
+                              </button>
+                            ) : null}
+                            {isAdmin ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (
+                                    window.confirm(
+                                      "Remover este comentário pela moderação?",
+                                    )
+                                  )
+                                    onAdminDeleteComment?.(comment.id);
+                                }}
+                                className="text-xs font-semibold text-red-600 hover:underline"
+                              >
+                                Excluir pela moderação
+                              </button>
+                            ) : null}
+                          </div>
+                        </div>
                       </div>
-                      <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-5 text-slate-600">
-                        {comment.texto}
-                      </p>
-                      {isAuthenticated ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setReplyTo(comment);
-                            setCommentText(
-                              `@${comment.usuario?.username || comment.usuario?.nome || "viajante"} `,
-                            );
-                            document
-                              .getElementById(`comment-${post.id}`)
-                              ?.focus();
-                          }}
-                          className="mt-2 text-xs font-semibold text-blue-600 hover:underline"
-                        >
-                          Responder
-                        </button>
-                      ) : null}
-                      {isAdmin ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                "Remover este comentário pela moderação?",
-                              )
-                            )
-                              onAdminDeleteComment?.(comment.id);
-                          }}
-                          className="ml-3 mt-2 text-xs font-semibold text-red-600 hover:underline"
-                        >
-                          Excluir pela moderação
-                        </button>
+                      {repliesOpen ? (
+                        <div className="ml-8 space-y-2 border-l-2 border-blue-100 pl-3 sm:ml-10">
+                          {replies.map((reply) => (
+                            <div key={reply.id} className="flex gap-2">
+                              <Link
+                                to={profilePath(reply.usuario) || "/comunidade"}
+                                onClick={(event) => {
+                                  if (!profilePath(reply.usuario))
+                                    event.preventDefault();
+                                }}
+                                aria-label={
+                                  profilePath(reply.usuario)
+                                    ? `Ver perfil de ${reply.usuario?.nome}`
+                                    : undefined
+                                }
+                                className="shrink-0"
+                              >
+                                <UserAvatar
+                                  user={reply.usuario}
+                                  alt=""
+                                  className="h-7 w-7 rounded-full object-cover"
+                                />
+                              </Link>
+                              <div className="min-w-0 flex-1 rounded-2xl bg-blue-50/70 px-3 py-2">
+                                <div className="flex flex-wrap items-baseline gap-x-2">
+                                  <p className="text-xs font-bold text-slate-800">
+                                    {reply.usuario?.nome || "Viajante"}
+                                  </p>
+                                  <time className="text-[10px] text-slate-400">
+                                    {formatCommunityDate(reply.criadoEm)}
+                                  </time>
+                                </div>
+                                <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-5 text-slate-600">
+                                  {reply.texto}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       ) : null}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               {isAuthenticated ? (
                 <form

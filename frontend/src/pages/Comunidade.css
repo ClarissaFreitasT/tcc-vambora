@@ -11,6 +11,7 @@
   --community-surface: #fff;
   --community-field: #eaf3fd;
   --community-line: #dce9f9;
+  --community-heart: #e0476b;
   min-height: 100vh;
   overflow: hidden;
   background:
@@ -306,6 +307,136 @@
   box-shadow: 0 22px 44px -24px rgba(15, 42, 92, 0.46);
 }
 
+.community-post-avatar {
+  box-shadow:
+    0 0 0 3px var(--community-surface),
+    0 0 0 5px var(--community-pale);
+}
+
+.community-post-meta {
+  min-height: 1.25rem;
+}
+
+.community-post-tag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: var(--community-field);
+  padding: 0.15rem 0.65rem;
+  color: var(--community-blue);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.community-post-follow {
+  min-height: 2rem;
+  border: 1.5px solid var(--community-blue);
+  background: transparent;
+  color: var(--community-blue);
+}
+
+.community-post-follow:hover:not(:disabled) {
+  background: var(--community-blue);
+  color: #fff;
+}
+
+.community-post-follow.is-following {
+  border-color: transparent;
+  background: var(--community-field);
+  color: var(--community-muted);
+}
+
+.community-post-photo {
+  height: min(380px, 60vw);
+  border-radius: 20px;
+  object-fit: cover;
+}
+
+.community-post-route {
+  border: 1px solid transparent;
+  background: var(--community-field);
+}
+
+.community-post-route:hover {
+  border-color: var(--community-pale);
+}
+
+.community-post-route-thumb {
+  background: linear-gradient(165deg, #9ccbf5, #3b82e0 60%, #0f2a5c);
+}
+
+.community-post-actions {
+  min-height: 2.8rem;
+}
+
+.community-post-action {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  gap: 0.5rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  padding: 0.55rem 0.8rem;
+  color: var(--community-muted);
+  cursor: pointer;
+  font:
+    500 0.9rem "Fredoka",
+    "Trebuchet MS",
+    sans-serif;
+  transition:
+    background 180ms ease,
+    color 180ms ease;
+}
+
+.community-post-action:hover:not(:disabled),
+.community-post-action-count:hover {
+  background: var(--community-field);
+  color: var(--community-ink);
+}
+
+.community-post-action:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.community-post-action-like.is-liked {
+  color: var(--community-heart);
+}
+
+.community-post-action-like.is-liked svg {
+  animation: community-like-pop 500ms cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+
+.community-post-action-count {
+  min-width: 1.5rem;
+  min-height: 2.5rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  padding: 0 0.35rem;
+  color: var(--community-muted);
+  cursor: pointer;
+  font:
+    500 0.9rem "Fredoka",
+    "Trebuchet MS",
+    sans-serif;
+}
+
+.community-post-action-save {
+  margin-left: auto;
+}
+
+.community-post-action-save.is-saved {
+  color: var(--community-blue);
+}
+
+@keyframes community-like-pop {
+  40% {
+    transform: scale(1.35);
+  }
+}
+
 @keyframes community-post-in {
   from {
     opacity: 0;
@@ -366,7 +497,10 @@
   box-shadow: 0 18px 30px -12px rgba(59, 130, 224, 0.7);
   color: #fff;
   cursor: pointer;
-  font: 500 1rem "Fredoka", "Trebuchet MS", sans-serif;
+  font:
+    500 1rem "Fredoka",
+    "Trebuchet MS",
+    sans-serif;
   transition:
     transform 220ms ease,
     box-shadow 220ms ease,
@@ -374,7 +508,9 @@
 }
 
 .community-fab > span:first-child {
-  font: 400 1.8rem/1 "Geologica", sans-serif;
+  font:
+    400 1.8rem/1 "Geologica",
+    sans-serif;
 }
 
 .community-fab:hover {
@@ -469,7 +605,11 @@
   background: var(--community-field);
   padding: 0.9rem 1rem;
   color: var(--community-ink);
-  font: 400 0.95rem/1.6 "Geologica", "Segoe UI", system-ui, sans-serif;
+  font:
+    400 0.95rem/1.6 "Geologica",
+    "Segoe UI",
+    system-ui,
+    sans-serif;
 }
 
 .community-dialog-textarea {
@@ -598,7 +738,10 @@
   border-radius: 999px;
   padding: 0.6rem 1rem;
   cursor: pointer;
-  font: 500 0.86rem "Fredoka", "Trebuchet MS", sans-serif;
+  font:
+    500 0.86rem "Fredoka",
+    "Trebuchet MS",
+    sans-serif;
 }
 
 .community-dialog-cancel {

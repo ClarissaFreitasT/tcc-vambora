@@ -21,14 +21,14 @@ export default function Comunidade() {
   const [destinos, setDestinos] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
-            <button
-              type="button"
-              onClick={openPostDialog}
-              className="floating-button"
-              aria-label="Criar nova publicação"
-            >
-              <span>+</span>
-            </button>
+  <button
+    type="button"
+    onClick={openPostDialog}
+    className="floating-button"
+    aria-label="Criar nova publicação"
+  >
+    <span>+</span>
+  </button>;
   const [selectedPostCategoryIds, setSelectedPostCategoryIds] = useState([]);
   const [search, setSearch] = useState("");
   const [postText, setPostText] = useState("");
@@ -88,12 +88,12 @@ export default function Comunidade() {
       setFeedError(null);
       try {
         const savedMode = feedMode === "saved";
-        const path =
-          feedMode === "following"
-            ? "/publicacoes/feed"
-            : savedMode
-              ? "/publicacoes/salvas"
-              : "/publicacoes/timeline";
+        const followingMode = feedMode === "following";
+        const path = followingMode
+          ? "/publicacoes/feed"
+          : savedMode
+            ? "/publicacoes/salvas"
+            : "/publicacoes/timeline";
         const query = new URLSearchParams({ limit: "12" });
         if (append && nextCursorRef.current)
           query.set("cursor", nextCursorRef.current);
@@ -106,18 +106,24 @@ export default function Comunidade() {
         const pageItems = Array.isArray(response)
           ? response
           : response.items || [];
-        const incoming =
+        const incoming = pageItems.filter(
+          (post) => !followingMode || post.usuarioId !== user?.id,
+        );
+        const filteredIncoming =
           savedMode && selectedCategoryIds.length
-            ? pageItems.filter((post) =>
+            ? incoming.filter((post) =>
                 post.categorias?.some(({ categoriaId, categoria }) =>
                   selectedCategoryIds.includes(categoriaId || categoria?.id),
                 ),
               )
-            : pageItems;
+            : incoming;
         setPublicacoes((current) => {
-          if (!append) return incoming;
+          if (!append) return filteredIncoming;
           const ids = new Set(current.map((post) => post.id));
-          return [...current, ...incoming.filter((post) => !ids.has(post.id))];
+          return [
+            ...current,
+            ...filteredIncoming.filter((post) => !ids.has(post.id)),
+          ];
         });
         const cursor = Array.isArray(response)
           ? null
@@ -136,7 +142,7 @@ export default function Comunidade() {
         }
       }
     },
-    [feedMode, selectedCategoryIds],
+    [feedMode, selectedCategoryIds, user?.id],
   );
 
   useEffect(() => {
@@ -870,7 +876,7 @@ export default function Comunidade() {
           ) : null}
         </section>
 
-        <aside className="community-right-sidebar space-y-4 px-4 py-5 sm:px-6 lg:sticky lg:top-[88px] lg:max-h-[calc(100vh-88px)] lg:overflow-y-auto lg:px-0">
+        <aside className="community-right-sidebar space-y-8 px-4 py-5 sm:px-6 lg:sticky lg:top-[88px] lg:max-h-[calc(100vh-88px)] lg:overflow-y-auto lg:px-0">
           <label className="flex items-center gap-3 rounded-full bg-slate-100 px-5 py-3 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-500">
             <span aria-hidden="true" className="text-lg text-slate-500">
               ⌕
@@ -957,17 +963,6 @@ export default function Comunidade() {
                 </div>
               ))}
             </div>
-            {filteredUsers.length > 6 ? (
-              <p className="px-5 pb-4 text-xs text-slate-500">
-                Refine a busca para encontrar mais perfis.
-              </p>
-            ) : null}
-            <Link
-              to="/perfil"
-              className="block border-t border-slate-200 px-5 py-4 text-sm font-semibold text-blue-600 hover:bg-slate-100"
-            >
-              Completar meu perfil
-            </Link>
           </section>
 
           <section className="overflow-hidden rounded-3xl bg-slate-50">
