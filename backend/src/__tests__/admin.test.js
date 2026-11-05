@@ -128,6 +128,7 @@ describe("Autorização de administrador", () => {
     mockCreate.mockResolvedValue({
       id: "new-user",
       nome: "Novo usuário",
+      username: "novo.usuario",
       email: "novo@example.com",
       senhaHash: "senha-hash",
       role: "USER",
@@ -135,6 +136,7 @@ describe("Autorização de administrador", () => {
 
     const response = await request(app).post("/auth/register").send({
       nome: "Novo usuário",
+      username: "novo.usuario",
       email: "novo@example.com",
       password: "senha123",
       dataNascimento: "01/01/2000",
@@ -145,6 +147,7 @@ describe("Autorização de administrador", () => {
     expect(mockCreate).toHaveBeenCalledWith({
       data: {
         nome: "Novo usuário",
+        username: "novo.usuario",
         email: "novo@example.com",
         senhaHash: "senha-hash",
         dataNascimento: new Date("2000-01-01T00:00:00.000Z"),

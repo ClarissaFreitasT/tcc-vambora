@@ -508,6 +508,14 @@
   stroke-width: 2;
 }
 
+.profile-route-social-button.is-active {
+  color: #e83f68;
+}
+
+.profile-route-social-button:last-child.is-active {
+  color: var(--profile-blue);
+}
+
 .profile-publication-list {
   display: grid;
   gap: 1.2rem;
@@ -595,6 +603,57 @@
   aspect-ratio: 1.5 / 1;
 }
 
+.profile-publication-route {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+  border: 1px solid var(--profile-line);
+  border-radius: 16px;
+  background: var(--profile-field);
+  padding: 0.75rem 0.9rem;
+  color: var(--profile-navy);
+  text-decoration: none;
+}
+
+.profile-publication-route:hover {
+  border-color: var(--profile-blue);
+  background: #eef5ff;
+}
+
+.profile-publication-route-thumb {
+  display: block;
+  flex: 0 0 auto;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 14px;
+  object-fit: cover;
+}
+
+.profile-publication-route strong,
+.profile-publication-route small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-publication-route strong {
+  font-size: 0.88rem;
+}
+
+.profile-publication-route small {
+  margin-top: 0.15rem;
+  color: var(--profile-muted);
+  font-size: 0.74rem;
+}
+
+.profile-publication-route-arrow {
+  margin-left: auto;
+  color: var(--profile-blue);
+  font-size: 1.1rem;
+}
+
 .profile-publication-actions {
   display: flex;
   min-height: 2.8rem;
@@ -610,11 +669,23 @@
     sans-serif;
 }
 
-.profile-publication-actions > span {
+.profile-publication-actions > span,
+.profile-publication-actions > button {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.8rem;
+}
+
+.profile-publication-actions > button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.profile-publication-actions > button.is-liked {
+  color: #e83f68;
 }
 
 .profile-publication-actions svg {
@@ -650,7 +721,16 @@
   width: 2.6rem;
   height: 2.6rem;
   place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
   padding: 0 !important;
+  color: inherit;
+  cursor: pointer;
+}
+
+.profile-publication-save.is-saved {
+  color: var(--profile-blue);
 }
 
 .profile-publication-save svg {

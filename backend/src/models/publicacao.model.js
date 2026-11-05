@@ -5,7 +5,13 @@ const publicacaoInclude = (usuarioId) => ({
     select: { id: true, nome: true, username: true, fotoUrl: true },
   },
   roteiro: {
-    select: { id: true, titulo: true, destino: true, publico: true },
+    select: {
+      id: true,
+      titulo: true,
+      destino: true,
+      imagemUrl: true,
+      publico: true,
+    },
   },
   categorias: {
     include: { categoria: { select: { id: true, nome: true } } },
@@ -79,12 +85,7 @@ async function findCommunityPage(
   const hasMore = safeRows.length > limit;
   const chronologicalItems = safeRows.slice(0, limit);
   const nextCursor = hasMore ? chronologicalItems.at(-1)?.id || null : null;
-  const rankedItems = following
-    ? chronologicalItems
-    : [...chronologicalItems].sort(
-        (a, b) => relevanceScore(b) - relevanceScore(a),
-      );
-  const items = rankedItems.map((post) => ({
+  const items = chronologicalItems.map((post) => ({
     ...post,
     curtiu: Boolean(post.curtidas?.length),
     salvo: Boolean(post.salvos?.length),
@@ -95,20 +96,6 @@ async function findCommunityPage(
     items,
     nextCursor,
   };
-}
-
-function relevanceScore(post) {
-  const ageDays = Math.max(
-    0,
-    (Date.now() - new Date(post.criadoEm).getTime()) / 86_400_000,
-  );
-  const likes = post._count?.curtidas || 0;
-  const comments = post._count?.comentarios || 0;
-  return (
-    1 / (1 + ageDays / 5) +
-    Math.log1p(likes) * 0.15 +
-    Math.log1p(comments) * 0.2
-  );
 }
 
 function sanitizePrivateRoute(post) {
@@ -189,13 +176,17 @@ export async function obterRoteiroVinculavel(id, usuarioId) {
   });
 }
 
-export async function listarPublicacoesUsuario(usuarioId) {
+export async function listarPublicacoesUsuario(usuarioId, viewerId = null) {
   const posts = await prisma.publicacao.findMany({
     where: { usuarioId },
-    include: publicacaoInclude(),
+    include: publicacaoInclude(viewerId),
     orderBy: [{ criadoEm: "desc" }, { id: "desc" }],
   });
-  return posts.map(sanitizePrivateRoute);
+  return posts.map(({ curtidas = [], salvos = [], ...post }) => ({
+    ...sanitizePrivateRoute(post),
+    curtiu: Boolean(curtidas.length),
+    salvo: Boolean(salvos.length),
+  }));
 }
 
 export async function listarPublicacoesCurtidasUsuario(usuarioId) {

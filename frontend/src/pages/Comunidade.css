@@ -362,7 +362,7 @@
 }
 
 .community-post-route-thumb {
-  background: linear-gradient(165deg, #9ccbf5, #3b82e0 60%, #0f2a5c);
+  object-fit: cover;
 }
 
 .community-post-actions {

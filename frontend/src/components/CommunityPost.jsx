@@ -277,7 +277,14 @@ export default function CommunityPost({
               to={`/roteiros/${post.roteiro.id}`}
               className="community-post-route mt-3 flex items-center gap-3 rounded-2xl p-3 transition"
             >
-              <span className="community-post-route-thumb h-12 w-12 shrink-0 rounded-[14px]" />
+              {post.roteiro.imagemUrl ? (
+                <img
+                  className="community-post-route-thumb h-12 w-12 shrink-0 rounded-[14px]"
+                  src={post.roteiro.imagemUrl}
+                  alt=""
+                  loading="lazy"
+                />
+              ) : null}
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-semibold text-slate-900">
                   {post.roteiro.titulo}

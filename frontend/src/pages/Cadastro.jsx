@@ -8,6 +8,7 @@ export default function Cadastro() {
   const location = useLocation();
   const [form, setForm] = useState({
     nome: "",
+    username: "",
     email: "",
     dataNascimento: "",
     password: "",
@@ -27,6 +28,13 @@ export default function Cadastro() {
   async function handleSubmit(event) {
     event.preventDefault();
     setStatus(null);
+    const username = form.username.trim().toLowerCase();
+    if (!/^[a-z0-9._]+$/.test(username)) {
+      setStatus(
+        "Nome de usuário inválido. Use apenas letras, números, pontos e underscores, sem espaços.",
+      );
+      return;
+    }
     const dataNascimento = getAdultBirthDateIso(form.dataNascimento);
     if (!dataNascimento) {
       setStatus(
@@ -44,10 +52,18 @@ export default function Cadastro() {
     }
     setLoading(true);
     try {
+      const disponibilidade = await apiFetch(
+        `/auth/username/availability?username=${encodeURIComponent(username)}`,
+      );
+      if (!disponibilidade.disponivel) {
+        setStatus("Esse nome de usuário já está indisponível.");
+        return;
+      }
       await apiFetch("/auth/register", {
         method: "POST",
         body: JSON.stringify({
           nome: form.nome,
+          username,
           email: form.email,
           dataNascimento,
           password: form.password,
@@ -90,6 +106,20 @@ export default function Cadastro() {
               onChange={updateField}
               required
               maxLength={255}
+            />
+          </label>
+          <label className="grid gap-2 text-sm font-medium text-slate-700">
+            Nome de usuário (@)
+            <input
+              className="input-field"
+              name="username"
+              value={form.username}
+              onChange={updateField}
+              required
+              maxLength={80}
+              pattern="[A-Za-z0-9._]+"
+              title="Use apenas letras, números, pontos e underscores, sem espaços."
+              autoComplete="username"
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">

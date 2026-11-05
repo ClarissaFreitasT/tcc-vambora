@@ -2,14 +2,16 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { prisma } from "../config/prisma.js";
 import { parseBirthDate, isAtLeast18 } from "../utils/birthDate.js";
+import { normalizarUsername } from "../utils/username.js";
 
 export async function register(req, res) {
   try {
     const { nome, email, password, username, dataNascimento } = req.body;
 
-    if (!nome || !email || !password || !dataNascimento) {
+    if (!nome || !email || !password || !username || !dataNascimento) {
       return res.status(400).json({
-        message: "Nome, email, data de nascimento e senha são obrigatórios",
+        message:
+          "Nome, nome de usuário, email, data de nascimento e senha são obrigatórios",
       });
     }
     if (typeof password !== "string" || password.length < 6) {
@@ -38,28 +40,22 @@ export async function register(req, res) {
       });
     }
 
-    let nomeUsuario = null;
-    if (username) {
-      nomeUsuario = username
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9._-]/g, "");
-
-      if (!nomeUsuario) {
-        return res.status(400).json({
-          mensagem: "Username inválido",
-        });
-      }
-
-      const usuarioComUsername = await prisma.usuario.findUnique({
-        where: { username: nomeUsuario },
+    const nomeUsuario = normalizarUsername(username);
+    if (!nomeUsuario) {
+      return res.status(400).json({
+        mensagem:
+          "Nome de usuário inválido. Use apenas letras, números, pontos e underscores, sem espaços.",
       });
+    }
 
-      if (usuarioComUsername) {
-        return res.status(400).json({
-          mensagem: "Username já está em uso",
-        });
-      }
+    const usuarioComUsername = await prisma.usuario.findUnique({
+      where: { username: nomeUsuario },
+    });
+
+    if (usuarioComUsername) {
+      return res.status(400).json({
+        mensagem: "Nome de usuário indisponível",
+      });
     }
 
     const senhaHash = await bcrypt.hash(password, 10);
@@ -71,9 +67,7 @@ export async function register(req, res) {
       dataNascimento: nascimento,
     };
 
-    if (nomeUsuario) {
-      data.username = nomeUsuario;
-    }
+    data.username = nomeUsuario;
 
     const usuario = await prisma.usuario.create({
       data,
@@ -89,9 +83,36 @@ export async function register(req, res) {
       },
     });
   } catch (error) {
+    if (error?.code === "P2002") {
+      return res.status(400).json({
+        mensagem: "Nome de usuário indisponível",
+      });
+    }
     console.error("Erro no cadastro:", error);
     return res.status(500).json({ message: "Erro interno do servidor" });
   }
+}
+
+export async function verificarDisponibilidadeUsername(req, res) {
+  const nomeUsuario = normalizarUsername(req.query.username);
+
+  if (!nomeUsuario) {
+    return res.status(400).json({
+      disponivel: false,
+      mensagem:
+        "Nome de usuário inválido. Use apenas letras, números, pontos e underscores, sem espaços.",
+    });
+  }
+
+  const usuario = await prisma.usuario.findUnique({
+    where: { username: nomeUsuario },
+    select: { id: true },
+  });
+
+  return res.status(200).json({
+    username: nomeUsuario,
+    disponivel: !usuario,
+  });
 }
 
 export async function login(req, res) {
@@ -137,6 +158,7 @@ export async function login(req, res) {
         id: usuario.id,
         nome: usuario.nome,
         email: usuario.email,
+        ...(usuario.username ? { username: usuario.username } : {}),
         fotoUrl: usuario.fotoUrl,
       },
     });

@@ -1,5 +1,6 @@
 import { prisma } from "../config/prisma.js";
 import { isManagedImageUrl } from "../config/storage.js";
+import { normalizarUsername } from "../utils/username.js";
 
 const camposUsuarioAdmin = {
   id: true,
@@ -22,16 +23,6 @@ const camposUsuarioPublicos = {
   personalidade: true,
   criadoEm: true,
 };
-
-function normalizarUsername(username) {
-  if (typeof username !== "string") return null;
-
-  const valorNormalizado = username
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9._-]/g, "");
-  return valorNormalizado || null;
-}
 
 export function normalizarPersonalidade(personalidade) {
   if (typeof personalidade !== "string") {
@@ -156,7 +147,13 @@ export async function obterUsuarioPorUsername(username, viewerId = null) {
           titulo: true,
           descricao: true,
           destino: true,
+          imagemUrl: true,
+          orcamento: true,
+          publico: true,
           criadoEm: true,
+          dias: { select: { id: true, numeroDia: true } },
+          favoritos: { select: { id: true } },
+          reviews: { select: { nota: true } },
         },
         orderBy: { criadoEm: "desc" },
       },
@@ -187,9 +184,22 @@ export async function obterUsuarioPorUsername(username, viewerId = null) {
   });
 
   if (!usuario) return null;
-  const { seguidores = [], _count, ...perfil } = usuario;
+  const { seguidores = [], _count, roteiros = [], ...perfil } = usuario;
   return {
     ...perfil,
+    roteiros: roteiros.map(({ favoritos = [], reviews = [], ...roteiro }) => {
+      const totalAvaliacoes = reviews.length;
+      const mediaAvaliacao = totalAvaliacoes
+        ? reviews.reduce((sum, review) => sum + review.nota, 0) /
+          totalAvaliacoes
+        : 0;
+      return {
+        ...roteiro,
+        totalCurtidas: favoritos.length,
+        totalAvaliacoes,
+        mediaAvaliacao: Number(mediaAvaliacao.toFixed(2)),
+      };
+    }),
     seguindo: seguidores.length > 0,
     totalSeguidores: _count.seguidores,
     totalSeguindo: _count.seguindo,

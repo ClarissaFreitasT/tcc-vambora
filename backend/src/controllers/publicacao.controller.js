@@ -127,7 +127,10 @@ export async function criarPublicacao(req, res) {
 export async function listarPublicacoesUsuario(req, res) {
   const { usuarioId } = req.params;
 
-  const publicacoes = await PublicacaoModel.listarPublicacoesUsuario(usuarioId);
+  const publicacoes = await PublicacaoModel.listarPublicacoesUsuario(
+    usuarioId,
+    req.user?.id,
+  );
 
   return res.status(200).json(publicacoes);
 }

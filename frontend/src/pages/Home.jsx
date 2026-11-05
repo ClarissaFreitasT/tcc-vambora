@@ -12,81 +12,20 @@ import { apiFetch } from "../data/api";
 import { useAuth } from "../context/useAuth";
 import ImageFallback from "../components/ImageFallback";
 import RoteiroSearchPanel from "../components/RoteiroSearchPanel";
+import RoteiroPublicoCard from "../components/RoteiroPublicoCard";
 import {
   emptyRouteFilters,
   getRouteCategories,
   getRouteDestinations,
 } from "../utils/homeRoutes";
 import "./Home.css";
+import "./RoteirosPublicos.css";
 
 const GlobeCanvas = lazy(() => import("../components/GlobeCanvas.jsx"));
 
-function formatMoney(value) {
-  if (value === null || value === undefined || value === "")
-    return "Orçamento não informado";
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(Number(value));
-}
-
-function routeDays(route) {
-  return route.totalDias ?? route.dias?.length ?? 0;
-}
-
-function formatRouteDays(route) {
-  const total = routeDays(route);
-  if (!total) return "Duração não informada";
-  return `${total} ${total === 1 ? "dia" : "dias"}`;
-}
-
-function HomeRouteCard({ route, recent = false }) {
-  const reviews = Number(route.totalAvaliacoes || 0);
-  return (
-    <Link
-      to={`/roteiros/${route.id}`}
-      className={`home-route-card group relative isolate block h-[360px] overflow-hidden rounded-[28px] bg-slate-900 text-white shadow-[0_20px_55px_rgba(15,23,42,.14)] transition hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(15,23,42,.22)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 ${recent ? "home-route-card--recent" : ""}`}
-    >
-      <ImageFallback
-        src={route.imagemUrl}
-        alt={`Paisagem do roteiro para ${route.destino}`}
-        className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/35 to-transparent" />
-      <div className="home-route-card-content absolute inset-x-0 bottom-0 p-5 sm:p-6">
-        <p className="home-route-destination text-xs font-bold uppercase tracking-[.2em] text-cyan-200">
-          {route.destino}
-        </p>
-        <h3 className="home-display mt-2 text-2xl font-black leading-tight text-white">
-          {route.titulo}
-        </h3>
-        <p className="mt-2 text-sm text-white/75">
-          Por {route.usuario?.nome || "Viajante Vambora"}
-        </p>
-        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-white/20 pt-3 text-sm font-medium text-white/90">
-          {reviews ? (
-            <span>
-              ★ {Number(route.mediaAvaliacao).toFixed(1)}{" "}
-              <span className="text-white/65">({reviews})</span>
-            </span>
-          ) : (
-            <span>Ainda sem avaliações</span>
-          )}
-          <span>{formatMoney(route.orcamento)}</span>
-          <span>{formatRouteDays(route)}</span>
-          <span aria-label={`${route.totalCurtidas || 0} curtidas`}>
-            ♥ {route.totalCurtidas || 0}
-          </span>
-        </div>
-        <span className="sr-only">Abrir roteiro completo</span>
-      </div>
-    </Link>
-  );
-}
-
 export default function Home() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [roteiros, setRoteiros] = useState([]);
   const [loadingRoutes, setLoadingRoutes] = useState(true);
   const [routesError, setRoutesError] = useState(null);
@@ -95,6 +34,52 @@ export default function Home() {
   const globeRef = useRef(null);
   const routeRailRef = useRef(null);
   const [filters, setFilters] = useState({ ...emptyRouteFilters });
+  const [savedRouteState, setSavedRouteState] = useState({
+    userId: null,
+    ids: [],
+  });
+
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) return undefined;
+    let active = true;
+    apiFetch("/roteiros/salvos")
+      .then((entries) => {
+        if (!active) return;
+        setSavedRouteState({
+          userId: user.id,
+          ids: entries
+            .map((entry) => entry.roteiroId || entry.roteiro?.id)
+            .filter(Boolean),
+        });
+      })
+      .catch(() => {
+        if (active) setSavedRouteState({ userId: user.id, ids: [] });
+      });
+    return () => {
+      active = false;
+    };
+  }, [isAuthenticated, user?.id]);
+
+  const savedRouteIds =
+    isAuthenticated && savedRouteState.userId === user?.id
+      ? savedRouteState.ids
+      : [];
+  const savedRoutesLoading =
+    isAuthenticated && savedRouteState.userId !== user?.id;
+
+  function updateSavedRoute(routeId, saved) {
+    setSavedRouteState((current) => {
+      if (current.userId !== user?.id) return current;
+      if (saved)
+        return current.ids.includes(routeId)
+          ? current
+          : { ...current, ids: [...current.ids, routeId] };
+      return {
+        ...current,
+        ids: current.ids.filter((id) => id !== routeId),
+      };
+    });
+  }
 
   async function loadRoutes() {
     setLoadingRoutes(true);
@@ -437,7 +422,14 @@ export default function Home() {
                 </button>
                 <div ref={routeRailRef} className="home-route-rail">
                   {featuredRoutes.map((route) => (
-                    <HomeRouteCard key={route.id} route={route} />
+                    <RoteiroPublicoCard
+                      key={route.id}
+                      route={route}
+                      isAuthenticated={isAuthenticated}
+                      saved={savedRouteIds.includes(route.id)}
+                      savedLoading={savedRoutesLoading}
+                      onSavedChange={updateSavedRoute}
+                    />
                   ))}
                 </div>
                 <button

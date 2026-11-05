@@ -2293,6 +2293,68 @@ body:has(.site-shell.home-page) {
   }
 }
 
+.home-route-rail .public-route-card {
+  flex-basis: min(100%, 300px);
+  height: 390px;
+}
+
+.home-route-rail .public-route-card .home-route-card-content {
+  padding: 1.1rem;
+}
+
+.home-route-rail .public-route-card .home-route-destination {
+  font-size: 0.62rem;
+}
+
+.home-route-rail .public-route-card h2 {
+  font-size: 1.55rem;
+  line-height: 1.08;
+}
+
+.home-route-rail
+  .public-route-card
+  .home-route-card-content
+  > p:not(.home-route-destination) {
+  font-size: 0.82rem;
+}
+
+.home-route-rail .public-route-card .public-route-meta {
+  gap: 0.55rem 0.8rem;
+  font-size: 0.78rem;
+}
+
+@media (max-width: 760px) {
+  .home-route-rail .public-route-card {
+    flex-basis: min(82vw, 340px);
+    height: 420px;
+  }
+}
+
+.home-route-rail .public-route-card {
+  flex-basis: min(100%, 356px);
+  height: clamp(360px, 36vw, 430px);
+}
+
+@media (max-width: 760px) {
+  .home-route-rail .public-route-card {
+    flex-basis: min(82vw, 340px);
+    height: 420px;
+  }
+}
+
+/* Keep the home rail cards aligned with the public routes grid. */
+.home-route-rail .public-route-card {
+  flex-basis: 300px;
+  height: clamp(360px, 36vw, 430px);
+}
+
+@media (max-width: 760px) {
+  .home-route-rail .public-route-card {
+    flex-basis: min(82vw, 340px);
+    height: 420px;
+  }
+}
+
 /* Refined layout for the Home discovery steps section. */
 .home-process-section {
   padding-block: clamp(3.5rem, 6vw, 5rem);
@@ -2633,5 +2695,17 @@ body:has(.site-shell.home-page) {
   .home-route-rail .home-route-card {
     flex-basis: min(78vw, 320px);
     height: 390px;
+  }
+}
+
+.home-route-rail .public-route-card {
+  flex-basis: min(100%, 356px);
+  height: clamp(360px, 36vw, 430px);
+}
+
+@media (max-width: 760px) {
+  .home-route-rail .public-route-card {
+    flex-basis: min(82vw, 340px);
+    height: 420px;
   }
 }

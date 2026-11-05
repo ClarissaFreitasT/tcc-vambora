@@ -110,8 +110,60 @@ function ProfileTabIcon({ name }) {
   );
 }
 
-function ProfileRouteCard({ roteiro }) {
+function ProfileRouteCard({
+  roteiro,
+  isAuthenticated,
+  onRequireLogin,
+  saved,
+  onToggleSave,
+}) {
   const totalDias = roteiro.totalDias ?? roteiro.dias?.length ?? 0;
+  const [totalLikes, setTotalLikes] = useState(
+    Number(roteiro.totalCurtidas || 0),
+  );
+  const [liked, setLiked] = useState(false);
+  const [likeBusy, setLikeBusy] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    apiFetch(`/roteiros/${roteiro.id}/curtidas`)
+      .then((result) => {
+        if (!active) return;
+        setTotalLikes(
+          Number(result?.totalCurtidas ?? roteiro.totalCurtidas ?? 0),
+        );
+        setLiked(Boolean(result?.curtiu));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [roteiro.id, roteiro.totalCurtidas]);
+
+  async function toggleLike(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!isAuthenticated) {
+      onRequireLogin();
+      return;
+    }
+    if (likeBusy) return;
+    setLikeBusy(true);
+    try {
+      const result = await apiFetch(`/roteiros/${roteiro.id}/curtir`, {
+        method: liked ? "DELETE" : "POST",
+      });
+      setLiked(!liked);
+      setTotalLikes(Number(result?.totalCurtidas ?? totalLikes));
+    } catch (error) {
+      if (!liked && error.status === 409) {
+        setLiked(true);
+        setTotalLikes((current) => current + 1);
+      }
+    } finally {
+      setLikeBusy(false);
+    }
+  }
 
   return (
     <article className="profile-route-card">
@@ -155,29 +207,76 @@ function ProfileRouteCard({ roteiro }) {
         className="profile-route-social-actions"
         aria-label="Interações do roteiro"
       >
-        <span
-          className="profile-route-social-button"
-          aria-label={`${roteiro.totalCurtidas || 0} curtidas`}
+        <button
+          type="button"
+          className={`profile-route-social-button${liked ? " is-active" : ""}`}
+          onClick={toggleLike}
+          disabled={likeBusy}
+          aria-label={liked ? "Remover curtida do roteiro" : "Curtir roteiro"}
+          aria-pressed={liked}
         >
           <svg aria-hidden="true" viewBox="0 0 24 24">
             <path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.4a4.3 4.3 0 0 1 7.5 2.4C19.5 15.4 12 20 12 20Z" />
           </svg>
-          <span>{roteiro.totalCurtidas || 0}</span>
-        </span>
-        <span
-          className="profile-route-social-button"
-          aria-label="Salvar roteiro"
+          <span>{totalLikes}</span>
+        </button>
+        <button
+          type="button"
+          className={`profile-route-social-button${saved ? " is-active" : ""}`}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onToggleSave(roteiro, saved);
+          }}
+          aria-label={saved ? "Remover roteiro dos salvos" : "Salvar roteiro"}
+          aria-pressed={saved}
         >
           <svg aria-hidden="true" viewBox="0 0 24 24">
             <path d="M6 3h12v18l-6-4.5L6 21Z" />
           </svg>
-        </span>
+        </button>
       </div>
     </article>
   );
 }
 
-function ProfilePublicationCard({ post, onOpen }) {
+function ProfilePublicationCard({
+  post,
+  onOpen,
+  isAuthenticated,
+  onRequireLogin,
+  saved,
+  onToggleSave,
+}) {
+  const [likeCount, setLikeCount] = useState(
+    Number(post._count?.curtidas || 0),
+  );
+  const [liked, setLiked] = useState(Boolean(post.curtiu));
+  const [likeBusy, setLikeBusy] = useState(false);
+
+  async function toggleLike() {
+    if (!isAuthenticated) {
+      onRequireLogin();
+      return;
+    }
+    if (likeBusy) return;
+    setLikeBusy(true);
+    try {
+      await apiFetch(`/publicacoes/${post.id}/curtir`, {
+        method: liked ? "DELETE" : "POST",
+      });
+      setLiked(!liked);
+      setLikeCount((current) => current + (liked ? -1 : 1));
+    } catch (error) {
+      if (!liked && error.status === 409) {
+        setLiked(true);
+        setLikeCount((current) => current + 1);
+      }
+    } finally {
+      setLikeBusy(false);
+    }
+  }
+
   return (
     <article className="profile-publication-card">
       <header className="profile-publication-header">
@@ -210,13 +309,42 @@ function ProfilePublicationCard({ post, onOpen }) {
           ))}
         </div>
       ) : null}
+      {post.roteiro?.publico ? (
+        <Link
+          to={`/roteiros/${post.roteiro.id}`}
+          className="profile-publication-route"
+        >
+          {post.roteiro.imagemUrl ? (
+            <img
+              className="profile-publication-route-thumb"
+              src={post.roteiro.imagemUrl}
+              alt=""
+              loading="lazy"
+            />
+          ) : null}
+          <span className="min-w-0">
+            <strong>{post.roteiro.titulo}</strong>
+            <small>{post.roteiro.destino}</small>
+          </span>
+          <span className="profile-publication-route-arrow" aria-hidden="true">
+            →
+          </span>
+        </Link>
+      ) : null}
       <div className="profile-publication-actions">
-        <span aria-label={`${post._count?.curtidas || 0} curtidas`}>
+        <button
+          type="button"
+          onClick={toggleLike}
+          disabled={likeBusy}
+          aria-label={liked ? "Remover curtida" : "Curtir publicação"}
+          aria-pressed={liked}
+          className={liked ? "is-liked" : ""}
+        >
           <svg aria-hidden="true" viewBox="0 0 24 24">
             <path d="M12 20.5s-8-4.8-8-10.8A4.5 4.5 0 0 1 12 6.9a4.5 4.5 0 0 1 8 2.8c0 6-8 10.8-8 10.8Z" />
           </svg>
-          {post._count?.curtidas || 0}
-        </span>
+          {likeCount}
+        </button>
         <span aria-label={`${post._count?.comentarios || 0} comentários`}>
           <svg aria-hidden="true" viewBox="0 0 24 24">
             <path d="M4 5h16v11H9l-5 4Z" />
@@ -231,11 +359,19 @@ function ProfilePublicationCard({ post, onOpen }) {
         >
           Abrir
         </button>
-        <span className="profile-publication-save" aria-hidden="true">
+        <button
+          type="button"
+          className={`profile-publication-save${saved ? " is-saved" : ""}`}
+          onClick={() => onToggleSave(post, saved)}
+          aria-label={
+            saved ? "Remover publicação dos salvos" : "Salvar publicação"
+          }
+          aria-pressed={saved}
+        >
           <svg viewBox="0 0 24 24">
             <path d="M6 3h12v18l-6-4.5L6 21Z" />
           </svg>
-        </span>
+        </button>
       </div>
     </article>
   );
@@ -291,7 +427,7 @@ export default function Perfil() {
     setSavedRoutes([]);
     setSavedPosts([]);
     setSavedError(null);
-    setSavedLoading(isOwnProfile);
+    setSavedLoading(isAuthenticated);
     setLikedPosts([]);
     setLikedRoutes([]);
     setLikesError(null);
@@ -332,7 +468,7 @@ export default function Perfil() {
         userId && !isOwnProfile
           ? apiFetch(`/usuarios/${loadedProfile.id}/seguindo`)
           : Promise.resolve(null),
-        isOwnProfile
+        isAuthenticated
           ? Promise.all([
               apiFetch("/roteiros/salvos"),
               apiFetch("/publicacoes/salvas"),
@@ -400,6 +536,48 @@ export default function Perfil() {
   useEffect(() => {
     queueMicrotask(() => loadProfile());
   }, [loadProfile]);
+
+  const savedRouteIds = new Set(savedRoutes.map((route) => route.id));
+  const savedPostIds = new Set(savedPosts.map((post) => post.id));
+
+  function requireLoginForSave() {
+    navigate("/login", { state: { from: location.pathname } });
+  }
+
+  async function toggleProfileSave(item, saved) {
+    if (!isAuthenticated) {
+      requireLoginForSave();
+      return;
+    }
+
+    const isRoute = Boolean(item.destino || item.totalDias || item.publico);
+    const endpoint = isRoute
+      ? `/roteiros/${item.id}/salvar`
+      : `/publicacoes/${item.id}/salvar`;
+
+    try {
+      await apiFetch(endpoint, { method: saved ? "DELETE" : "POST" });
+      if (isRoute) {
+        setSavedRoutes((current) =>
+          saved
+            ? current.filter((entry) => entry.id !== item.id)
+            : current.some((entry) => entry.id === item.id)
+              ? current
+              : [...current, item],
+        );
+      } else {
+        setSavedPosts((current) =>
+          saved
+            ? current.filter((entry) => entry.id !== item.id)
+            : current.some((entry) => entry.id === item.id)
+              ? current
+              : [...current, item],
+        );
+      }
+    } catch (error) {
+      setStatus({ type: "error", message: error.message });
+    }
+  }
 
   const activeContent = useMemo(() => {
     if (activeTab === "posts")
@@ -916,9 +1094,28 @@ export default function Perfil() {
                       key={`post-${item.id}`}
                       post={item}
                       onOpen={openPublication}
+                      isAuthenticated={isAuthenticated}
+                      onRequireLogin={() =>
+                        navigate("/login", {
+                          state: { from: location.pathname },
+                        })
+                      }
+                      saved={savedPostIds.has(item.id) || Boolean(item.salvo)}
+                      onToggleSave={toggleProfileSave}
                     />
                   ) : (
-                    <ProfileRouteCard key={`route-${item.id}`} roteiro={item} />
+                    <ProfileRouteCard
+                      key={`route-${item.id}`}
+                      roteiro={item}
+                      isAuthenticated={isAuthenticated}
+                      onRequireLogin={() =>
+                        navigate("/login", {
+                          state: { from: location.pathname },
+                        })
+                      }
+                      saved={savedRouteIds.has(item.id)}
+                      onToggleSave={toggleProfileSave}
+                    />
                   ),
                 )}
               </div>
