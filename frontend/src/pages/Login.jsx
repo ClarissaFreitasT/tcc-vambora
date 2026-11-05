@@ -27,7 +27,7 @@ export default function Login() {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.12),_transparent_42%)] px-4 py-16 lg:px-8">
+    <main className="auth-page min-h-screen px-4 py-16 lg:px-8">
       <div className="mx-auto max-w-xl">
         <div className="mb-8">
           <h1 className="mt-4 text-4xl font-black text-slate-900">
