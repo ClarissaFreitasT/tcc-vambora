@@ -120,7 +120,7 @@ Oito migrations versionadas:
 7. `20261016120000_expand_community`
 8. `20261019100000_add_roteiro_image`
 
-**A segunda remove `usuarios.orcamento_perfil`.** Preserve backup e revise as migrations pendentes em banco com dados. Nenhuma migration foi alterada ou aplicada nesta auditoria. O schema foi validado estaticamente; aplicação SQL e drift ainda precisam ser verificados no banco real. Não há script de seed; a migration de comunidade insere as categorias Dicas, Roteiros e Destinos.
+**A segunda remove `usuarios.orcamento_perfil`.** Preserve backup e revise as migrations pendentes em banco com dados. Nenhuma migration foi alterada ou aplicada nesta auditoria. O schema foi validado estaticamente; aplicação SQL e drift ainda precisam ser verificados no banco real. Para popular a demonstração com usuários, roteiros e comunidade fictícios, execute `npm run seed:demo` na pasta `backend`. Consulte [dados e acesso de demonstração](backend/prisma/DEMO.md). A seed reutiliza as categorias existentes, incluindo Dicas, Roteiros e Destinos.
 
 Execute manualmente, na pasta `backend`, com as variáveis do banco correto configuradas em um ambiente controlado:
 
