@@ -8,29 +8,30 @@
 
 .home-display {
   font-family: var(--home-heading-font);
-  .home-team-art {
-    display: grid;
-    place-items: center;
-  }
-
-  .home-team-art svg {
-    display: block;
-    width: min(100%, 32rem);
-    height: auto;
-    filter: drop-shadow(0 24px 30px rgba(15, 42, 92, 0.16));
-  }
-
-  .home-team-plane {
-    animation: home-team-fly 7s ease-in-out infinite alternate;
-    transform-origin: center;
-  }
-
-  @keyframes home-team-fly {
-    to {
-      transform: translate(-8px, -6px) rotate(-2deg);
-    }
-  }
   color: #0b2342;
+}
+
+.home-team-art {
+  display: grid;
+  place-items: center;
+}
+
+.home-team-art svg {
+  display: block;
+  width: min(100%, 32rem);
+  height: auto;
+  filter: drop-shadow(0 24px 30px rgba(15, 42, 92, 0.16));
+}
+
+.home-team-plane {
+  animation: home-team-fly 7s ease-in-out infinite alternate;
+  transform-origin: center;
+}
+
+@keyframes home-team-fly {
+  to {
+    transform: translate(-8px, -6px) rotate(-2deg);
+  }
 }
 
 .home-popular-section h2,

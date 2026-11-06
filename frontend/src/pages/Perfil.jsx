@@ -1100,7 +1100,7 @@ export default function Perfil() {
                           state: { from: location.pathname },
                         })
                       }
-                      saved={savedPostIds.has(item.id) || Boolean(item.salvo)}
+                      saved={savedPostIds.has(item.id)}
                       onToggleSave={toggleProfileSave}
                     />
                   ) : (
