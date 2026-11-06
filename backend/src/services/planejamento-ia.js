@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { prisma } from "../config/prisma.js";
 import { gerarComGemini, verificarGemini } from "./gemini.js";
+import { preservarCustos } from "./ia-custos.js";
 import {
   cidadeLabel,
   dataCivil,
@@ -155,6 +156,7 @@ export function criarServicoIa(
               titulo: d.titulo,
               cidadePrincipal: d.cidadePrincipal,
               itens: d.itens.map((i) => ({
+                id: i.id,
                 titulo: i.titulo,
                 descricao: i.descricao,
                 localNome: i.localNome,
@@ -169,6 +171,7 @@ export function criarServicoIa(
         op: op.id,
         revisao: p.roteiro?.revisao ?? null,
         inicial: !p.roteiro && !p.propostas.length,
+        primeiraVersao: !p.roteiro && !p.mensagens.some((m) => m.papel === "assistente"),
         contexto: {
           dadosIniciais: validarViagem(p.dadosIniciais),
           roteiroSalvo: roteiro,
@@ -193,7 +196,7 @@ export function criarServicoIa(
           const conteudo = validarProposta(resposta.proposta);
           // Initial generation cannot change the form's constraints.
           if (
-            !id &&
+            reserva.primeiraVersao &&
             JSON.stringify(validarViagem(conteudo)) !==
               JSON.stringify(validarViagem(reserva.contexto.dadosIniciais))
           ) {
@@ -268,6 +271,7 @@ export function criarServicoIa(
         const conteudo = validarProposta(proposta.conteudo);
         const { titulo, descricao, cidades, dataIda, dataVolta, dias } =
           conteudo;
+        const diasComCustos = preservarCustos({ ...conteudo, dias }, p.roteiro);
         const dados = {
           titulo,
           descricao,
@@ -301,7 +305,7 @@ export function criarServicoIa(
             data: { roteiroId },
           });
         }
-        for (const dia of dias) {
+        for (const dia of diasComCustos) {
           await tx.diaDoRoteiro.create({
             data: {
               roteiroId,

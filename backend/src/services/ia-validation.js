@@ -103,6 +103,9 @@ export function validarProposta(input) {
         )
           throw falha(400, "Horário inválido.");
         return {
+          ...(item.itemOriginalId == null ? {} : {
+            itemOriginalId: texto(item.itemOriginalId, "Referência da atividade", 36),
+          }),
           titulo: texto(item.titulo, "Título da atividade", 255),
           descricao: texto(item.descricao, "Descrição", 4000, true),
           localNome: texto(item.localNome, "Local", 255, true),
@@ -166,6 +169,7 @@ export const respostaSchema = object({
             cidadeIndice: { type: "integer" },
             itens: array(
               object({
+                itemOriginalId: { anyOf: [string, { type: "null" }] },
                 titulo: string,
                 descricao: string,
                 localNome: string,

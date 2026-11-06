@@ -338,4 +338,54 @@ describe("planejamento IA: ciclo de vida", () => {
     ).rejects.toMatchObject({ status: 502 });
     expect(db.estado().propostas).toHaveLength(0);
   });
+
+  it.each([
+    { cidades: [{ nome: "Porto", regiao: "", pais: "Portugal" }] },
+    { dataIda: "2027-01-01", dataVolta: "2027-01-01" },
+  ])("mantém as restrições iniciais na recuperação após timeout: %j", async (mudanca) => {
+    gerar.mockRejectedValueOnce(Object.assign(new Error("Timeout"), { status: 504 }));
+    await expect(service.gerarProposta("u1", null, pedido)).rejects.toMatchObject({ status: 504 });
+    const id = db.estado().planos[0].id;
+    gerar.mockResolvedValueOnce({ resposta: "Mudança indevida", proposta: { ...conteudo, ...mudanca } });
+    await expect(service.gerarProposta("u1", id, {
+      mensagem: "Gere a primeira versão com os dados iniciais da viagem.", operacaoId: "nova-tentativa-00001",
+    })).rejects.toMatchObject({ status: 502 });
+    expect(db.estado().propostas).toHaveLength(0);
+    const recuperado = await service.gerarProposta("u1", id, {
+      mensagem: "Gere a primeira versão com os dados iniciais da viagem.", operacaoId: "nova-tentativa-00002",
+    });
+    expect(recuperado.propostas).toHaveLength(1);
+  });
+
+  it("permite mudar cidades após descartar uma primeira versão válida", async () => {
+    const p = await service.gerarProposta("u1", null, pedido);
+    await service.descartar("u1", p.id, p.propostas[0].id);
+    gerar.mockResolvedValueOnce({ resposta: "Porto", proposta: {
+      ...conteudo, cidades: [{ nome: "Porto", pais: "Portugal", regiao: "" }],
+    } });
+    const nova = await service.gerarProposta("u1", p.id, {
+      mensagem: "Prefiro Porto", operacaoId: "mudar-cidade-000001",
+    });
+    expect(nova.propostas[0].conteudo.cidades[0].nome).toBe("Porto");
+  });
+
+  it("preserva custos manuais ao confirmar ajustes e fornece referências ao Gemini", async () => {
+    const p = await service.gerarProposta("u1", null, pedido);
+    await service.aplicar("u1", p.id, p.propostas[0].id);
+    const item = { ...conteudo.dias[0].itens[0], id: "atividade-1", custoEstimado: 150 };
+    db.estado().roteiros[0].dias = [{ titulo: "Chegada", numeroDia: 1, cidadePrincipal: "Lisboa, Portugal", itens: [item] }];
+    db.estado().roteiros[0].revisao++;
+    gerar.mockResolvedValueOnce({ resposta: "Título atualizado", proposta: {
+      ...conteudo, dias: [{ ...conteudo.dias[0], itens: [{ ...item, titulo: "Passeio atualizado", itemOriginalId: item.id, custoEstimado: 999 }] }],
+    } });
+    const nova = await service.gerarProposta("u1", p.id, {
+      mensagem: "Atualize o título", operacaoId: "ajustar-titulo-0001",
+    });
+    const enviado = gerar.mock.calls[1][0].roteiroSalvo.dias[0].itens[0];
+    expect(enviado.id).toBe(item.id);
+    expect(enviado).not.toHaveProperty("custoEstimado");
+    await service.aplicar("u1", p.id, nova.propostas[0].id);
+    expect(db.estado().dias[0].itens.create[0].custoEstimado).toBe(150);
+    expect(db.estado().dias[0].itens.create[0]).not.toHaveProperty("itemOriginalId");
+  });
 });

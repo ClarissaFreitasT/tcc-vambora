@@ -601,7 +601,7 @@ export default function RoteiroDetalhes() {
                 {roteiro.titulo}
               </h1>
               <p className="mt-2 text-slate-600">{roteiro.destino}</p>
-              {roteiro.dataIda && <p className="mt-2 text-sm text-slate-600">{dataViagem(roteiro.dataIda)} a {dataViagem(roteiro.dataVolta)} · {roteiro.pessoas} pessoa(s)</p>}
+              {roteiro.dataIda && <p className="mt-2 text-sm text-slate-600">{dataViagem(roteiro.dataIda)} a {dataViagem(roteiro.dataVolta)}{roteiro.pessoas > 0 ? ` · ${roteiro.pessoas} pessoa(s)` : ""}</p>}
               <p className="mt-3 text-sm text-slate-500">
                 Criado por{" "}
                 {roteiro.usuario?.id ? (
