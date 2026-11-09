@@ -306,6 +306,10 @@
   );
 }
 
+.public-route-card .home-route-card-content h2 {
+  color: #fff;
+}
+
 .public-route-card-badge {
   position: absolute;
   z-index: 2;
